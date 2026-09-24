@@ -8,17 +8,27 @@ import 'location.dart';
 import 'new_character_screen.dart';
 import 'new_item_screen.dart';
 import 'new_location_screen.dart';
+import 'new_quest_screen.dart';
+import 'quest.dart';
 
 /// Всё содержимое мира, загруженное разом.
 class _Content {
-  const _Content(this.locations, this.items, this.characters);
+  const _Content(this.locations, this.items, this.characters, this.quests);
 
   final List<Location> locations;
   final List<Item> items;
   final List<Character> characters;
+  final List<Quest> quests;
+
+  /// Названия всех объектов мира по id — для ссылок в строках списка.
+  Map<String, String> get titles => {
+    for (final l in locations) l.id: l.title,
+    for (final i in items) i.id: i.title,
+    for (final c in characters) c.id: c.title,
+  };
 }
 
-/// Мир изнутри: локации, предметы и персонажи, у каждого раздела своя кнопка «+».
+/// Мир изнутри: локации, предметы, персонажи и квесты, у каждого раздела своя кнопка «+».
 class WorldScreen extends StatefulWidget {
   const WorldScreen({super.key, required this.world, required this.repo});
 
@@ -34,12 +44,13 @@ class _WorldScreenState extends State<WorldScreen> {
 
   Future<_Content> _load() async {
     final id = widget.world.id;
-    final (locations, items, characters) = await (
+    final (locations, items, characters, quests) = await (
       widget.repo.locations(id),
       widget.repo.items(id),
       widget.repo.characters(id),
+      widget.repo.quests(id),
     ).wait;
-    return _Content(locations, items, characters);
+    return _Content(locations, items, characters, quests);
   }
 
   /// Открывает форму создания; после сохранения перечитывает мир.
@@ -63,6 +74,14 @@ class _WorldScreenState extends State<WorldScreen> {
           onPressed: () => _open(form),
         ),
       );
+
+  /// Квест в списке: выдающий, шаги по порядку, награды — строками.
+  Widget _questTile(Quest q, Map<String, String> titles) => ListTile(
+    leading: const Icon(Icons.flag),
+    title: Text(q.title),
+    subtitle: Text(q.lines(titles).join('\n')),
+    isThreeLine: true,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +157,22 @@ class _WorldScreenState extends State<WorldScreen> {
                     ),
                   ),
                 ),
+              const Divider(),
+              _header(
+                'Квесты',
+                const Key('new-quest'),
+                'Новый квест',
+                NewQuestScreen(
+                  world: world,
+                  repo: repo,
+                  locations: c.locations,
+                  items: c.items,
+                  characters: c.characters,
+                ),
+              ),
+              if (c.quests.isEmpty)
+                const ListTile(subtitle: Text('Квестов пока нет')),
+              for (final q in c.quests) _questTile(q, c.titles),
             ],
           );
         },

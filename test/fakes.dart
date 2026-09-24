@@ -9,6 +9,7 @@ import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
+import 'package:rpg_builder/content/quest.dart';
 import 'package:rpg_builder/content/slug.dart';
 import 'package:rpg_builder/worlds/world.dart';
 import 'package:rpg_builder/worlds/worlds_repo.dart';
@@ -123,6 +124,35 @@ class FakeContent implements ContentRepo {
     list.add(character);
     return character;
   }
+
+  final _quests = <String, List<Quest>>{};
+
+  @override
+  Future<List<Quest>> quests(String worldId) async =>
+      List.of(_quests[worldId] ?? const []);
+
+  @override
+  Future<Quest> createQuest(String worldId, NewQuest q) async {
+    final list = _quests.putIfAbsent(worldId, () => []);
+    final p = q.toParams(worldId, uniqueSlug(q.title, list.map((x) => x.slug)));
+    // Через те же строки, что шлёт и читает настоящая база.
+    final quest = Quest.fromRow({
+      'id': 'quest-${list.length}',
+      'slug': p['p_slug'],
+      'title': p['p_title'],
+      'description': p['p_description'],
+      'giver_id': p['p_giver_id'],
+      'quest_steps': [
+        for (final (i, s) in (p['p_steps'] as List).indexed)
+          {...s as Map<String, dynamic>, 'position': i + 1},
+      ],
+      'quest_rewards': [
+        for (final id in p['p_rewards'] as List) {'item_id': id},
+      ],
+    });
+    list.add(quest);
+    return quest;
+  }
 }
 
 /// Приложение на подменённой базе.
@@ -157,5 +187,11 @@ Future<void> signUp(WidgetTester t, String email) async {
   await t.enterText(find.byKey(const Key('email')), email);
   await t.enterText(find.byKey(const Key('password')), 'secret123');
   await t.tap(find.byKey(const Key('sign-up')));
+  await t.pumpAndSettle();
+}
+
+/// Открывает мир из списка своих миров.
+Future<void> openWorld(WidgetTester t, String title) async {
+  await t.tap(find.text(title));
   await t.pumpAndSettle();
 }

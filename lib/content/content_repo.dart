@@ -3,6 +3,7 @@ import 'package:supabase/supabase.dart';
 import 'character.dart';
 import 'item.dart';
 import 'location.dart';
+import 'quest.dart';
 import 'slug.dart';
 
 /// Содержимое одного мира. Чьё содержимое видно — решает RLS в базе.
@@ -15,6 +16,10 @@ abstract class ContentRepo {
 
   /// Персонаж и его добыча записываются одной транзакцией.
   Future<Character> createCharacter(String worldId, NewCharacter character);
+  Future<List<Quest>> quests(String worldId);
+
+  /// Квест, его шаги и награды записываются одной транзакцией.
+  Future<Quest> createQuest(String worldId, NewQuest quest);
 }
 
 class SupabaseContentRepo implements ContentRepo {
@@ -88,6 +93,30 @@ class SupabaseContentRepo implements ContentRepo {
         .select('*, loot(item_id, chance)')
         .single();
     return Character.fromRow(created);
+  }
+
+  static const _questColumns =
+      '*, quest_steps(position, kind, character_id, item_id, location_id, amount),'
+      ' quest_rewards(item_id)';
+
+  @override
+  Future<List<Quest>> quests(String worldId) async {
+    final rows = await _client
+        .from('quests')
+        .select(_questColumns)
+        .eq('project_id', worldId)
+        .order('created_at');
+    return rows.map(Quest.fromRow).toList();
+  }
+
+  @override
+  Future<Quest> createQuest(String worldId, NewQuest quest) async {
+    final slug = uniqueSlug(quest.title, await _slugs('quests', worldId));
+    final created = await _client
+        .rpc('create_quest', params: quest.toParams(worldId, slug))
+        .select(_questColumns)
+        .single();
+    return Quest.fromRow(created);
   }
 
   Future<List<String>> _slugs(String table, String worldId) async {

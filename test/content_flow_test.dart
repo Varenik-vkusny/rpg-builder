@@ -5,11 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes.dart';
 
-Future<void> openWorld(WidgetTester t, String title) async {
-  await t.tap(find.text(title));
-  await t.pumpAndSettle();
-}
-
 void main() {
   testWidgets('автор создаёт локацию и видит её в мире', (t) async {
     await pumpApp(t);
