@@ -34,7 +34,7 @@ Future<void> _shot(WidgetTester t, String name) async {
 }
 
 void main() {
-  testWidgets('срез 2.1: локация в мире', (t) async {
+  testWidgets('содержимое мира по срезам', (t) async {
     await t.runAsync(_loadFont);
     t.view.physicalSize = const Size(400, 760);
     t.view.devicePixelRatio = 1;
@@ -58,9 +58,30 @@ void main() {
     await t.tap(find.byKey(const Key('location-save')));
     await _shot(t, '2.1-world');
 
+    await t.tap(find.byKey(const Key('new-item')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('item-title')), 'Ключ от лебёдки');
+    await t.tap(find.byKey(const Key('item-kind-quest')));
+    await t.enterText(find.byKey(const Key('item-level')), '2');
+    await _shot(t, '2.2-form');
+    await t.tap(find.byKey(const Key('item-save')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('new-item')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('item-title')), 'Кирка');
+    await t.tap(find.byKey(const Key('item-rarity-rare')));
+    await t.enterText(find.byKey(const Key('item-level')), '3');
+    await t.enterText(find.byKey(const Key('item-stat')), '6');
+    await t.enterText(find.byKey(const Key('item-price')), '40');
+    await t.tap(find.byKey(const Key('item-save')));
+    await _shot(t, '2.2-world');
+
     final saved = (await content.locations('0-Пепельные копи')).single;
     expect(saved, isA<Location>());
     // slug виден только здесь — в интерфейсе его нет.
     debugPrint('slug: ${saved.slug}');
+    for (final i in await content.items('0-Пепельные копи')) {
+      debugPrint('slug: ${i.slug}');
+    }
   });
 }

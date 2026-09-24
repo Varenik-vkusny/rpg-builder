@@ -1,5 +1,6 @@
 import 'package:supabase/supabase.dart';
 
+import 'item.dart';
 import 'location.dart';
 import 'slug.dart';
 
@@ -7,6 +8,8 @@ import 'slug.dart';
 abstract class ContentRepo {
   Future<List<Location>> locations(String worldId);
   Future<Location> createLocation(String worldId, NewLocation location);
+  Future<List<Item>> items(String worldId);
+  Future<Item> createItem(String worldId, NewItem item);
 }
 
 class SupabaseContentRepo implements ContentRepo {
@@ -33,6 +36,27 @@ class SupabaseContentRepo implements ContentRepo {
         .select()
         .single();
     return Location.fromRow(row);
+  }
+
+  @override
+  Future<List<Item>> items(String worldId) async {
+    final rows = await _client
+        .from('items')
+        .select()
+        .eq('project_id', worldId)
+        .order('created_at');
+    return rows.map(Item.fromRow).toList();
+  }
+
+  @override
+  Future<Item> createItem(String worldId, NewItem item) async {
+    final slug = uniqueSlug(item.title, await _slugs('items', worldId));
+    final row = await _client
+        .from('items')
+        .insert(item.toRow(worldId, slug))
+        .select()
+        .single();
+    return Item.fromRow(row);
   }
 
   Future<List<String>> _slugs(String table, String worldId) async {

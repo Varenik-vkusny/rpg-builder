@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/content_repo.dart';
+import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/worlds/world.dart';
 import 'package:rpg_builder/worlds/worlds_repo.dart';
@@ -99,6 +100,89 @@ void main() {
 
     test('без входа локации не читаются', () async {
       expect(await anonymous().from('locations').select(), isEmpty);
+    });
+  });
+
+  group('предметы', () {
+    late Item key;
+
+    setUpAll(() async {
+      key = await SupabaseContentRepo(a).createItem(
+        world.id,
+        const NewItem(
+          title: 'Ключ от лебёдки',
+          kind: ItemKind.quest,
+          rarity: Rarity.common,
+          level: 2,
+          price: 0,
+        ),
+      );
+    });
+
+    test('автор видит свой предмет со slug и полями', () async {
+      final mine = await SupabaseContentRepo(a).items(world.id);
+      final got = mine.singleWhere((i) => i.id == key.id);
+      expect(got.slug, 'klyuch_ot_lebedki');
+      expect(got.kind, ItemKind.quest);
+      expect(got.level, 2);
+      expect(got.damage, isNull);
+    });
+
+    test('у оружия есть урон, защиты нет', () async {
+      final pick = await SupabaseContentRepo(a).createItem(
+        world.id,
+        const NewItem(
+          title: 'Кирка',
+          kind: ItemKind.weapon,
+          rarity: Rarity.rare,
+          level: 3,
+          damage: 6,
+          defense: 99,
+          price: 40,
+        ),
+      );
+      expect(pick.damage, 6);
+      expect(pick.defense, isNull);
+    });
+
+    test('база не принимает урон у квестового предмета', () async {
+      await expectLater(
+        a.from('items').insert({
+          'project_id': world.id,
+          'slug': 'strannyy_klyuch',
+          'title': 'Странный ключ',
+          'kind': 'quest',
+          'rarity': 'common',
+          'level': 1,
+          'damage': 5,
+          'price': 0,
+        }),
+        throwsA(isA<PostgrestException>()),
+      );
+    });
+
+    test('второй автор чужой предмет не видит', () async {
+      expect(await SupabaseContentRepo(b).items(world.id), isEmpty);
+      expect(await b.from('items').select().eq('id', key.id), isEmpty);
+    });
+
+    test('второй автор не может создать предмет в чужом мире', () async {
+      await expectLater(
+        b.from('items').insert({
+          'project_id': world.id,
+          'slug': 'podkidysh',
+          'title': 'Подкидыш',
+          'kind': 'misc',
+          'rarity': 'common',
+          'level': 1,
+          'price': 0,
+        }),
+        throwsA(isA<PostgrestException>()),
+      );
+    });
+
+    test('без входа предметы не читаются', () async {
+      expect(await anonymous().from('items').select(), isEmpty);
     });
   });
 }

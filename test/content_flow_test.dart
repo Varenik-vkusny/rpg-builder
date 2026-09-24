@@ -46,4 +46,63 @@ void main() {
 
     expect(find.text('Нужно название локации'), findsOneWidget);
   });
+
+  testWidgets('автор создаёт квестовый предмет и видит его в мире', (t) async {
+    await pumpApp(t);
+    await signUp(t, 'a@test.dev');
+    await createWorld(t, 'Пепельные копи');
+    await openWorld(t, 'Пепельные копи');
+    expect(find.text('Предметов пока нет'), findsOneWidget);
+
+    await t.tap(find.byKey(const Key('new-item')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('item-title')), 'Ключ от лебёдки');
+    await t.tap(find.byKey(const Key('item-kind-quest')));
+    await t.pumpAndSettle();
+    // У квестового предмета нет ни урона, ни защиты.
+    expect(find.byKey(const Key('item-stat')), findsNothing);
+    await t.enterText(find.byKey(const Key('item-level')), '2');
+    await t.tap(find.byKey(const Key('item-save')));
+    await t.pumpAndSettle();
+
+    expect(find.text('Ключ от лебёдки'), findsOneWidget);
+    expect(find.text('Квестовый · Обычный · ур. 2 · 0 зол.'), findsOneWidget);
+  });
+
+  testWidgets('предмет-оружие получает урон, редкость и цену', (t) async {
+    await pumpApp(t);
+    await signUp(t, 'a@test.dev');
+    await createWorld(t, 'Пепельные копи');
+    await openWorld(t, 'Пепельные копи');
+
+    await t.tap(find.byKey(const Key('new-item')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('item-title')), 'Кирка');
+    await t.tap(find.byKey(const Key('item-rarity-rare')));
+    await t.enterText(find.byKey(const Key('item-level')), '3');
+    await t.enterText(find.byKey(const Key('item-stat')), '6');
+    await t.enterText(find.byKey(const Key('item-price')), '40');
+    await t.tap(find.byKey(const Key('item-save')));
+    await t.pumpAndSettle();
+
+    expect(
+      find.text('Оружие · Редкий · ур. 3 · урон 6 · 40 зол.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('предмет-оружие без урона не создаётся', (t) async {
+    await pumpApp(t);
+    await signUp(t, 'a@test.dev');
+    await createWorld(t, 'Пепельные копи');
+    await openWorld(t, 'Пепельные копи');
+
+    await t.tap(find.byKey(const Key('new-item')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('item-title')), 'Кирка');
+    await t.tap(find.byKey(const Key('item-save')));
+    await t.pumpAndSettle();
+
+    expect(find.text('Урон — целое число от 0'), findsOneWidget);
+  });
 }

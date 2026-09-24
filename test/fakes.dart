@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/app.dart';
 import 'package:rpg_builder/auth/auth_service.dart';
 import 'package:rpg_builder/content/content_repo.dart';
+import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/content/slug.dart';
 import 'package:rpg_builder/worlds/world.dart';
@@ -82,6 +83,21 @@ class FakeContent implements ContentRepo {
     );
     list.add(loc);
     return loc;
+  }
+
+  final _items = <String, List<Item>>{};
+
+  @override
+  Future<List<Item>> items(String worldId) async =>
+      List.of(_items[worldId] ?? const []);
+
+  @override
+  Future<Item> createItem(String worldId, NewItem i) async {
+    final list = _items.putIfAbsent(worldId, () => []);
+    final row = i.toRow(worldId, uniqueSlug(i.title, list.map((x) => x.slug)));
+    final item = Item.fromRow({...row, 'id': 'item-${list.length}'});
+    list.add(item);
+    return item;
   }
 }
 
