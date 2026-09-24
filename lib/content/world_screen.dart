@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../assistant/assistant_screen.dart';
+import '../assistant/assistant_service.dart';
 import '../check/check_screen.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
@@ -12,10 +14,16 @@ import 'quest.dart';
 
 /// Мир изнутри: локации, предметы, персонажи и квесты, у каждого раздела своя кнопка «+».
 class WorldScreen extends StatefulWidget {
-  const WorldScreen({super.key, required this.world, required this.repo});
+  const WorldScreen({
+    super.key,
+    required this.world,
+    required this.repo,
+    required this.assistant,
+  });
 
   final World world;
   final ContentRepo repo;
+  final AssistantService assistant;
 
   @override
   State<WorldScreen> createState() => _WorldScreenState();
@@ -31,6 +39,26 @@ class _WorldScreenState extends State<WorldScreen> {
     final created = await Navigator.of(context)
         .push<bool>(MaterialPageRoute(builder: (_) => form));
     if (created == true) {
+      setState(() {
+        _content = _load();
+      });
+    }
+  }
+
+  /// Ассистент на текущем снимке мира; вернулся с изменениями — перечитать мир.
+  Future<void> _openAssistant() async {
+    final snapshot = await _content;
+    if (!mounted) return;
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => AssistantScreen(
+          world: widget.world,
+          snapshot: snapshot,
+          assistant: widget.assistant,
+        ),
+      ),
+    );
+    if (changed == true) {
       setState(() {
         _content = _load();
       });
@@ -64,6 +92,12 @@ class _WorldScreenState extends State<WorldScreen> {
       appBar: AppBar(
         title: Text(world.title),
         actions: [
+          IconButton(
+            key: const Key('assistant-open'),
+            tooltip: 'Ассистент',
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: _openAssistant,
+          ),
           IconButton(
             key: const Key('check-world'),
             tooltip: 'Проверка мира',

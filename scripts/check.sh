@@ -48,6 +48,11 @@ if [ -f pubspec.yaml ]; then
   run "тесты (экраны + изоляция миров в базе)" "flutter test --no-pub"
 fi
 
+# ---------- серверная функция ассистента (TypeScript) ----------
+if [ -d supabase/functions ]; then
+  run "функция ассистента (подменённая модель)" "bash scripts/fn-test.sh"
+fi
+
 # ---------- честный отказ ----------
 if [ "$RAN" -eq 0 ]; then
   echo ""

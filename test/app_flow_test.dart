@@ -42,7 +42,12 @@ void main() {
     final auth = FakeAuth();
     final repo = FakeWorlds(auth);
     await t.pumpWidget(
-      RpgBuilderApp(auth: auth, worlds: repo, content: FakeContent()),
+      RpgBuilderApp(
+        auth: auth,
+        worlds: repo,
+        content: FakeContent(),
+        assistant: FakeAssistant(),
+      ),
     );
     await signUp(t, 'a@test.dev');
 

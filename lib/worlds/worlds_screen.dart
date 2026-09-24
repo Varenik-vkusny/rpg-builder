@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../assistant/assistant_service.dart';
 import '../content/content_repo.dart';
 import '../content/world_screen.dart';
 import 'new_world_screen.dart';
@@ -11,11 +12,13 @@ class WorldsScreen extends StatefulWidget {
     super.key,
     required this.repo,
     required this.content,
+    required this.assistant,
     required this.onSignOut,
   });
 
   final WorldsRepo repo;
   final ContentRepo content;
+  final AssistantService assistant;
   final VoidCallback onSignOut;
 
   @override
@@ -81,8 +84,11 @@ class _WorldsScreenState extends State<WorldsScreen> {
                   subtitle: Text(_subtitle(w)),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) =>
-                          WorldScreen(world: w, repo: widget.content),
+                      builder: (_) => WorldScreen(
+                        world: w,
+                        repo: widget.content,
+                        assistant: widget.assistant,
+                      ),
                     ),
                   ),
                 ),

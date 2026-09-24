@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'assistant/assistant_service.dart';
 import 'auth/auth_screen.dart';
 import 'auth/auth_service.dart';
 import 'content/content_repo.dart';
@@ -13,11 +14,13 @@ class RpgBuilderApp extends StatelessWidget {
     required this.auth,
     required this.worlds,
     required this.content,
+    required this.assistant,
   });
 
   final AuthService auth;
   final WorldsRepo worlds;
   final ContentRepo content;
+  final AssistantService assistant;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +35,7 @@ class RpgBuilderApp extends StatelessWidget {
                 key: UniqueKey(),
                 repo: worlds,
                 content: content,
+                assistant: assistant,
                 onSignOut: auth.signOut,
               )
             : AuthScreen(auth: auth),

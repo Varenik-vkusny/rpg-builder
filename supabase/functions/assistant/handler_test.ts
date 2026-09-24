@@ -1,0 +1,129 @@
+// Серверная функция ассистента на подменённой модели. Запуск: node --test supabase/functions/
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+
+import { floodPlan, mines, scripted, toolUse } from "./fixtures_test_data.ts";
+import { handle, MAX_FIXES } from "./handler.ts";
+import { TOOLS } from "./plan.ts";
+
+const ask = (extra: Record<string, unknown> = {}) => ({
+  project_id: "w1",
+  scope: { type: "location", slug: "shtolnya_3" },
+  request: "затопи её, слизни там жить не могут",
+  attempt: 0,
+  previous_plan: null,
+  problems: [],
+  ...extra,
+});
+
+test("план: модель читает область и возвращает план, токены сложены", async () => {
+  const { deps, calls } = scripted(mines, [
+    toolUse("t1", "read_object", { type: "location", slug: "shtolnya_3" }),
+    toolUse("t2", "propose_plan", floodPlan),
+  ]);
+  const r = await handle(ask(), deps);
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.plan, floodPlan);
+  assert.deepEqual(r.body.usage, { input_tokens: 200, output_tokens: 40 });
+  // Результат чтения ушёл модели вторым ходом.
+  const toolResult = (calls[1].messages[2].content as { content: string }[])[0].content;
+  assert.match(toolResult, /обвалившаяся выработка/);
+});
+
+test("план: у модели только чтение и propose_plan, все строгие", () => {
+  assert.deepEqual(TOOLS.map((t) => t.name), ["find_in_scope", "read_object", "propose_plan"]);
+  for (const t of TOOLS) assert.equal(t.strict, true, t.name);
+});
+
+test("план: область — объект и связанное до двух связей", async () => {
+  const { deps, calls } = scripted(mines, [toolUse("t1", "propose_plan", floodPlan)]);
+  await handle(ask(), deps);
+  const system = calls[0].system;
+  // 1 связь: слизень; 2 связи: ключ (добыча слизня), квест (убить слизня).
+  for (const k of ["location:shtolnya_3", "character:slizen", "item:klyuch", "quest:obval"]) {
+    assert.match(system, new RegExp(k), k);
+  }
+  // 3 связи (бригадир — через квест) и несвязанное — вне области.
+  for (const k of ["character:brigadir", "location:rynok", "character:torgovka", "item:yabloko"]) {
+    assert.doesNotMatch(system, new RegExp(k), k);
+  }
+});
+
+test("план: read_object вне области не отдаёт объект", async () => {
+  const { deps, calls } = scripted(mines, [
+    toolUse("t1", "read_object", { type: "location", slug: "rynok" }),
+    toolUse("t2", "propose_plan", floodPlan),
+  ]);
+  await handle(ask(), deps);
+  const toolResult = (calls[1].messages[2].content as { content: string }[])[0].content;
+  assert.match(toolResult, /вне области/);
+  assert.doesNotMatch(toolResult, /Рынок/);
+});
+
+test("план: модель без инструмента получает напоминание, без плана за 8 ходов — 502", async () => {
+  const text = { stop_reason: "end_turn", content: [{ type: "text", text: "думаю" }], usage: { input_tokens: 1, output_tokens: 1 } };
+  const { deps, calls } = scripted(mines, Array.from({ length: 8 }, () => structuredClone(text)));
+  const r = await handle(ask(), deps);
+  assert.equal(r.status, 502);
+  assert.equal(calls.length, 8);
+  assert.match(String(calls[1].messages[2].content), /propose_plan/);
+});
+
+test("план: отказ модели — 502, план не возвращается", async () => {
+  const { deps } = scripted(mines, [{ stop_reason: "refusal", content: [], usage: { input_tokens: 5, output_tokens: 0 } }]);
+  const r = await handle(ask(), deps);
+  assert.equal(r.status, 502);
+  assert.equal(r.body.plan, undefined);
+});
+
+test("план: чужой или несуществующий мир — 404", async () => {
+  const { deps, calls } = scripted(null, []);
+  const r = await handle(ask(), deps);
+  assert.equal(r.status, 404);
+  assert.equal(calls.length, 0);
+});
+
+test("план: объекта области нет в мире — 404", async () => {
+  const { deps } = scripted(mines, []);
+  const r = await handle(ask({ scope: { type: "quest", slug: "net_takogo" } }), deps);
+  assert.equal(r.status, 404);
+});
+
+for (const [name, bad] of [
+  ["пустая просьба", { request: "  " }],
+  ["область-предмет", { scope: { type: "item", slug: "klyuch" } }],
+  ["без мира", { project_id: undefined }],
+] as const) {
+  test(`план: ${name} — 400 без вызова модели`, async () => {
+    const { deps, calls } = scripted(mines, []);
+    const r = await handle(ask(bad), deps);
+    assert.equal(r.status, 400);
+    assert.equal(calls.length, 0);
+  });
+}
+
+test("исправлени: попытка сверх двух — 400 без вызова модели", async () => {
+  const { deps, calls } = scripted(mines, []);
+  const r = await handle(ask({ attempt: MAX_FIXES + 1, previous_plan: floodPlan, problems: ["x"] }), deps);
+  assert.equal(r.status, 400);
+  assert.equal(calls.length, 0);
+});
+
+test("исправлени: модель получает прошлый план и список проблем", async () => {
+  const { deps, calls } = scripted(mines, [toolUse("t1", "propose_plan", floodPlan)]);
+  const r = await handle(
+    ask({ attempt: 1, previous_plan: floodPlan, problems: ["«Утопленник»: атака 14 выше потолка 10 (ур. 3)"] }),
+    deps,
+  );
+  assert.equal(r.status, 200);
+  const prompt = String(calls[0].messages[0].content);
+  assert.match(prompt, /атака 14 выше потолка 10/);
+  assert.match(prompt, /"attack":14/);
+});
+
+test("план: общий образец flood_plan.json совпадает с планом тестов функции", () => {
+  // Тот же файл читают тесты приложения (test/assistant_fixtures.dart) — форматы не разойдутся.
+  const shared = JSON.parse(readFileSync(new URL("./flood_plan.json", import.meta.url), "utf8"));
+  assert.deepEqual(shared, floodPlan);
+});

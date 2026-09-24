@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/app.dart';
+import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/auth/auth_service.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/character.dart';
@@ -158,11 +159,29 @@ class FakeContent implements ContentRepo {
   }
 }
 
+/// Подменённый ассистент: отдаёт заранее заданные планы по очереди
+/// и запоминает просьбы. Кончились планы — ошибка, как у упавшей функции.
+class FakeAssistant implements AssistantService {
+  FakeAssistant([List<Proposal>? answers]) : answers = answers ?? [];
+  final List<Proposal> answers;
+  final requests = <ProposeRequest>[];
+
+  @override
+  Future<Proposal> propose(ProposeRequest request) async {
+    requests.add(request);
+    if (answers.isEmpty) {
+      throw const AssistantException('Ассистент не ответил: нет плана');
+    }
+    return answers.removeAt(0);
+  }
+}
+
 /// Приложение на подменённой базе.
 /// [wrap] — ключ рамки для снимков экрана (demo/snapshots_test.dart).
 Future<FakeAuth> pumpApp(
   WidgetTester t, {
   FakeContent? content,
+  AssistantService? assistant,
   GlobalKey? wrap,
 }) async {
   final auth = FakeAuth();
@@ -170,6 +189,7 @@ Future<FakeAuth> pumpApp(
     auth: auth,
     worlds: FakeWorlds(auth),
     content: content ?? FakeContent(),
+    assistant: assistant ?? FakeAssistant(),
   );
   await t.pumpWidget(
     wrap == null ? app : RepaintBoundary(key: wrap, child: app),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
+import 'assistant/assistant_service.dart';
 import 'auth/auth_service.dart';
 import 'config.dart';
 import 'content/content_repo.dart';
@@ -19,6 +20,7 @@ Future<void> main() async {
       auth: SupabaseAuthService(client.auth),
       worlds: SupabaseWorldsRepo(client),
       content: SupabaseContentRepo(client),
+      assistant: SupabaseAssistantService(client),
     ),
   );
 }
