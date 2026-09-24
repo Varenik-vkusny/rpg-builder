@@ -1,0 +1,100 @@
+// Переходник: разговор петли ассистента (handler.ts) ↔ Gemini generateContent.
+// Петля говорит блоками tool_use / tool_result; здесь они становятся functionCall /
+// functionResponse. Ход модели уходит обратно в Gemini как есть (блок gemini_turn) —
+// с подписями мыслей (thoughtSignature), иначе Gemini 3 теряет нить между ходами.
+import type { ModelBlock, ModelCall, ModelResponse } from "./handler.ts";
+
+// deno-lint-ignore no-explicit-any
+type Json = any;
+
+const LOCAL_ID = "local_";
+
+/// Отказы по безопасности — для петли это «модель отказалась».
+const REFUSAL = new Set(["SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION"]);
+
+export function toGemini(call: ModelCall): Json {
+  const names = new Map<string, string>(); // id вызова → имя инструмента
+  const contents = call.messages.map((m) => {
+    if (m.role === "assistant") {
+      const blocks = m.content as ModelBlock[];
+      for (const b of blocks) if (b.type === "tool_use") names.set(b.id!, b.name!);
+      const turn = blocks.find((b) => b.type === "gemini_turn");
+      return turn ? (turn.input as Json) : { role: "model", parts: blocks.map(blockToPart) };
+    }
+    if (typeof m.content === "string") return { role: "user", parts: [{ text: m.content }] };
+    return {
+      role: "user",
+      parts: (m.content as Json[]).map((r) => ({
+        functionResponse: {
+          ...(String(r.tool_use_id).startsWith(LOCAL_ID) ? {} : { id: r.tool_use_id }),
+          name: names.get(r.tool_use_id) ?? "unknown",
+          response: r.is_error ? { error: r.content } : { result: r.content },
+        },
+      })),
+    };
+  });
+  return {
+    systemInstruction: { parts: [{ text: call.system }] },
+    contents,
+    tools: [{
+      functionDeclarations: call.tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        parametersJsonSchema: t.input_schema,
+      })),
+    }],
+    // Каждый ход — вызов инструмента: чтение или итоговый план.
+    toolConfig: { functionCallingConfig: { mode: "ANY" } },
+  };
+}
+
+function blockToPart(b: ModelBlock): Json {
+  if (b.type === "tool_use") return { functionCall: { name: b.name, args: b.input } };
+  return { text: b.text ?? "" };
+}
+
+export function fromGemini(res: Json): ModelResponse {
+  const u = res.usageMetadata ?? {};
+  const usage = {
+    input_tokens: u.promptTokenCount ?? 0,
+    output_tokens: (u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0),
+  };
+  const cand = res.candidates?.[0];
+  if (res.promptFeedback?.blockReason || REFUSAL.has(cand?.finishReason)) {
+    return { stop_reason: "refusal", content: [], usage };
+  }
+  const content: ModelBlock[] = [];
+  // Ход целиком (с подписями мыслей и id вызовов) — чтобы вернуть его Gemini без потерь.
+  const parts: Json[] = cand?.content?.parts ?? [];
+  parts.forEach((p: Json, i: number) => {
+    if (p.functionCall) {
+      // Gemini 3 даёт id сам; нет — петле свой (LOCAL_ID), а Gemini id не отправляем.
+      const fc = p.functionCall;
+      content.push({ type: "tool_use", id: fc.id ?? `${LOCAL_ID}${i}`, name: fc.name, input: fc.args ?? {} });
+    }
+    if (typeof p.text === "string" && !p.thought) content.push({ type: "text", text: p.text });
+  });
+  content.push({ type: "gemini_turn", input: { role: "model", parts } });
+  const stop = content.some((b) => b.type === "tool_use") ? "tool_use" : (cand?.finishReason ?? null);
+  return { stop_reason: stop, content, usage };
+}
+
+/// Вызов Gemini по HTTP. Ключ — только из секрета функции (VISION.md, правило 9).
+export async function callGemini(apiKey: string, model: string, call: ModelCall): Promise<ModelResponse> {
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify(toGemini(call)),
+  });
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new ModelError(r.status, body?.error?.message ?? r.statusText);
+  return fromGemini(body);
+}
+
+export class ModelError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}

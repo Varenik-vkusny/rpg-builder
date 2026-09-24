@@ -92,11 +92,11 @@ const opSchema = {
 };
 
 /// Инструменты модели: только чтение и «предложить план». Записи нет (VISION.md, правило 1).
+/// Схему плана сервер проверяет сам (schema_check.ts): Gemini не держит её строго.
 export const TOOLS = [
   {
     name: "find_in_scope",
     description: "Ищет объекты области по части названия и/или виду. Возвращает вид, slug и название.",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -110,7 +110,6 @@ export const TOOLS = [
   {
     name: "read_object",
     description: "Возвращает все поля объекта области и его связи (по slug).",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -125,7 +124,6 @@ export const TOOLS = [
     name: "propose_plan",
     description:
       "Отдаёт итоговый план автору на проверку. План ничего не записывает: автор увидит «было → стало» и решит сам.",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {

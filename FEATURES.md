@@ -23,14 +23,14 @@
 ## 3. Ядро — ассистент правок
 
 - [x] Автор выбирает область и пишет просьбу, ассистент возвращает план без записи в базу | bash scripts/fn-test.sh "план" && flutter test --no-pub test/assistant_flow_test.dart --name "план"
-- [x] Операции вне области отклоняются на сервере и в приложении | bash scripts/fn-test.sh "вне области" && flutter test --no-pub test/scope_test.dart --name "вне области"
+- [x] Операции вне области отклоняются на сервере и в приложении | bash scripts/fn-test.sh "вне области" && flutter test --no-pub test/scope_test.dart test/scope_final_plan_test.dart --name "вне области"
 - [x] Автор видит «было → стало» по каждому полю и результат проверки плана на копии | flutter test --no-pub test/plan_copy_test.dart --name "копия"
 - [x] Ассистент сам исправляет план по ошибкам проверки, не больше двух раз; дальше «Применить» недоступно | flutter test --no-pub test/autofix_test.dart --name "исправлени" && bash scripts/fn-test.sh "исправлени"
 - [x] Автор применяет план — всё пишется одной транзакцией или не пишется ничего | bash -c 'set -a; . ./.env.test; flutter test --no-pub test/change_set_db_test.dart test/apply_flow_test.dart --name "применить"'
 - [x] Автор отклоняет план — в базе ничего не меняется | bash -c 'set -a; . ./.env.test; flutter test --no-pub test/change_set_db_test.dart test/apply_flow_test.dart --name "отклонить"'
 - Автор видит историю наборов изменений и откатывает любой
 - Автор просит ассистента исправить проблему прямо с экрана «Проверка мира»
-- Сцена «штольня» проходит вживую: 6 изменений, урон 14 пойман и исправлен на 8, применить, откатить
+- Сцена «штольня» проходит вживую: 6 изменений, атака 14 поймана (потолок 3 ур. = 10) и исправлена до ≤ 10, применить, откатить
 
 ## 4. Польза сверху ядра
 

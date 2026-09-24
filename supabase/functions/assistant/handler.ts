@@ -5,6 +5,7 @@ import { outOfScope, TOOLS } from "./plan.ts";
 import type { ScopeType, World } from "./world.ts";
 import { key, objectsByKey, scopeOf } from "./world.ts";
 import { systemPrompt, userPrompt } from "./prompt.ts";
+import { checkSchema } from "./schema_check.ts";
 
 /// Не больше двух исправлений плана по ошибкам проверки (VISION.md, раздел 10).
 export const MAX_FIXES = 2;
@@ -23,7 +24,7 @@ export interface AssistantRequest {
   problems: string[];
 }
 
-// Ответ модели — ровно те поля Messages API, что нужны петле.
+// Ход модели блоками text / tool_use (формат петли; Gemini переводит gemini.ts).
 export interface ModelBlock {
   type: string;
   id?: string;
@@ -87,6 +88,22 @@ export function parseRequest(b: unknown): AssistantRequest | string {
   };
 }
 
+const PLAN_SCHEMA = TOOLS.find((t) => t.name === "propose_plan")!.input_schema;
+
+/// Ответ модели «план отклонён»: ошибка на propose_plan, остальным вызовам — «не выполнено».
+/// Каждому вызову — свой ответ: Gemini молча обрывает разговор, если ответов меньше, чем вызовов.
+function rejectPlan(uses: ModelBlock[], proposed: ModelBlock, lines: string[]) {
+  return {
+    role: "user" as const,
+    content: uses.map((u) => ({
+      type: "tool_result",
+      tool_use_id: u.id,
+      is_error: true,
+      content: u === proposed ? lines.join("\n") : "не выполнено: план отклонён",
+    })),
+  };
+}
+
 /// Ответ инструмента чтения. Всё — только внутри области.
 function readTool(name: string, input: Record<string, unknown>, w: World, scope: Set<string>): unknown {
   const all = objectsByKey(w);
@@ -128,21 +145,22 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
     const uses = res.content.filter((b) => b.type === "tool_use");
     const proposed = uses.find((b) => b.name === "propose_plan");
     if (proposed) {
-      const bad = outOfScope(proposed.input as Plan, scope);
-      if (bad.length === 0) return { status: 200, body: { plan: proposed.input as Plan, usage } };
+      // Схему держит сервер: модель может прислать план не по форме.
+      const shape = checkSchema(proposed.input, PLAN_SCHEMA);
+      if (shape.errors.length > 0) {
+        call.messages.push(rejectPlan(uses, proposed, [
+          "План не по схеме propose_plan:", ...shape.errors.slice(0, 20), "Отдай план заново строго по схеме.",
+        ]));
+        continue;
+      }
+      const plan = shape.value as Plan;
+      const bad = outOfScope(plan, scope);
+      if (bad.length === 0) return { status: 200, body: { plan, usage } };
       // Вне области: план отклонён. Модель узнаёт почему и может исправить.
       if (++outside >= MAX_OUT_OF_SCOPE) return fail(422, "операции вне области", { out_of_scope: bad, usage });
-      call.messages.push({
-        role: "user",
-        content: uses.map((u) => ({
-          type: "tool_result",
-          tool_use_id: u.id,
-          is_error: true,
-          content: u === proposed
-            ? ["План отклонён — операции вне области:", ...bad, "Предложи план заново только в границах области."].join("\n")
-            : "не выполнено: план отклонён",
-        })),
-      });
+      call.messages.push(rejectPlan(uses, proposed, [
+        "План отклонён — операции вне области:", ...bad, "Предложи план заново только в границах области.",
+      ]));
       continue;
     }
     if (uses.length === 0) {

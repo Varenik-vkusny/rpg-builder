@@ -33,9 +33,8 @@ test("план: модель читает область и возвращает
   assert.match(toolResult, /обвалившаяся выработка/);
 });
 
-test("план: у модели только чтение и propose_plan, все строгие", () => {
+test("план: у модели только чтение и propose_plan", () => {
   assert.deepEqual(TOOLS.map((t) => t.name), ["find_in_scope", "read_object", "propose_plan"]);
-  for (const t of TOOLS) assert.equal(t.strict, true, t.name);
 });
 
 test("план: область — объект и связанное до двух связей", async () => {
