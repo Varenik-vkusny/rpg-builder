@@ -1,0 +1,15 @@
+
+# протокол смены — локальные отметки
+.claude/last-green
+.claude/sessions/
+
+# тестовые аккаунты для проверки RLS
+.env.test
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+.idea/
+*.iml
+debug.log
