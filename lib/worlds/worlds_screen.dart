@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../content/content_repo.dart';
+import '../content/world_screen.dart';
 import 'new_world_screen.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
 
 class WorldsScreen extends StatefulWidget {
-  const WorldsScreen({super.key, required this.repo, required this.onSignOut});
+  const WorldsScreen({
+    super.key,
+    required this.repo,
+    required this.content,
+    required this.onSignOut,
+  });
 
   final WorldsRepo repo;
+  final ContentRepo content;
   final VoidCallback onSignOut;
 
   @override
@@ -58,7 +66,8 @@ class _WorldsScreenState extends State<WorldsScreen> {
           }
           if (snap.hasError) {
             return Center(
-                child: Text('Не удалось загрузить миры: ${snap.error}'));
+              child: Text('Не удалось загрузить миры: ${snap.error}'),
+            );
           }
           final worlds = snap.data!;
           if (worlds.isEmpty) {
@@ -70,6 +79,12 @@ class _WorldsScreenState extends State<WorldsScreen> {
                 ListTile(
                   title: Text(w.title),
                   subtitle: Text(_subtitle(w)),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          WorldScreen(world: w, repo: widget.content),
+                    ),
+                  ),
                 ),
             ],
           );
