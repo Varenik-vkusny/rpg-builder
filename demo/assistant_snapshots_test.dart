@@ -30,10 +30,7 @@ void main() {
         ),
       ],
     );
-    final assistant = FakeAssistant([
-      proposal(floodPlan()),
-      proposal(outside),
-    ]);
+    final assistant = FakeAssistant([proposal(floodPlan()), proposal(outside)]);
     await pumpApp(t, content: content, assistant: assistant, wrap: frame);
     await signUp(t, 'author@test.dev');
     await createWorld(t, 'Пепельные копи');
@@ -50,7 +47,21 @@ void main() {
     await tapShown(t, find.byKey(const Key('assistant-propose')));
     await shot(t, '3.1-plan');
 
+    // 3.3: план на копии — итог проверки и «было → стало» по операциям.
+    final list = find.byType(Scrollable).first;
+    await t.scrollUntilVisible(
+      find.byKey(const Key('plan-op-4')),
+      200,
+      scrollable: list,
+    );
+    await shot(t, '3.3-diff');
+
     // 3.2: операция над «Рынком» вне области — приложение её не пускает.
+    await t.scrollUntilVisible(
+      find.byKey(const Key('assistant-propose')),
+      -200,
+      scrollable: list,
+    );
     await tapShown(t, find.byKey(const Key('assistant-propose')));
     await t.scrollUntilVisible(
       find.textContaining('Вне области'),

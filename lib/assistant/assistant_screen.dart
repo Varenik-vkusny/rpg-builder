@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'assistant_service.dart';
-import 'plan.dart';
-import 'scope.dart';
+import 'plan_preview.dart';
+import 'plan_view.dart';
 
 /// Ассистент: автор выбирает область и пишет просьбу — получает план.
 /// В базу отсюда не пишется ничего.
@@ -32,8 +32,8 @@ class _AssistantScreenState extends State<AssistantScreen> {
   String? _error;
   Proposal? _proposal;
 
-  /// Операции плана вне области — второй замок после серверной функции.
-  Map<int, List<String>> _outside = const {};
+  /// План на копии мира: «было → стало», область, проверка.
+  PlanPreview? _preview;
 
   @override
   void dispose() {
@@ -75,11 +75,15 @@ class _AssistantScreenState extends State<AssistantScreen> {
           request: text,
         ),
       );
-      final scope = scopeOf(widget.snapshot, Scope(_type, _slug!));
+      final preview = previewPlan(
+        widget.snapshot,
+        p.plan,
+        Scope(_type, _slug!),
+      );
       if (mounted) {
         setState(() {
           _proposal = p;
-          _outside = outOfScope(p.plan, scope);
+          _preview = preview;
         });
       }
     } catch (e) {
@@ -145,54 +149,12 @@ class _AssistantScreenState extends State<AssistantScreen> {
             onPressed: _busy ? null : _propose,
             child: Text(_busy ? 'Ассистент думает…' : 'Предложить план'),
           ),
-          if (p != null) ..._planLines(p.plan),
+          if (p != null) ...[
+            const SizedBox(height: 16),
+            PlanView(plan: p.plan, preview: _preview!),
+          ],
         ],
       ),
     );
   }
-
-  List<Widget> _planLines(Plan plan) => [
-    const SizedBox(height: 16),
-    Text(
-      plan.summary,
-      key: const Key('plan-summary'),
-      style: Theme.of(context).textTheme.titleMedium,
-    ),
-    if (_outside.isNotEmpty)
-      Text(
-        'Операций вне области: ${_outside.length} — такой план применить нельзя',
-        key: const Key('plan-out-of-scope'),
-        style: TextStyle(color: Theme.of(context).colorScheme.error),
-      ),
-    for (final (i, op) in plan.ops.indexed)
-      ListTile(
-        dense: true,
-        title: Text(describeOp(op)),
-        subtitle: _outside[i] == null
-            ? null
-            : Text(
-                'Вне области: ${_outside[i]!.join(', ')}',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-      ),
-  ];
-}
-
-const _actionLabels = {
-  OpAction.create: 'создать',
-  OpAction.update: 'изменить',
-  OpAction.delete: 'удалить',
-};
-
-/// «изменить location shtolnya_3: description = затоплена по пояс».
-String describeOp(PlanOp op) {
-  final who = switch (op.type) {
-    OpType.loot => '${op.character} → ${op.item}',
-    OpType.questStep => '${op.quest} шаг ${op.position}',
-    OpType.questReward => '${op.quest} → ${op.item}',
-    _ => op.slug ?? '?',
-  };
-  final fields = op.fields.entries.map((e) => '${e.key} = ${e.value}');
-  return '${_actionLabels[op.action]} ${op.typeName} $who'
-      '${fields.isEmpty ? '' : ': ${fields.join(', ')}'}';
 }
