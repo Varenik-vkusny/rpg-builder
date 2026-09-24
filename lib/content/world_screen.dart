@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../worlds/world.dart';
+import 'character.dart';
 import 'content_repo.dart';
 import 'item.dart';
 import 'location.dart';
+import 'new_character_screen.dart';
 import 'new_item_screen.dart';
 import 'new_location_screen.dart';
 
 /// Всё содержимое мира, загруженное разом.
 class _Content {
-  const _Content(this.locations, this.items);
+  const _Content(this.locations, this.items, this.characters);
 
   final List<Location> locations;
   final List<Item> items;
+  final List<Character> characters;
 }
 
-/// Мир изнутри: локации и предметы, у каждого раздела своя кнопка «+».
+/// Мир изнутри: локации, предметы и персонажи, у каждого раздела своя кнопка «+».
 class WorldScreen extends StatefulWidget {
   const WorldScreen({super.key, required this.world, required this.repo});
 
@@ -31,11 +34,12 @@ class _WorldScreenState extends State<WorldScreen> {
 
   Future<_Content> _load() async {
     final id = widget.world.id;
-    final (locations, items) = await (
+    final (locations, items, characters) = await (
       widget.repo.locations(id),
       widget.repo.items(id),
+      widget.repo.characters(id),
     ).wait;
-    return _Content(locations, items);
+    return _Content(locations, items, characters);
   }
 
   /// Открывает форму создания; после сохранения перечитывает мир.
@@ -108,6 +112,31 @@ class _WorldScreenState extends State<WorldScreen> {
                   leading: const Icon(Icons.inventory_2),
                   title: Text(i.title),
                   subtitle: Text(i.summary),
+                ),
+              const Divider(),
+              _header(
+                'Персонажи',
+                const Key('new-character'),
+                'Новый персонаж',
+                NewCharacterScreen(
+                  world: world,
+                  repo: repo,
+                  locations: c.locations,
+                  items: c.items,
+                ),
+              ),
+              if (c.characters.isEmpty)
+                const ListTile(subtitle: Text('Персонажей пока нет')),
+              for (final ch in c.characters)
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text(ch.title),
+                  subtitle: Text(
+                    ch.summary(
+                      {for (final l in c.locations) l.id: l.title},
+                      {for (final i in c.items) i.id: i.title},
+                    ),
+                  ),
                 ),
             ],
           );

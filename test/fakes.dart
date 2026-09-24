@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/app.dart';
 import 'package:rpg_builder/auth/auth_service.dart';
 import 'package:rpg_builder/content/content_repo.dart';
+import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/content/slug.dart';
@@ -98,6 +99,29 @@ class FakeContent implements ContentRepo {
     final item = Item.fromRow({...row, 'id': 'item-${list.length}'});
     list.add(item);
     return item;
+  }
+
+  final _characters = <String, List<Character>>{};
+
+  @override
+  Future<List<Character>> characters(String worldId) async =>
+      List.of(_characters[worldId] ?? const []);
+
+  @override
+  Future<Character> createCharacter(String worldId, NewCharacter c) async {
+    final list = _characters.putIfAbsent(worldId, () => []);
+    final p = c.toParams(worldId, uniqueSlug(c.title, list.map((x) => x.slug)));
+    final character = Character.fromRow({
+      'id': 'char-${list.length}',
+      'slug': p['p_slug'],
+      'title': p['p_title'],
+      'description': p['p_description'],
+      'role': p['p_role'],
+      'location_id': p['p_location_id'],
+      'loot': p['p_loot'],
+    });
+    list.add(character);
+    return character;
   }
 }
 

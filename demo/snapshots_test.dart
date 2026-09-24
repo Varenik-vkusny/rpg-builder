@@ -76,6 +76,29 @@ void main() {
     await t.tap(find.byKey(const Key('item-save')));
     await _shot(t, '2.2-world');
 
+    await t.tap(find.byKey(const Key('new-character')));
+    await t.pumpAndSettle();
+    await t.enterText(
+      find.byKey(const Key('character-title')),
+      'Пепельный слизень',
+    );
+    await t.tap(find.byKey(const Key('character-role-enemy')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('character-location')));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Штольня №3').last);
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('loot-add')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('loot-item-0')));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Ключ от лебёдки').last);
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('loot-chance-0')), '35');
+    await _shot(t, '2.3-form');
+    await t.tap(find.byKey(const Key('character-save')));
+    await _shot(t, '2.3-world');
+
     final saved = (await content.locations('0-Пепельные копи')).single;
     expect(saved, isA<Location>());
     // slug виден только здесь — в интерфейсе его нет.

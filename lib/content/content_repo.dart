@@ -1,5 +1,6 @@
 import 'package:supabase/supabase.dart';
 
+import 'character.dart';
 import 'item.dart';
 import 'location.dart';
 import 'slug.dart';
@@ -10,6 +11,10 @@ abstract class ContentRepo {
   Future<Location> createLocation(String worldId, NewLocation location);
   Future<List<Item>> items(String worldId);
   Future<Item> createItem(String worldId, NewItem item);
+  Future<List<Character>> characters(String worldId);
+
+  /// Персонаж и его добыча записываются одной транзакцией.
+  Future<Character> createCharacter(String worldId, NewCharacter character);
 }
 
 class SupabaseContentRepo implements ContentRepo {
@@ -57,6 +62,32 @@ class SupabaseContentRepo implements ContentRepo {
         .select()
         .single();
     return Item.fromRow(row);
+  }
+
+  @override
+  Future<List<Character>> characters(String worldId) async {
+    final rows = await _client
+        .from('characters')
+        .select('*, loot(item_id, chance)')
+        .eq('project_id', worldId)
+        .order('created_at');
+    return rows.map(Character.fromRow).toList();
+  }
+
+  @override
+  Future<Character> createCharacter(
+    String worldId,
+    NewCharacter character,
+  ) async {
+    final slug = uniqueSlug(
+      character.title,
+      await _slugs('characters', worldId),
+    );
+    final created = await _client
+        .rpc('create_character', params: character.toParams(worldId, slug))
+        .select('*, loot(item_id, chance)')
+        .single();
+    return Character.fromRow(created);
   }
 
   Future<List<String>> _slugs(String table, String worldId) async {

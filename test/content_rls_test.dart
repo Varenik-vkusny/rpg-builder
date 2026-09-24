@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
@@ -183,6 +184,124 @@ void main() {
 
     test('без входа предметы не читаются', () async {
       expect(await anonymous().from('items').select(), isEmpty);
+    });
+  });
+
+  group('персонажи', () {
+    late Item key;
+    late Character slime;
+
+    setUpAll(() async {
+      key = await SupabaseContentRepo(a).createItem(
+        world.id,
+        const NewItem(
+          title: 'Ключ от лебёдки',
+          kind: ItemKind.quest,
+          rarity: Rarity.common,
+          level: 2,
+          price: 0,
+        ),
+      );
+      slime = await SupabaseContentRepo(a).createCharacter(
+        world.id,
+        NewCharacter(
+          title: 'Пепельный слизень',
+          description: '',
+          role: Role.enemy,
+          locationId: shaft.id,
+          loot: [LootDrop(itemId: key.id, chance: 35)],
+        ),
+      );
+    });
+
+    /// Прямой вызов транзакции в базе в обход формы.
+    Future<void> rawCreate(
+      SupabaseClient who,
+      String slug,
+      String role,
+      List<Map<String, dynamic>> loot,
+    ) => who.rpc(
+      'create_character',
+      params: {
+        'p_project_id': world.id,
+        'p_slug': slug,
+        'p_title': slug,
+        'p_description': '',
+        'p_role': role,
+        'p_location_id': null,
+        'p_loot': loot,
+      },
+    );
+
+    test('автор видит врага с локацией, slug и добычей 35%', () async {
+      final mine = await SupabaseContentRepo(a).characters(world.id);
+      final got = mine.singleWhere((c) => c.id == slime.id);
+      expect(got.slug, 'pepelnyy_slizen');
+      expect(got.role, Role.enemy);
+      expect(got.locationId, shaft.id);
+      expect(got.loot.single.itemId, key.id);
+      expect(got.loot.single.chance, 35);
+    });
+
+    for (final bad in [0, -1, 100.5]) {
+      test('база не принимает шанс $bad и не оставляет персонажа', () async {
+        final slug =
+            'bad_chance_${bad.toString().replaceAll(RegExp(r'\W'), '_')}';
+        await expectLater(
+          rawCreate(a, slug, 'enemy', [
+            {'item_id': key.id, 'chance': bad},
+          ]),
+          throwsA(isA<PostgrestException>()),
+        );
+        // Транзакция: без добычи не остался и сам персонаж.
+        expect(await a.from('characters').select().eq('slug', slug), isEmpty);
+      });
+    }
+
+    test('база принимает шанс ровно 100', () async {
+      await rawCreate(a, 'full_chance', 'enemy', [
+        {'item_id': key.id, 'chance': 100},
+      ]);
+      final rows = await a
+          .from('characters')
+          .select('loot(chance)')
+          .eq('project_id', world.id)
+          .eq('slug', 'full_chance');
+      expect(rows.single['loot'].single['chance'], 100);
+    });
+
+    test('добычу задают только врагу', () async {
+      await expectLater(
+        rawCreate(a, 'zhitel_s_dobychey', 'npc', [
+          {'item_id': key.id, 'chance': 50},
+        ]),
+        throwsA(isA<PostgrestException>()),
+      );
+      expect(
+        await a.from('characters').select().eq('slug', 'zhitel_s_dobychey'),
+        isEmpty,
+      );
+    });
+
+    test('второй автор чужого персонажа и добычу не видит', () async {
+      expect(await SupabaseContentRepo(b).characters(world.id), isEmpty);
+      expect(await b.from('characters').select().eq('id', slime.id), isEmpty);
+      expect(
+        await b.from('loot').select().eq('character_id', slime.id),
+        isEmpty,
+      );
+    });
+
+    test('второй автор не может создать персонажа в чужом мире', () async {
+      await expectLater(
+        rawCreate(b, 'podkidysh', 'enemy', const []),
+        throwsA(isA<PostgrestException>()),
+      );
+    });
+
+    test('без входа персонажи и добыча не читаются', () async {
+      expect(await anonymous().from('characters').select(), isEmpty);
+      expect(await anonymous().from('loot').select(), isEmpty);
     });
   });
 }
