@@ -86,17 +86,7 @@ void main() {
     });
 
     test('slug локации не меняется после создания', () async {
-      try {
-        await a.from('locations').update({'slug': 'drugoy'}).eq('id', shaft.id);
-      } on PostgrestException {
-        // Отказ базы — тоже правильный исход.
-      }
-      final row = await a
-          .from('locations')
-          .select('slug')
-          .eq('id', shaft.id)
-          .single();
-      expect(row['slug'], 'shtolnya_3');
+      await expectSlugLocked(a, 'locations', shaft.id, 'shtolnya_3');
     });
 
     test('без входа локации не читаются', () async {
@@ -160,6 +150,10 @@ void main() {
         }),
         throwsA(isA<PostgrestException>()),
       );
+    });
+
+    test('slug предмета не меняется после создания', () async {
+      await expectSlugLocked(a, 'items', key.id, 'klyuch_ot_lebedki');
     });
 
     test('второй автор чужой предмет не видит', () async {
@@ -281,6 +275,10 @@ void main() {
         await a.from('characters').select().eq('slug', 'zhitel_s_dobychey'),
         isEmpty,
       );
+    });
+
+    test('slug персонажа не меняется после создания', () async {
+      await expectSlugLocked(a, 'characters', slime.id, 'pepelnyy_slizen');
     });
 
     test('второй автор чужого персонажа и добычу не видит', () async {

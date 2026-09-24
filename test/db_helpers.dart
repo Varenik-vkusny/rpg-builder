@@ -48,3 +48,21 @@ Future<(SupabaseClient, SupabaseClient)> twoAuthors() async {
 /// Клиент без входа.
 SupabaseClient anonymous() =>
     SupabaseClient(supabaseUrl, supabasePublishableKey);
+
+/// Запрет смены slug (VISION.md, правило 8) проверяется самим триггером базы:
+/// проба `slug_change_blocked` делает настоящий update и откатывает его.
+/// Обычный update сюда не годится — его раньше триггера отсекает RLS.
+Future<void> expectSlugLocked(
+  SupabaseClient who,
+  String table,
+  String id,
+  String slug,
+) async {
+  final blocked = await who.rpc(
+    'slug_change_blocked',
+    params: {'p_table': table, 'p_id': id},
+  );
+  expect(blocked, isTrue, reason: 'триггер $table не остановил смену slug');
+  final row = await who.from(table).select('slug').eq('id', id).single();
+  expect(row['slug'], slug, reason: 'проба не должна ничего менять');
+}
