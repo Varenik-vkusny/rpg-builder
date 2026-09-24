@@ -4,6 +4,7 @@ import '../content/character.dart';
 import '../content/item.dart';
 import '../content/location.dart';
 import '../content/quest.dart';
+import 'warning_rules.dart';
 
 /// Мир целиком в памяти: всё, что видят правила.
 class WorldSnapshot {
@@ -52,8 +53,11 @@ class Problem {
   String toString() => '${severity.name}/$rule($objectId): $message';
 }
 
-/// Все проблемы мира одним списком.
-List<Problem> checkWorld(WorldSnapshot w) => errorRules(w);
+/// Все проблемы мира одним списком: сначала ошибки, потом предупреждения.
+List<Problem> checkWorld(WorldSnapshot w) => [
+  ...errorRules(w),
+  ...warningRules(w),
+];
 
 /// Ошибки: ссылка на несуществующий объект, квест без шагов или выдающего.
 List<Problem> errorRules(WorldSnapshot w) {

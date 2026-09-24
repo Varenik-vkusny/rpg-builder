@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/check/check_screen.dart';
+import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/quest.dart';
 import 'package:rpg_builder/worlds/world.dart';
 
@@ -58,5 +59,36 @@ void main() {
     expect(find.text('Ошибок: 2 · Предупреждений: 0'), findsOneWidget);
     expect(find.text('«Пустой квест»: у квеста нет выдающего'), findsOneWidget);
     expect(find.text('«Пустой квест»: у квеста нет шагов'), findsOneWidget);
+  });
+
+  testWidgets('предупреждение: урон выше потолка видно на экране', (t) async {
+    final content = FakeContent();
+    await content.createItem(
+      world.id,
+      const NewItem(
+        title: 'Кайло',
+        kind: ItemKind.weapon,
+        rarity: Rarity.common,
+        level: 2,
+        damage: 14,
+        price: 10,
+      ),
+    );
+    await t.pumpWidget(
+      MaterialApp(
+        home: CheckScreen(world: world, repo: content),
+      ),
+    );
+    await t.pumpAndSettle();
+    expect(find.text('Ошибок: 0 · Предупреждений: 2'), findsOneWidget);
+    expect(
+      find.text('«Кайло»: урон 14 выше потолка 8 (ур. 2, обычный)'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('«Кайло» нельзя получить: не выпадает и не выдаётся наградой'),
+      findsOneWidget,
+    );
+    expect(find.text('Предупреждение'), findsNWidgets(2));
   });
 }

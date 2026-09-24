@@ -1,4 +1,4 @@
-// ПОКАЗ, а не проверка: сквозной путь 2.1–2.4 — рисует экраны мира на подменённой базе в PNG
+// ПОКАЗ, а не проверка: сквозной путь 2.1–2.6 — рисует экраны мира на подменённой базе в PNG
 // с настоящим шрифтом (иконки — квадратики). В check.sh не входит.
 // Запуск: flutter test --no-pub demo/snapshots_test.dart  → снимки в build/snapshots/
 import 'dart:io';
@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
 
 import '../test/fakes.dart';
@@ -154,6 +155,30 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await _shot(t, '2.4-world');
+
+    // 2.5: мир из приёмки цел — проверка проблем не находит.
+    await _tap(t, find.byKey(const Key('check-world')));
+    await _shot(t, '2.5-check-clean');
+    await t.pageBack();
+    await t.pumpAndSettle();
+
+    // 2.6: «Кайло» ур. 2 с уроном 14 при потолке 8, и его нигде не получить.
+    await content.createItem(
+      '0-Пепельные копи',
+      const NewItem(
+        title: 'Кайло',
+        kind: ItemKind.weapon,
+        rarity: Rarity.common,
+        level: 2,
+        damage: 14,
+        price: 10,
+      ),
+    );
+    await _tap(t, find.byKey(const Key('check-world')));
+    expect(find.text('Ошибок: 0 · Предупреждений: 2'), findsOneWidget);
+    await _shot(t, '2.6-check-warnings');
+    await t.pageBack();
+    await t.pumpAndSettle();
 
     // Второй аккаунт: чужого мира и его содержимого не видит.
     await t.pageBack();
