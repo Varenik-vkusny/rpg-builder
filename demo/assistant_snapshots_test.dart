@@ -18,11 +18,10 @@ void main() {
     addTearDown(t.view.reset);
 
     final content = await minesContent();
-    // Второй ответ — тот же план плюс правка «Рынка», которого в области нет.
+    // Повторная просьба — правка «Рынка», которого в области штольни нет.
     final outside = Plan(
-      summary: 'Штольня затоплена, а заодно рынок',
+      summary: 'Рынок тоже подтопило',
       ops: [
-        ...floodPlan().ops,
         const PlanOp(
           action: OpAction.update,
           type: OpType.location,
@@ -68,11 +67,21 @@ void main() {
     );
     await shot(t, '3.4-fixed');
 
-    // 3.2: операция над «Рынком» вне области — приложение её не пускает.
+    // 3.5: «Применить» — план записан, мир перечитан: утопленник в штольне.
+    await tapShown(t, find.byKey(const Key('plan-apply')));
     await t.scrollUntilVisible(
-      find.byKey(const Key('assistant-propose')),
-      -200,
-      scrollable: list,
+      find.text('Утопленник'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await shot(t, '3.5-applied-world');
+
+    // 3.2: повтор — операция над «Рынком» вне области, приложение её не пускает.
+    await tapShown(t, find.byKey(const Key('assistant-open')));
+    await pick(t, 'scope-object-location', 'Штольня №3');
+    await t.enterText(
+      find.byKey(const Key('assistant-request')),
+      'И рынок подтопи',
     );
     await tapShown(t, find.byKey(const Key('assistant-propose')));
     await t.scrollUntilVisible(

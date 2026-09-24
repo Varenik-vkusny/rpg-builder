@@ -1,5 +1,6 @@
 import 'package:supabase/supabase.dart';
 
+import '../assistant/change_set.dart';
 import '../check/world_check.dart';
 import 'character.dart';
 import 'item.dart';
@@ -21,6 +22,9 @@ abstract class ContentRepo {
 
   /// Квест, его шаги и награды записываются одной транзакцией.
   Future<Quest> createQuest(String worldId, NewQuest quest);
+
+  /// План ассистента — одной транзакцией или ничего; набор уходит в журнал.
+  Future<void> applyChangeSet(String worldId, ChangeSetDraft draft);
 }
 
 extension WorldSnapshotLoad on ContentRepo {
@@ -137,6 +141,10 @@ class SupabaseContentRepo implements ContentRepo {
         .single();
     return Quest.fromRow(created);
   }
+
+  @override
+  Future<void> applyChangeSet(String worldId, ChangeSetDraft draft) =>
+      _client.rpc('apply_change_set', params: draft.toParams(worldId));
 
   Future<List<String>> _slugs(String table, String worldId) async {
     final rows = await _client

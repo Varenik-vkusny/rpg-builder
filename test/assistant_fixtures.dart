@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/assistant/plan.dart';
+import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
@@ -38,6 +39,12 @@ Proposal proposal(Plan plan) =>
 /// слизень (роняет ключ 35%), бригадир, квест «Обвал в третьей штольне».
 Future<FakeContent> minesContent() async {
   final c = FakeContent();
+  await fillMines(c, minesId);
+  return c;
+}
+
+/// Наполняет мир [worldId] «Пепельными копями» — в подменённой или настоящей базе.
+Future<void> fillMines(ContentRepo c, String minesId) async {
   final shaft = await c.createLocation(
     minesId,
     const NewLocation(
@@ -113,18 +120,19 @@ Future<FakeContent> minesContent() async {
       rewardIds: [pick.id],
     ),
   );
-  return c;
 }
 
 /// Мир «Пепельные копи» открыт, экран ассистента открыт.
 Future<(FakeContent, FakeAssistant)> openAssistant(
   WidgetTester t, [
   FakeAssistant? assistant,
+  FakeContent? base,
 ]) async {
   t.view.physicalSize = const Size(800, 1200);
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
-  final content = await minesContent();
+  final content = base ?? await minesContent();
+  if (base != null) await fillMines(base, minesId);
   // Три одинаковых ответа: план и два исправления (атака 14 так и остаётся).
   final a =
       assistant ??

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../check/world_check.dart';
+import '../content/content_repo.dart';
 import '../worlds/world.dart';
 import 'assistant_service.dart';
+import 'change_set.dart';
 import 'assistant_flow.dart';
 import 'plan_view.dart';
 
@@ -14,11 +16,15 @@ class AssistantScreen extends StatefulWidget {
     required this.world,
     required this.snapshot,
     required this.assistant,
+    required this.repo,
   });
 
   final World world;
   final WorldSnapshot snapshot;
   final AssistantService assistant;
+
+  /// Куда пишется применённый или отклонённый набор изменений.
+  final ContentRepo repo;
 
   @override
   State<AssistantScreen> createState() => _AssistantScreenState();
@@ -36,6 +42,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
 
   /// Последний план после автоисправлений и его проверка на копии.
   PlanRun? _run;
+
+  /// Просьба, на которую получен [_run].
+  ProposeRequest? _asked;
 
   @override
   void dispose() {
@@ -70,19 +79,25 @@ class _AssistantScreenState extends State<AssistantScreen> {
       _run = null;
     });
     try {
+      final asked = ProposeRequest(
+        worldId: widget.world.id,
+        scope: Scope(_type, _slug!),
+        request: text,
+      );
       final run = await runAssistant(
         assistant: widget.assistant,
         world: widget.snapshot,
-        request: ProposeRequest(
-          worldId: widget.world.id,
-          scope: Scope(_type, _slug!),
-          request: text,
-        ),
+        request: asked,
         onAttempt: (n) {
           if (mounted) setState(() => _attempt = n);
         },
       );
-      if (mounted) setState(() => _run = run);
+      if (mounted) {
+        setState(() {
+          _run = run;
+          _asked = asked;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
@@ -111,8 +126,48 @@ class _AssistantScreenState extends State<AssistantScreen> {
           key: const Key('plan-blocked'),
           style: error,
         ),
+      Row(
+        spacing: 8,
+        children: [
+          Expanded(
+            child: FilledButton(
+              key: const Key('plan-apply'),
+              onPressed: _busy || !run.canApply ? null : () => _decide(true),
+              child: const Text('Применить'),
+            ),
+          ),
+        ],
+      ),
+      if (_error != null) _errorText(),
+      const SizedBox(height: 16),
       PlanView(plan: run.proposal.plan, preview: run.preview),
     ];
+  }
+
+  Widget _errorText() => Text(
+    _error!,
+    key: const Key('assistant-error'),
+    style: TextStyle(color: Theme.of(context).colorScheme.error),
+  );
+
+  /// «Применить» — план одной транзакцией. Успех — назад в мир, он перечитывается.
+  Future<void> _decide(bool apply) async {
+    final draft = ChangeSetDraft.fromRun(_run!, _asked!);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.repo.applyChangeSet(widget.world.id, draft);
+      if (mounted) Navigator.of(context).pop(apply);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = 'Не удалось применить — в мире ничего не изменилось: $e';
+        });
+      }
+    }
   }
 
   @override
@@ -160,12 +215,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (_error != null)
-            Text(
-              _error!,
-              key: const Key('assistant-error'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
+          if (_error != null && _run == null) _errorText(),
           FilledButton(
             key: const Key('assistant-propose'),
             onPressed: _busy ? null : _propose,

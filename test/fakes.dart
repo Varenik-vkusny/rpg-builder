@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/app.dart';
 import 'package:rpg_builder/assistant/assistant_service.dart';
+import 'package:rpg_builder/assistant/change_set.dart';
+import 'package:rpg_builder/assistant/plan_apply.dart';
 import 'package:rpg_builder/auth/auth_service.dart';
+import 'package:rpg_builder/check/world_check.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/item.dart';
@@ -157,7 +160,35 @@ class FakeContent implements ContentRepo {
     list.add(quest);
     return quest;
   }
+
+  final changeSets = <FakeChangeSet>[];
+
+  /// Как база: план на мир целиком, любая невыполнимая операция — ничего не пишется.
+  @override
+  Future<void> applyChangeSet(String worldId, ChangeSetDraft draft) async {
+    final (copy, results) = applyToCopy(
+      await snapshotOf(worldId),
+      draft.plan,
+    );
+    final failed = results.where((r) => r.error != null);
+    if (failed.isNotEmpty) throw StateError(failed.first.error!);
+    _locations[worldId] = [...copy.locations];
+    _items[worldId] = [...copy.items];
+    _characters[worldId] = [...copy.characters];
+    _quests[worldId] = [...copy.quests];
+    changeSets.add((status: 'applied', draft: draft));
+  }
+
+  Future<WorldSnapshot> snapshotOf(String worldId) async => WorldSnapshot(
+    locations: await locations(worldId),
+    items: await items(worldId),
+    characters: await characters(worldId),
+    quests: await quests(worldId),
+  );
 }
+
+/// Записанный набор изменений: статус и что было в нём.
+typedef FakeChangeSet = ({String status, ChangeSetDraft draft});
 
 /// Подменённый ассистент: отдаёт заранее заданные планы по очереди
 /// и запоминает просьбы. Кончились планы — ошибка, как у упавшей функции.

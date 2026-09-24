@@ -55,6 +55,7 @@ class _WorldScreenState extends State<WorldScreen> {
           world: widget.world,
           snapshot: snapshot,
           assistant: widget.assistant,
+          repo: widget.repo,
         ),
       ),
     );
