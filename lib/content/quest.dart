@@ -64,7 +64,10 @@ class Quest {
   final String slug;
   final String title;
   final String description;
-  final String giverId;
+
+  /// Выдающий житель. В базе обязателен; null бывает только в копии мира
+  /// с планом ассистента — такой квест проверка мира отмечает ошибкой.
+  final String? giverId;
   final List<QuestStep> steps;
   final List<String> rewardIds;
 
@@ -73,7 +76,7 @@ class Quest {
   List<String> lines(Map<String, String> titles) {
     String t(String id) => titles[id] ?? '?';
     return [
-      'Выдаёт: ${t(giverId)}',
+      'Выдаёт: ${giverId == null ? '—' : t(giverId!)}',
       for (var i = 0; i < steps.length; i++)
         '${i + 1}. ${steps[i].label(t(steps[i].targetId))}',
       if (rewardIds.isNotEmpty) 'Награда: ${rewardIds.map(t).join(', ')}',
@@ -90,7 +93,7 @@ class Quest {
       slug: row['slug'] as String,
       title: row['title'] as String,
       description: row['description'] as String,
-      giverId: row['giver_id'] as String,
+      giverId: row['giver_id'] as String?,
       steps: steps.map(QuestStep.fromRow).toList(),
       rewardIds: [
         for (final r in (row['quest_rewards'] as List? ?? const []))

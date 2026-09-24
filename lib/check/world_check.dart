@@ -1,0 +1,125 @@
+// Проверка мира — чистый Dart над снимком мира в памяти, без Flutter и базы.
+// Тот же код проверит и копию мира с планом ассистента (VISION.md, правило 7).
+import '../content/character.dart';
+import '../content/item.dart';
+import '../content/location.dart';
+import '../content/quest.dart';
+
+/// Мир целиком в памяти: всё, что видят правила.
+class WorldSnapshot {
+  const WorldSnapshot({
+    this.locations = const [],
+    this.items = const [],
+    this.characters = const [],
+    this.quests = const [],
+  });
+
+  final List<Location> locations;
+  final List<Item> items;
+  final List<Character> characters;
+  final List<Quest> quests;
+
+  /// Названия всех объектов мира по id.
+  Map<String, String> get titles => {
+    for (final l in locations) l.id: l.title,
+    for (final i in items) i.id: i.title,
+    for (final c in characters) c.id: c.title,
+    for (final q in quests) q.id: q.title,
+  };
+}
+
+/// Ошибка блокирует запись мира (правило 4), предупреждение — нет.
+enum Severity {
+  error('Ошибка'),
+  warning('Предупреждение');
+
+  const Severity(this.label);
+  final String label;
+}
+
+/// Одна найденная проблема: какое правило, на каком объекте, что не так.
+class Problem {
+  const Problem(this.severity, this.rule, this.objectId, this.message);
+
+  final Severity severity;
+
+  /// Короткий код правила: `broken_link`, `quest_no_steps`, …
+  final String rule;
+  final String objectId;
+  final String message;
+
+  @override
+  String toString() => '${severity.name}/$rule($objectId): $message';
+}
+
+/// Все проблемы мира одним списком.
+List<Problem> checkWorld(WorldSnapshot w) => errorRules(w);
+
+/// Ошибки: ссылка на несуществующий объект, квест без шагов или выдающего.
+List<Problem> errorRules(WorldSnapshot w) {
+  final ids = _Ids(w);
+  return [
+    for (final c in w.characters) ...[
+      if (c.locationId != null)
+        ?ids.link(c.id, c.title, 'локация', c.locationId!, ids.locations),
+      for (final l in c.loot)
+        ?ids.link(c.id, c.title, 'добыча', l.itemId, ids.items),
+    ],
+    for (final q in w.quests) ..._questErrors(q, ids),
+  ];
+}
+
+List<Problem> _questErrors(Quest q, _Ids ids) => [
+  if (q.giverId == null)
+    Problem(
+      Severity.error,
+      'quest_no_giver',
+      q.id,
+      '«${q.title}»: у квеста нет выдающего',
+    )
+  else
+    ?ids.link(q.id, q.title, 'выдающий', q.giverId!, ids.characters),
+  if (q.steps.isEmpty)
+    Problem(
+      Severity.error,
+      'quest_no_steps',
+      q.id,
+      '«${q.title}»: у квеста нет шагов',
+    ),
+  for (final (i, s) in q.steps.indexed)
+    ?ids.link(q.id, q.title, 'шаг ${i + 1}', s.targetId, switch (s.kind) {
+      StepKind.talk || StepKind.kill => ids.characters,
+      StepKind.collect => ids.items,
+      StepKind.visit => ids.locations,
+    }),
+  for (final r in q.rewardIds)
+    ?ids.link(q.id, q.title, 'награда', r, ids.items),
+];
+
+/// id объектов мира по видам — куда может вести ссылка.
+class _Ids {
+  _Ids(WorldSnapshot w)
+    : locations = {for (final l in w.locations) l.id},
+      items = {for (final i in w.items) i.id},
+      characters = {for (final c in w.characters) c.id};
+
+  final Set<String> locations;
+  final Set<String> items;
+  final Set<String> characters;
+
+  /// Ошибка, если [id] не найден среди [pool]; иначе null.
+  Problem? link(
+    String owner,
+    String ownerTitle,
+    String what,
+    String id,
+    Set<String> pool,
+  ) => pool.contains(id)
+      ? null
+      : Problem(
+          Severity.error,
+          'broken_link',
+          owner,
+          '«$ownerTitle»: $what ссылается на несуществующий объект',
+        );
+}

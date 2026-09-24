@@ -1,5 +1,6 @@
 import 'package:supabase/supabase.dart';
 
+import '../check/world_check.dart';
 import 'character.dart';
 import 'item.dart';
 import 'location.dart';
@@ -20,6 +21,24 @@ abstract class ContentRepo {
 
   /// Квест, его шаги и награды записываются одной транзакцией.
   Future<Quest> createQuest(String worldId, NewQuest quest);
+}
+
+extension WorldSnapshotLoad on ContentRepo {
+  /// Всё содержимое мира разом — снимок для экрана мира и проверки.
+  Future<WorldSnapshot> snapshot(String worldId) async {
+    final (locations, items, characters, quests) = await (
+      this.locations(worldId),
+      this.items(worldId),
+      this.characters(worldId),
+      this.quests(worldId),
+    ).wait;
+    return WorldSnapshot(
+      locations: locations,
+      items: items,
+      characters: characters,
+      quests: quests,
+    );
+  }
 }
 
 class SupabaseContentRepo implements ContentRepo {

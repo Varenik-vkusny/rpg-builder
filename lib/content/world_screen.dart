@@ -1,32 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../check/check_screen.dart';
+import '../check/world_check.dart';
 import '../worlds/world.dart';
-import 'character.dart';
 import 'content_repo.dart';
-import 'item.dart';
-import 'location.dart';
 import 'new_character_screen.dart';
 import 'new_item_screen.dart';
 import 'new_location_screen.dart';
 import 'new_quest_screen.dart';
 import 'quest.dart';
-
-/// Всё содержимое мира, загруженное разом.
-class _Content {
-  const _Content(this.locations, this.items, this.characters, this.quests);
-
-  final List<Location> locations;
-  final List<Item> items;
-  final List<Character> characters;
-  final List<Quest> quests;
-
-  /// Названия всех объектов мира по id — для ссылок в строках списка.
-  Map<String, String> get titles => {
-    for (final l in locations) l.id: l.title,
-    for (final i in items) i.id: i.title,
-    for (final c in characters) c.id: c.title,
-  };
-}
 
 /// Мир изнутри: локации, предметы, персонажи и квесты, у каждого раздела своя кнопка «+».
 class WorldScreen extends StatefulWidget {
@@ -40,18 +22,9 @@ class WorldScreen extends StatefulWidget {
 }
 
 class _WorldScreenState extends State<WorldScreen> {
-  late Future<_Content> _content = _load();
+  late Future<WorldSnapshot> _content = _load();
 
-  Future<_Content> _load() async {
-    final id = widget.world.id;
-    final (locations, items, characters, quests) = await (
-      widget.repo.locations(id),
-      widget.repo.items(id),
-      widget.repo.characters(id),
-      widget.repo.quests(id),
-    ).wait;
-    return _Content(locations, items, characters, quests);
-  }
+  Future<WorldSnapshot> _load() => widget.repo.snapshot(widget.world.id);
 
   /// Открывает форму создания; после сохранения перечитывает мир.
   Future<void> _open(Widget form) async {
@@ -88,8 +61,22 @@ class _WorldScreenState extends State<WorldScreen> {
     final world = widget.world;
     final repo = widget.repo;
     return Scaffold(
-      appBar: AppBar(title: Text(world.title)),
-      body: FutureBuilder<_Content>(
+      appBar: AppBar(
+        title: Text(world.title),
+        actions: [
+          IconButton(
+            key: const Key('check-world'),
+            tooltip: 'Проверка мира',
+            icon: const Icon(Icons.fact_check),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => CheckScreen(world: world, repo: repo),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: FutureBuilder<WorldSnapshot>(
         future: _content,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
