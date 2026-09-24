@@ -103,6 +103,10 @@ void main() {
 
   /// Мир с «Штольней №3» и «Ключом от лебёдки» — как в приёмке.
   Future<void> worldWithShaftAndKey(WidgetTester t) async {
+    // Форма персонажа с добычей выше стандартных 600 точек теста.
+    t.view.physicalSize = const Size(800, 1000);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
     await pumpApp(t);
     await signUp(t, 'a@test.dev');
     await createWorld(t, 'Пепельные копи');
@@ -145,12 +149,15 @@ void main() {
     await t.pumpAndSettle();
     await choose(t, const Key('loot-item-0'), 'Ключ от лебёдки');
     await t.enterText(find.byKey(const Key('loot-chance-0')), '35');
+    await t.ensureVisible(find.byKey(const Key('character-save')));
     await t.tap(find.byKey(const Key('character-save')));
     await t.pumpAndSettle();
 
     expect(find.text('Пепельный слизень'), findsOneWidget);
     expect(
-      find.text('Враг · Штольня №3 · роняет: Ключ от лебёдки 35%'),
+      find.text(
+        'Враг · ур. 1 · здоровье 10 · атака 0 · Штольня №3 · роняет: Ключ от лебёдки 35%',
+      ),
       findsOneWidget,
     );
   });
@@ -163,6 +170,7 @@ void main() {
       await t.pumpAndSettle();
       await choose(t, const Key('loot-item-0'), 'Ключ от лебёдки');
       await t.enterText(find.byKey(const Key('loot-chance-0')), bad);
+      await t.ensureVisible(find.byKey(const Key('character-save')));
       await t.tap(find.byKey(const Key('character-save')));
       await t.pumpAndSettle();
 
@@ -181,10 +189,16 @@ void main() {
     await t.pumpAndSettle();
     await choose(t, const Key('loot-item-0'), 'Ключ от лебёдки');
     await t.enterText(find.byKey(const Key('loot-chance-0')), '100');
+    await t.ensureVisible(find.byKey(const Key('character-save')));
     await t.tap(find.byKey(const Key('character-save')));
     await t.pumpAndSettle();
 
-    expect(find.text('Враг · роняет: Ключ от лебёдки 100%'), findsOneWidget);
+    expect(
+      find.text(
+        'Враг · ур. 1 · здоровье 10 · атака 0 · роняет: Ключ от лебёдки 100%',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('персонаж-житель не имеет добычи', (t) async {
@@ -194,9 +208,48 @@ void main() {
     expect(find.byKey(const Key('loot-add')), findsNothing);
     await t.enterText(find.byKey(const Key('character-title')), 'Бригадир');
     await choose(t, const Key('character-location'), 'Штольня №3');
+    await t.ensureVisible(find.byKey(const Key('character-save')));
     await t.tap(find.byKey(const Key('character-save')));
     await t.pumpAndSettle();
 
-    expect(find.text('Житель · Штольня №3'), findsOneWidget);
+    expect(
+      find.text('Житель · ур. 1 · здоровье 10 · атака 0 · Штольня №3'),
+      findsOneWidget,
+    );
   });
+
+  testWidgets('персонаж-враг: уровень 3, здоровье 30, атака 14', (t) async {
+    await worldWithShaftAndKey(t);
+    await startEnemy(t, 'Утопленник');
+    await t.enterText(find.byKey(const Key('character-level')), '3');
+    await t.enterText(find.byKey(const Key('character-hp')), '30');
+    await t.enterText(find.byKey(const Key('character-attack')), '14');
+    await t.ensureVisible(find.byKey(const Key('character-save')));
+    await t.tap(find.byKey(const Key('character-save')));
+    await t.pumpAndSettle();
+
+    expect(find.text('Враг · ур. 3 · здоровье 30 · атака 14'), findsOneWidget);
+  });
+
+  for (final (field, bad, message) in [
+    ('character-level', '0', 'Уровень — целое от 1'),
+    ('character-hp', '0', 'Здоровье — целое от 1'),
+    ('character-attack', '-2', 'Атака — целое от 0'),
+    ('character-attack', 'много', 'Атака — целое от 0'),
+  ]) {
+    testWidgets(
+      'персонаж: уровень, здоровье, атака — $field «$bad» не принимается',
+      (t) async {
+        await worldWithShaftAndKey(t);
+        await startEnemy(t, 'Утопленник');
+        await t.enterText(find.byKey(Key(field)), bad);
+        await t.ensureVisible(find.byKey(const Key('character-save')));
+        await t.tap(find.byKey(const Key('character-save')));
+        await t.pumpAndSettle();
+
+        expect(find.text(message), findsOneWidget);
+        expect(find.text('Новый персонаж'), findsOneWidget);
+      },
+    );
+  }
 }

@@ -38,6 +38,9 @@ class Character {
     required this.role,
     required this.locationId,
     required this.loot,
+    this.level = 1,
+    this.hp = 10,
+    this.attack = 0,
   });
 
   final String id;
@@ -47,14 +50,18 @@ class Character {
   final Role role;
   final String? locationId;
   final List<LootDrop> loot;
+  final int level;
+  final int hp;
+  final int attack;
 
-  /// «Враг · Штольня №3 · роняет: Ключ от лебёдки 35%» — строка в списке мира.
+  /// «Враг · ур. 3 · здоровье 30 · атака 8 · Штольня №3 · роняет: Ключ от лебёдки 35%» — строка в списке мира.
   String summary(
     Map<String, String> locationTitles,
     Map<String, String> itemTitles,
   ) {
     final parts = [
       role.label,
+      'ур. $level · здоровье $hp · атака $attack',
       if (locationId != null) locationTitles[locationId] ?? '?',
       if (loot.isNotEmpty)
         'роняет: ${loot.map((l) => '${itemTitles[l.itemId] ?? '?'} ${l.chanceLabel}').join(', ')}',
@@ -69,6 +76,9 @@ class Character {
     description: row['description'] as String,
     role: Role.values.byName(row['role'] as String),
     locationId: row['location_id'] as String?,
+    level: row['level'] as int,
+    hp: row['hp'] as int,
+    attack: row['attack'] as int,
     loot: [
       for (final l in (row['loot'] as List? ?? const []))
         LootDrop.fromRow(l as Map<String, dynamic>),
@@ -85,6 +95,9 @@ class NewCharacter {
     required this.role,
     required this.locationId,
     this.loot = const [],
+    this.level = 1,
+    this.hp = 10,
+    this.attack = 0,
   });
 
   final String title;
@@ -92,6 +105,9 @@ class NewCharacter {
   final Role role;
   final String? locationId;
   final List<LootDrop> loot;
+  final int level;
+  final int hp;
+  final int attack;
 
   Map<String, dynamic> toParams(String worldId, String slug) => {
     'p_project_id': worldId,
@@ -100,6 +116,9 @@ class NewCharacter {
     'p_description': description,
     'p_role': role.name,
     'p_location_id': locationId,
+    'p_level': level,
+    'p_hp': hp,
+    'p_attack': attack,
     'p_loot': role == Role.enemy
         ? [for (final l in loot) l.toJson()]
         : const [],

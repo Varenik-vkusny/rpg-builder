@@ -213,8 +213,9 @@ void main() {
       SupabaseClient who,
       String slug,
       String role,
-      List<Map<String, dynamic>> loot,
-    ) => who.rpc(
+      List<Map<String, dynamic>> loot, {
+      Map<String, int> stats = const {},
+    }) => who.rpc(
       'create_character',
       params: {
         'p_project_id': world.id,
@@ -224,6 +225,7 @@ void main() {
         'p_role': role,
         'p_location_id': null,
         'p_loot': loot,
+        ...stats,
       },
     );
 
@@ -276,6 +278,44 @@ void main() {
         isEmpty,
       );
     });
+
+    test('персонаж: база хранит уровень, здоровье и атаку', () async {
+      final made = await SupabaseContentRepo(a).createCharacter(
+        world.id,
+        const NewCharacter(
+          title: 'Утопленник',
+          description: '',
+          role: Role.enemy,
+          locationId: null,
+          level: 3,
+          hp: 30,
+          attack: 14,
+        ),
+      );
+      final got = (await SupabaseContentRepo(a).characters(world.id))
+          .singleWhere((c) => c.id == made.id);
+      expect((got.level, got.hp, got.attack), (3, 30, 14));
+    });
+
+    for (final (param, bad) in [
+      ('p_level', 0),
+      ('p_hp', 0),
+      ('p_attack', -1),
+    ]) {
+      test(
+        'персонаж: уровень, здоровье, атака — база не принимает $param = $bad',
+        () async {
+          final slug = 'bad${param}_${bad.abs()}';
+          await expectLater(
+            rawCreate(a, slug, 'enemy', const [], stats: {param: bad}),
+            throwsA(
+              isA<PostgrestException>().having((e) => e.code, 'code', '23514'),
+            ),
+          );
+          expect(await a.from('characters').select().eq('slug', slug), isEmpty);
+        },
+      );
+    }
 
     test('slug персонажа не меняется после создания', () async {
       await expectSlugLocked(a, 'characters', slime.id, 'pepelnyy_slizen');

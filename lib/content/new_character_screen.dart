@@ -33,6 +33,9 @@ class _LootRow {
 class _NewCharacterScreenState extends State<NewCharacterScreen> {
   final _title = TextEditingController();
   final _description = TextEditingController();
+  final _level = TextEditingController(text: '1');
+  final _hp = TextEditingController(text: '10');
+  final _attack = TextEditingController(text: '0');
   Role _role = Role.npc;
   String? _locationId;
   final _loot = <_LootRow>[];
@@ -43,6 +46,9 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
   void dispose() {
     _title.dispose();
     _description.dispose();
+    _level.dispose();
+    _hp.dispose();
+    _attack.dispose();
     for (final r in _loot) {
       r.chance.dispose();
     }
@@ -67,10 +73,23 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
     return (drops, null);
   }
 
+  /// Уровень, здоровье, атака из формы или текст ошибки.
+  ((int, int, int)?, String?) _readStats() {
+    int? n(TextEditingController c) => int.tryParse(c.text.trim());
+    final (level, hp, attack) = (n(_level), n(_hp), n(_attack));
+    if (level == null || level < 1) return (null, 'Уровень — целое от 1');
+    if (hp == null || hp < 1) return (null, 'Здоровье — целое от 1');
+    if (attack == null || attack < 0) return (null, 'Атака — целое от 0');
+    return ((level, hp, attack), null);
+  }
+
   Future<void> _save() async {
     final title = _title.text.trim();
     final (loot, lootError) = _readLoot();
-    final problem = title.isEmpty ? 'Нужно имя персонажа' : lootError;
+    final (stats, statsError) = _readStats();
+    final problem = title.isEmpty
+        ? 'Нужно имя персонажа'
+        : statsError ?? lootError;
     if (problem != null) {
       setState(() => _error = problem);
       return;
@@ -88,6 +107,9 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
           role: _role,
           locationId: _locationId,
           loot: loot,
+          level: stats!.$1,
+          hp: stats.$2,
+          attack: stats.$3,
         ),
       );
       if (mounted) Navigator.of(context).pop(true);
@@ -136,6 +158,16 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
     );
   }
 
+  Widget _statField(String key, TextEditingController c, String label) =>
+      Expanded(
+        child: TextField(
+          key: Key(key),
+          controller: c,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(labelText: label),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -178,6 +210,14 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
                 DropdownMenuItem(value: l.id, child: Text(l.title)),
             ],
             onChanged: (v) => setState(() => _locationId = v),
+          ),
+          Row(
+            spacing: 8,
+            children: [
+              _statField('character-level', _level, 'Уровень'),
+              _statField('character-hp', _hp, 'Здоровье'),
+              _statField('character-attack', _attack, 'Атака'),
+            ],
           ),
           if (_role == Role.enemy) ...[
             const SizedBox(height: 16),

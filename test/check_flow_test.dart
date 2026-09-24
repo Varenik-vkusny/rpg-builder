@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/check/check_screen.dart';
+import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/quest.dart';
 import 'package:rpg_builder/worlds/world.dart';
@@ -90,5 +91,34 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Предупреждение'), findsNWidgets(2));
+  });
+
+  testWidgets('предупреждение: атака врага выше потолка видно на экране', (
+    t,
+  ) async {
+    final content = FakeContent();
+    await content.createCharacter(
+      world.id,
+      const NewCharacter(
+        title: 'Утопленник',
+        description: '',
+        role: Role.enemy,
+        locationId: null,
+        level: 3,
+        hp: 30,
+        attack: 14,
+      ),
+    );
+    await t.pumpWidget(
+      MaterialApp(
+        home: CheckScreen(world: world, repo: content),
+      ),
+    );
+    await t.pumpAndSettle();
+    expect(find.text('Ошибок: 0 · Предупреждений: 1'), findsOneWidget);
+    expect(
+      find.text('«Утопленник»: атака 14 выше потолка 10 (ур. 3)'),
+      findsOneWidget,
+    );
   });
 }

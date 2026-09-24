@@ -119,6 +119,9 @@ class FakeContent implements ContentRepo {
       'description': p['p_description'],
       'role': p['p_role'],
       'location_id': p['p_location_id'],
+      'level': p['p_level'],
+      'hp': p['p_hp'],
+      'attack': p['p_attack'],
       'loot': p['p_loot'],
     });
     list.add(character);

@@ -18,6 +18,7 @@
 - [x] Автор создаёт квест: выдающий — только житель, шаги по порядку (поговорить / убить N врагов / собрать N предметов / прийти в локацию, ровно одна цель), награды; чужой автор его не видит | bash -c 'set -a; . ./.env.test; flutter test --no-pub test/quest_flow_test.dart test/quest_rls_test.dart'
 - [x] Экран «Проверка мира» показывает ошибки ссылок и квестов без шагов или выдающего | flutter test --no-pub test/world_check_test.dart test/check_flow_test.dart
 - [x] Экран «Проверка мира» показывает предупреждения: предмет нельзя получить, урон выше потолка, цена против редкости, повтор названий (без «враг сильнее локации» — у врага нет уровня, отложено владельцем 24.09.2026) | flutter test --no-pub test/world_check_test.dart test/check_flow_test.dart --name "предупреждени"
+- [x] Автор задаёт персонажу уровень, здоровье и атаку; проверка предупреждает, если атака врага выше потолка уровня или враг сильнее своей локации | bash -c 'set -a; . ./.env.test; flutter test --no-pub test/enemy_check_test.dart test/check_flow_test.dart test/content_flow_test.dart test/content_rls_test.dart --name "атак"'
 
 ## 3. Ядро — ассистент правок
 

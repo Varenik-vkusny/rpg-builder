@@ -1,12 +1,16 @@
 // Предупреждения проверки мира — чистый Dart, как и ошибки (world_check.dart).
+import '../content/character.dart';
 import '../content/item.dart';
 import 'world_check.dart';
 
-/// Предупреждения: предмет нельзя получить, урон выше потолка,
-/// эпический дешевле медианы редких, повтор названий.
+/// Предупреждения: предмет нельзя получить, урон выше потолка, атака врага
+/// выше потолка, враг выше уровней локации, эпический дешевле медианы редких,
+/// повтор названий.
 List<Problem> warningRules(WorldSnapshot w) => [
   ..._unobtainable(w),
   ..._damageOverCeiling(w),
+  ..._enemyAttackOverCeiling(w),
+  ..._enemyOverLocation(w),
   ..._epicCheaperThanRare(w),
   ..._duplicateTitles(w),
 ];
@@ -60,6 +64,36 @@ Iterable<Problem> _damageOverCeiling(WorldSnapshot w) => [
             '(ур. ${i.level}, ${i.rarity.label.toLowerCase()})',
       ),
 ];
+
+/// Потолок атаки врага — как урона обычного предмета его уровня: 4 + уровень × 2.
+double attackCeiling(int level) => damageCeiling(level, Rarity.common);
+
+Iterable<Problem> _enemyAttackOverCeiling(WorldSnapshot w) => [
+  for (final c in w.characters)
+    if (c.role == Role.enemy && c.attack > attackCeiling(c.level))
+      _warn(
+        'attack_over_ceiling',
+        c.id,
+        '«${c.title}»: атака ${c.attack} выше потолка '
+            '${_num(attackCeiling(c.level))} (ур. ${c.level})',
+      ),
+];
+
+/// Враг выше верхнего уровня своей локации.
+Iterable<Problem> _enemyOverLocation(WorldSnapshot w) {
+  final byId = {for (final l in w.locations) l.id: l};
+  return [
+    for (final c in w.characters)
+      if (byId[c.locationId] case final l?
+          when c.role == Role.enemy && c.level > l.levelMax)
+        _warn(
+          'enemy_over_location',
+          c.id,
+          '«${c.title}»: ур. ${c.level} выше уровней локации '
+              '«${l.title}» (${l.levelMin}–${l.levelMax})',
+        ),
+  ];
+}
 
 /// Эпический дешевле медианы цен редких. Редких нет — сравнивать не с чем.
 Iterable<Problem> _epicCheaperThanRare(WorldSnapshot w) {

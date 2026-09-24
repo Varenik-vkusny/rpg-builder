@@ -1,4 +1,4 @@
-// ПОКАЗ, а не проверка: сквозной путь 2.1–2.6 — рисует экраны мира на подменённой базе в PNG
+// ПОКАЗ, а не проверка: сквозной путь 2.1–2.7 — рисует экраны мира на подменённой базе в PNG
 // с настоящим шрифтом (иконки — квадратики). В check.sh не входит.
 // Запуск: flutter test --no-pub demo/snapshots_test.dart  → снимки в build/snapshots/
 import 'dart:io';
@@ -177,6 +177,33 @@ void main() {
     await _tap(t, find.byKey(const Key('check-world')));
     expect(find.text('Ошибок: 0 · Предупреждений: 2'), findsOneWidget);
     await _shot(t, '2.6-check-warnings');
+    await t.pageBack();
+    await t.pumpAndSettle();
+
+    // 2.7: враг «Утопленник» ур. 3, здоровье 30, атака 14 при потолке 10.
+    await t.scrollUntilVisible(
+      find.byKey(const Key('new-character')),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await _tap(t, find.byKey(const Key('new-character')));
+    await t.enterText(find.byKey(const Key('character-title')), 'Утопленник');
+    await _tap(t, find.byKey(const Key('character-role-enemy')));
+    await _pick(t, 'character-location', 'Штольня №3');
+    await t.enterText(find.byKey(const Key('character-level')), '3');
+    await t.enterText(find.byKey(const Key('character-hp')), '30');
+    await t.enterText(find.byKey(const Key('character-attack')), '14');
+    await _shot(t, '2.7-form');
+    await _tap(t, find.byKey(const Key('character-save')));
+    await t.scrollUntilVisible(
+      find.text('Утопленник'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await _shot(t, '2.7-world');
+    await _tap(t, find.byKey(const Key('check-world')));
+    expect(find.text('Ошибок: 0 · Предупреждений: 3'), findsOneWidget);
+    await _shot(t, '2.7-check-attack');
     await t.pageBack();
     await t.pumpAndSettle();
 
