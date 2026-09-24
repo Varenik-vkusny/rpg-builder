@@ -3,6 +3,7 @@
 // Запуск: flutter test --no-pub demo/assistant_snapshots_test.dart → build/snapshots/3.*.png
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/assistant/plan.dart';
 
 import '../test/assistant_fixtures.dart';
 import '../test/fakes.dart';
@@ -16,7 +17,23 @@ void main() {
     addTearDown(t.view.reset);
 
     final content = await minesContent();
-    final assistant = FakeAssistant([proposal(floodPlan())]);
+    // Второй ответ — тот же план плюс правка «Рынка», которого в области нет.
+    final outside = Plan(
+      summary: 'Штольня затоплена, а заодно рынок',
+      ops: [
+        ...floodPlan().ops,
+        const PlanOp(
+          action: OpAction.update,
+          type: OpType.location,
+          slug: 'rynok',
+          fields: {'description': 'рынок тоже подтопило'},
+        ),
+      ],
+    );
+    final assistant = FakeAssistant([
+      proposal(floodPlan()),
+      proposal(outside),
+    ]);
     await pumpApp(t, content: content, assistant: assistant, wrap: frame);
     await signUp(t, 'author@test.dev');
     await createWorld(t, 'Пепельные копи');
@@ -32,5 +49,14 @@ void main() {
     await shot(t, '3.1-request');
     await tapShown(t, find.byKey(const Key('assistant-propose')));
     await shot(t, '3.1-plan');
+
+    // 3.2: операция над «Рынком» вне области — приложение её не пускает.
+    await tapShown(t, find.byKey(const Key('assistant-propose')));
+    await t.scrollUntilVisible(
+      find.textContaining('Вне области'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await shot(t, '3.2-out-of-scope');
   });
 }

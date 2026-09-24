@@ -42,7 +42,9 @@ class PlanOp {
 
   factory PlanOp.fromJson(Map<String, dynamic> j) {
     final type = _typeNames[j['type']];
-    if (type == null) throw FormatException('неизвестный вид операции ${j['type']}');
+    if (type == null) {
+      throw FormatException('неизвестный вид операции ${j['type']}');
+    }
     return PlanOp(
       action: OpAction.values.byName(j['action'] as String),
       type: type,
@@ -77,9 +79,25 @@ class PlanOp {
 }
 
 const planFieldNames = [
-  'title', 'description', 'level_min', 'level_max', 'kind', 'rarity', 'level', //
-  'damage', 'defense', 'price', 'role', 'hp', 'attack', 'location', 'giver',
-  'step_kind', 'target', 'amount', 'chance',
+  'title',
+  'description',
+  'level_min',
+  'level_max',
+  'kind',
+  'rarity',
+  'level',
+  'damage',
+  'defense',
+  'price',
+  'role',
+  'hp',
+  'attack',
+  'location',
+  'giver',
+  'step_kind',
+  'target',
+  'amount',
+  'chance',
 ];
 
 class Plan {

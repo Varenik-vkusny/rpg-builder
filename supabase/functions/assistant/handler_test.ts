@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { floodPlan, mines, scripted, toolUse } from "./fixtures_test_data.ts";
+import { floodPlan, mines, op, scripted, toolUse } from "./fixtures_test_data.ts";
 import { handle, MAX_FIXES } from "./handler.ts";
-import { TOOLS } from "./plan.ts";
+import type { Plan } from "./plan.ts";
+import { outOfScope, TOOLS } from "./plan.ts";
+import { scopeOf } from "./world.ts";
 
 const ask = (extra: Record<string, unknown> = {}) => ({
   project_id: "w1",
@@ -126,4 +128,49 @@ test("план: общий образец flood_plan.json совпадает с 
   // Тот же файл читают тесты приложения (test/assistant_fixtures.dart) — форматы не разойдутся.
   const shared = JSON.parse(readFileSync(new URL("./flood_plan.json", import.meta.url), "utf8"));
   assert.deepEqual(shared, floodPlan);
+});
+
+/// План затопления плюс одна операция вне области штольни.
+const withOutside = (extra: Plan["ops"][number]): Plan => ({ ...floodPlan, ops: [...floodPlan.ops, extra] });
+const shaftScope = () => scopeOf(mines, "location", "shtolnya_3");
+
+test("вне области: план в границах и созданное планом — можно", () => {
+  // Утопленника создаёт сам план — упоминать его в добыче и шаге квеста можно.
+  assert.deepEqual(outOfScope(floodPlan, shaftScope()), []);
+});
+
+for (const [name, extra, what] of [
+  ["изменить объект вне области", op({ type: "location", slug: "rynok", fields: { description: "x" } }), "location:rynok"],
+  ["удалить объект вне области", op({ action: "delete", type: "item", slug: "yabloko" }), "item:yabloko"],
+  ["сослаться на объект вне области", op({ type: "character", slug: "slizen", fields: { location: "rynok" } }), "location:rynok"],
+  ["добыча предметом вне области", op({ action: "create", type: "loot", character: "slizen", item: "yabloko", fields: { chance: 5 } }), "item:yabloko"],
+  ["цель шага без вида шага", op({ type: "quest_step", quest: "obval", position: 1, fields: { target: "slizen" } }), "шаг-без-вида:slizen"],
+  ["шаг квеста с целью вне области", op({ type: "quest_step", quest: "obval", position: 1, fields: { step_kind: "talk", target: "torgovka" } }), "character:torgovka"],
+] as const) {
+  test(`вне области: ${name} — отклоняется`, () => {
+    const bad = outOfScope(withOutside(extra), shaftScope());
+    assert.equal(bad.length, 1, bad.join("; "));
+    assert.match(bad[0], new RegExp(`операция 6 .*${what}`));
+  });
+}
+
+test("вне области: функция отклоняет план, модель исправляет — уходит исправленный", async () => {
+  const bad = withOutside(op({ type: "location", slug: "rynok", fields: { description: "x" } }));
+  const { deps, calls } = scripted(mines, [toolUse("t1", "propose_plan", bad), toolUse("t2", "propose_plan", floodPlan)]);
+  const r = await handle(ask(), deps);
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.plan, floodPlan);
+  const rejected = (calls[1].messages[2].content as { is_error: boolean; content: string }[])[0];
+  assert.equal(rejected.is_error, true);
+  assert.match(rejected.content, /location:rynok вне области/);
+});
+
+test("вне области: второй раз вне области — 422, плана нет", async () => {
+  const bad = withOutside(op({ action: "delete", type: "item", slug: "yabloko" }));
+  const { deps, calls } = scripted(mines, [toolUse("t1", "propose_plan", bad), toolUse("t2", "propose_plan", bad)]);
+  const r = await handle(ask(), deps);
+  assert.equal(r.status, 422);
+  assert.equal(r.body.plan, undefined);
+  assert.equal(calls.length, 2);
+  assert.match(String(r.body.out_of_scope), /item:yabloko/);
 });

@@ -1,7 +1,7 @@
 // Ассистент правок: просьба + область → план. В базу не пишет ничего.
 // Модель и мир приходят зависимостями — тесты подставляют заранее заданную модель.
 import type { Plan } from "./plan.ts";
-import { TOOLS } from "./plan.ts";
+import { outOfScope, TOOLS } from "./plan.ts";
 import type { ScopeType, World } from "./world.ts";
 import { key, objectsByKey, scopeOf } from "./world.ts";
 import { systemPrompt, userPrompt } from "./prompt.ts";
@@ -10,6 +10,9 @@ import { systemPrompt, userPrompt } from "./prompt.ts";
 export const MAX_FIXES = 2;
 /// Ходов модели внутри одного запроса: чтение объектов и сам план.
 export const MAX_TURNS = 8;
+/// Сколько раз модель может предложить план с операциями вне области, прежде чем
+/// функция откажет (VISION.md, правило 5).
+export const MAX_OUT_OF_SCOPE = 2;
 
 export interface AssistantRequest {
   project_id: string;
@@ -114,6 +117,7 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
     messages: [{ role: "user", content: userPrompt(req) }],
   };
   const usage = { input_tokens: 0, output_tokens: 0 };
+  let outside = 0;
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const res = await deps.callModel(call);
     usage.input_tokens += res.usage.input_tokens;
@@ -122,8 +126,25 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
     call.messages.push({ role: "assistant", content: res.content });
 
     const uses = res.content.filter((b) => b.type === "tool_use");
-    const plan = uses.find((b) => b.name === "propose_plan");
-    if (plan) return { status: 200, body: { plan: plan.input as Plan, usage } };
+    const proposed = uses.find((b) => b.name === "propose_plan");
+    if (proposed) {
+      const bad = outOfScope(proposed.input as Plan, scope);
+      if (bad.length === 0) return { status: 200, body: { plan: proposed.input as Plan, usage } };
+      // Вне области: план отклонён. Модель узнаёт почему и может исправить.
+      if (++outside >= MAX_OUT_OF_SCOPE) return fail(422, "операции вне области", { out_of_scope: bad, usage });
+      call.messages.push({
+        role: "user",
+        content: uses.map((u) => ({
+          type: "tool_result",
+          tool_use_id: u.id,
+          is_error: true,
+          content: u === proposed
+            ? ["План отклонён — операции вне области:", ...bad, "Предложи план заново только в границах области."].join("\n")
+            : "не выполнено: план отклонён",
+        })),
+      });
+      continue;
+    }
     if (uses.length === 0) {
       call.messages.push({ role: "user", content: "Отдай итог инструментом propose_plan." });
       continue;

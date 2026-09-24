@@ -144,7 +144,8 @@ function touched(op: PlanOp): { changes: string[]; creates: string | null; refs:
   const refs: string[] = [];
   if (f.location) refs.push(key("location", f.location));
   if (f.giver) refs.push(key("character", f.giver));
-  if (f.target && f.step_kind) refs.push(key(stepTargetType(f.step_kind), f.target));
+  // Цель без вида шага не проверить по области — такая ссылка не пропускается никогда.
+  if (f.target) refs.push(f.step_kind ? key(stepTargetType(f.step_kind), f.target) : key("шаг-без-вида", f.target));
   if (op.type === "loot") {
     return { changes: [key("character", op.character ?? "")], creates: null, refs: [...refs, key("item", op.item ?? "")] };
   }

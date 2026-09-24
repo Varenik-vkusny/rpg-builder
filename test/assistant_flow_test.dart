@@ -1,48 +1,8 @@
 // Экран ассистента на подменённой базе и подменённом ассистенте.
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'assistant_fixtures.dart';
 import 'fakes.dart';
-
-/// Мир «Пепельные копи» открыт, экран ассистента открыт.
-Future<(FakeContent, FakeAssistant)> openAssistant(
-  WidgetTester t, [
-  FakeAssistant? assistant,
-]) async {
-  t.view.physicalSize = const Size(800, 1200);
-  t.view.devicePixelRatio = 1;
-  addTearDown(t.view.reset);
-  final content = await minesContent();
-  final a = assistant ?? FakeAssistant([proposal(floodPlan())]);
-  await pumpApp(t, content: content, assistant: a);
-  await signUp(t, 'a@test.dev');
-  await createWorld(t, 'Пепельные копи');
-  await openWorld(t, 'Пепельные копи');
-  await t.tap(find.byKey(const Key('assistant-open')));
-  await t.pumpAndSettle();
-  return (content, a);
-}
-
-/// Выбирает область и пишет просьбу.
-Future<void> ask(
-  WidgetTester t, {
-  String type = 'location',
-  String? object = 'Штольня №3',
-  String request = 'затопи её, слизни там жить не могут',
-}) async {
-  await t.tap(find.byKey(Key('scope-type-$type')));
-  await t.pumpAndSettle();
-  if (object != null) {
-    await t.tap(find.byKey(Key('scope-object-$type')));
-    await t.pumpAndSettle();
-    await t.tap(find.text(object).last);
-    await t.pumpAndSettle();
-  }
-  await t.enterText(find.byKey(const Key('assistant-request')), request);
-  await t.tap(find.byKey(const Key('assistant-propose')));
-  await t.pumpAndSettle();
-}
 
 /// Весь мир подменённой базы строкой — чтобы видеть, что в него ничего не записано.
 Future<String> dump(FakeContent c) async => [

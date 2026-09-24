@@ -2,6 +2,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
 import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/assistant/plan.dart';
 import 'package:rpg_builder/content/character.dart';
@@ -15,13 +18,9 @@ import 'fakes.dart';
 const minesId = '0-Пепельные копи';
 
 /// План «штольня затоплена» — общий образец с тестами серверной функции.
-Map<String, dynamic> floodPlanJson() =>
-    jsonDecode(
-          File(
-            'supabase/functions/assistant/flood_plan.json',
-          ).readAsStringSync(),
-        )
-        as Map<String, dynamic>;
+Map<String, dynamic> floodPlanJson() => jsonDecode(
+  File('supabase/functions/assistant/flood_plan.json').readAsStringSync(),
+) as Map<String, dynamic>;
 
 Plan floodPlan() => Plan.fromJson(floodPlanJson());
 
@@ -50,7 +49,12 @@ Future<FakeContent> minesContent() async {
   );
   await c.createLocation(
     minesId,
-    const NewLocation(title: 'Рынок', description: '', levelMin: 1, levelMax: 3),
+    const NewLocation(
+      title: 'Рынок',
+      description: '',
+      levelMin: 1,
+      levelMax: 3,
+    ),
   );
   final key = await c.createItem(
     minesId,
@@ -110,4 +114,43 @@ Future<FakeContent> minesContent() async {
     ),
   );
   return c;
+}
+
+/// Мир «Пепельные копи» открыт, экран ассистента открыт.
+Future<(FakeContent, FakeAssistant)> openAssistant(
+  WidgetTester t, [
+  FakeAssistant? assistant,
+]) async {
+  t.view.physicalSize = const Size(800, 1200);
+  t.view.devicePixelRatio = 1;
+  addTearDown(t.view.reset);
+  final content = await minesContent();
+  final a = assistant ?? FakeAssistant([proposal(floodPlan())]);
+  await pumpApp(t, content: content, assistant: a);
+  await signUp(t, 'a@test.dev');
+  await createWorld(t, 'Пепельные копи');
+  await openWorld(t, 'Пепельные копи');
+  await t.tap(find.byKey(const Key('assistant-open')));
+  await t.pumpAndSettle();
+  return (content, a);
+}
+
+/// Выбирает область и пишет просьбу.
+Future<void> ask(
+  WidgetTester t, {
+  String type = 'location',
+  String? object = 'Штольня №3',
+  String request = 'затопи её, слизни там жить не могут',
+}) async {
+  await t.tap(find.byKey(Key('scope-type-$type')));
+  await t.pumpAndSettle();
+  if (object != null) {
+    await t.tap(find.byKey(Key('scope-object-$type')));
+    await t.pumpAndSettle();
+    await t.tap(find.text(object).last);
+    await t.pumpAndSettle();
+  }
+  await t.enterText(find.byKey(const Key('assistant-request')), request);
+  await t.tap(find.byKey(const Key('assistant-propose')));
+  await t.pumpAndSettle();
 }

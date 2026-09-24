@@ -21,7 +21,7 @@ ${list}
 Операции плана:
 - location, item, character, quest: create / update / delete по slug. Новый slug — латиница, цифры и «_» (ashen_drowned), не совпадает с существующими.
 - loot (добыча врага): character + item, поле chance (0 < шанс ≤ 100). update меняет шанс, delete убирает.
-- quest_step: quest + position (с 1). create — только в конец (position = число шагов + 1); delete сдвигает следующие шаги; поля step_kind, target (slug), amount.
+- quest_step: quest + position (с 1). create — только в конец (position = число шагов + 1); delete сдвигает следующие шаги; поля step_kind, target (slug), amount. С target всегда указывай и step_kind.
 - quest_reward: quest + item, create / delete.
 В fields null значит «не задаю / не меняю». role и kind задаются только при создании.
 

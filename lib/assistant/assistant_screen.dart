@@ -4,6 +4,7 @@ import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'assistant_service.dart';
 import 'plan.dart';
+import 'scope.dart';
 
 /// Ассистент: автор выбирает область и пишет просьбу — получает план.
 /// В базу отсюда не пишется ничего.
@@ -30,6 +31,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
   bool _busy = false;
   String? _error;
   Proposal? _proposal;
+
+  /// Операции плана вне области — второй замок после серверной функции.
+  Map<int, List<String>> _outside = const {};
 
   @override
   void dispose() {
@@ -71,7 +75,13 @@ class _AssistantScreenState extends State<AssistantScreen> {
           request: text,
         ),
       );
-      if (mounted) setState(() => _proposal = p);
+      final scope = scopeOf(widget.snapshot, Scope(_type, _slug!));
+      if (mounted) {
+        setState(() {
+          _proposal = p;
+          _outside = outOfScope(p.plan, scope);
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
@@ -148,8 +158,23 @@ class _AssistantScreenState extends State<AssistantScreen> {
       key: const Key('plan-summary'),
       style: Theme.of(context).textTheme.titleMedium,
     ),
-    for (final op in plan.ops)
-      ListTile(dense: true, title: Text(describeOp(op))),
+    if (_outside.isNotEmpty)
+      Text(
+        'Операций вне области: ${_outside.length} — такой план применить нельзя',
+        key: const Key('plan-out-of-scope'),
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      ),
+    for (final (i, op) in plan.ops.indexed)
+      ListTile(
+        dense: true,
+        title: Text(describeOp(op)),
+        subtitle: _outside[i] == null
+            ? null
+            : Text(
+                'Вне области: ${_outside[i]!.join(', ')}',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+      ),
   ];
 }
 
