@@ -25,6 +25,9 @@ abstract class ContentRepo {
 
   /// План ассистента — одной транзакцией или ничего; набор уходит в журнал.
   Future<void> applyChangeSet(String worldId, ChangeSetDraft draft);
+
+  /// Отклонённый план: мир не меняется, набор пишется в журнал как rejected.
+  Future<void> rejectChangeSet(String worldId, ChangeSetDraft draft);
 }
 
 extension WorldSnapshotLoad on ContentRepo {
@@ -145,6 +148,10 @@ class SupabaseContentRepo implements ContentRepo {
   @override
   Future<void> applyChangeSet(String worldId, ChangeSetDraft draft) =>
       _client.rpc('apply_change_set', params: draft.toParams(worldId));
+
+  @override
+  Future<void> rejectChangeSet(String worldId, ChangeSetDraft draft) =>
+      _client.rpc('reject_change_set', params: draft.toParams(worldId));
 
   Future<List<String>> _slugs(String table, String worldId) async {
     final rows = await _client

@@ -52,6 +52,7 @@ void main() {
     );
     await ask(t);
     expect(enabled(t, 'plan-apply'), isFalse);
+    expect(enabled(t, 'plan-reject'), isTrue);
     expect(content.changeSets, isEmpty);
   });
 
@@ -71,11 +72,33 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Остались на экране плана.
-      expect(find.byKey(const Key('plan-apply')), findsOneWidget);
+      // Остались на экране плана, можно отклонить.
+      expect(find.byKey(const Key('plan-reject')), findsOneWidget);
       expect(content.changeSets, isEmpty);
     },
   );
+
+  testWidgets('отклонить: мир не изменился, набор записан как rejected', (
+    t,
+  ) async {
+    final (content, _) = await openAssistant(
+      t,
+      FakeAssistant([proposal(floodWithAttack(8))]),
+    );
+    final before = await content.snapshotOf(minesId);
+    await ask(t);
+    await tapButton(t, 'plan-reject');
+
+    expect(find.byKey(const Key('assistant-open')), findsOneWidget);
+    expect(find.text('Утопленник'), findsNothing);
+    expect(content.changeSets.single.status, 'rejected');
+    final after = await content.snapshotOf(minesId);
+    expect(after.titles, before.titles);
+    expect(
+      after.characters.map((c) => c.loot.length),
+      before.characters.map((c) => c.loot.length),
+    );
+  });
 }
 
 /// База, которая отказывает в применении (например, пропала связь).

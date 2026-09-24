@@ -136,6 +136,13 @@ class _AssistantScreenState extends State<AssistantScreen> {
               child: const Text('Применить'),
             ),
           ),
+          Expanded(
+            child: OutlinedButton(
+              key: const Key('plan-reject'),
+              onPressed: _busy ? null : () => _decide(false),
+              child: const Text('Отклонить'),
+            ),
+          ),
         ],
       ),
       if (_error != null) _errorText(),
@@ -150,7 +157,8 @@ class _AssistantScreenState extends State<AssistantScreen> {
     style: TextStyle(color: Theme.of(context).colorScheme.error),
   );
 
-  /// «Применить» — план одной транзакцией. Успех — назад в мир, он перечитывается.
+  /// «Применить» — план одной транзакцией; «Отклонить» — только в журнал.
+  /// Успех — назад в мир; при применении мир перечитывается.
   Future<void> _decide(bool apply) async {
     final draft = ChangeSetDraft.fromRun(_run!, _asked!);
     setState(() {
@@ -158,13 +166,17 @@ class _AssistantScreenState extends State<AssistantScreen> {
       _error = null;
     });
     try {
-      await widget.repo.applyChangeSet(widget.world.id, draft);
+      apply
+          ? await widget.repo.applyChangeSet(widget.world.id, draft)
+          : await widget.repo.rejectChangeSet(widget.world.id, draft);
       if (mounted) Navigator.of(context).pop(apply);
     } catch (e) {
       if (mounted) {
         setState(() {
           _busy = false;
-          _error = 'Не удалось применить — в мире ничего не изменилось: $e';
+          _error = apply
+              ? 'Не удалось применить — в мире ничего не изменилось: $e'
+              : 'Не удалось записать отказ: $e';
         });
       }
     }

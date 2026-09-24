@@ -179,6 +179,11 @@ class FakeContent implements ContentRepo {
     changeSets.add((status: 'applied', draft: draft));
   }
 
+  @override
+  Future<void> rejectChangeSet(String worldId, ChangeSetDraft draft) async {
+    changeSets.add((status: 'rejected', draft: draft));
+  }
+
   Future<WorldSnapshot> snapshotOf(String worldId) async => WorldSnapshot(
     locations: await locations(worldId),
     items: await items(worldId),

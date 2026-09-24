@@ -177,4 +177,30 @@ void main() {
     expect(dump(await repo.snapshot(world.id)), before);
     expect(await sets(), isEmpty);
   });
+
+  test(
+    'отклонить: мир не изменился, набор записан со статусом rejected',
+    () async {
+      final before = dump(await repo.snapshot(world.id));
+      await repo.rejectChangeSet(world.id, draft(floodWithAttack(8)));
+      expect(dump(await repo.snapshot(world.id)), before);
+      final set = (await sets()).single;
+      expect(set['status'], 'rejected');
+      final ops = await a
+          .from('change_ops')
+          .select()
+          .eq('change_set_id', set['id']);
+      expect(ops.length, 5);
+      expect(
+        ops.every((o) => o['before'] == null && o['after'] == null),
+        isTrue,
+      );
+      final gen = await a
+          .from('generations')
+          .select()
+          .eq('change_set_id', set['id'])
+          .single();
+      expect(gen['attempts'], 2);
+    },
+  );
 }

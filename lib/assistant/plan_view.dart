@@ -88,6 +88,7 @@ class PlanView extends StatelessWidget {
   static String _change(FieldChange c) => switch ((c.before, c.after)) {
     (null, final a) => '${c.label}: $a',
     (final b, null) => '${c.label}: $b → удалено',
-    (final b, final a) => '${c.label}: $b → $a',
+    (final String b, final String a) =>
+      '${c.label}: ${b.isEmpty ? 'пусто' : b} → ${a.isEmpty ? 'пусто' : a}',
   };
 }

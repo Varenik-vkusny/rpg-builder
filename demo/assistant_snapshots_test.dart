@@ -90,5 +90,16 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await shot(t, '3.2-out-of-scope');
+
+    // 3.6: «Отклонить» — назад в мир, в нём ничего не поменялось.
+    await t.scrollUntilVisible(
+      find.byKey(const Key('plan-reject')),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await shot(t, '3.6-before-reject');
+    await tapShown(t, find.byKey(const Key('plan-reject')));
+    await shot(t, '3.6-rejected-world');
+    expect(content.changeSets.map((c) => c.status), ['applied', 'rejected']);
   });
 }
