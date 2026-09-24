@@ -25,7 +25,7 @@ void main() {
       find.text('Штольня №3 затоплена: слизни ушли, появились утопленники'),
       findsOneWidget,
     );
-    final sent = assistant.requests.single;
+    final sent = assistant.requests.first;
     expect(sent.worldId, minesId);
     expect((sent.scope.type.name, sent.scope.slug), ('location', 'shtolnya_3'));
     expect(sent.request, 'затопи её, слизни там жить не могут');
@@ -37,8 +37,8 @@ void main() {
   testWidgets('план: область — квест или персонаж по выбору автора', (t) async {
     final (_, assistant) = await openAssistant(t);
     await ask(t, type: 'character', object: 'Слизень');
-    expect(assistant.requests.single.scope.slug, 'slizen');
-    expect(assistant.requests.single.scope.type.name, 'character');
+    expect(assistant.requests.first.scope.slug, 'slizen');
+    expect(assistant.requests.first.scope.type.name, 'character');
   });
 
   testWidgets('план: без объекта области просьба не уходит', (t) async {

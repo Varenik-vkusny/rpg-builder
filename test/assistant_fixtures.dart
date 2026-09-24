@@ -125,7 +125,10 @@ Future<(FakeContent, FakeAssistant)> openAssistant(
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
   final content = await minesContent();
-  final a = assistant ?? FakeAssistant([proposal(floodPlan())]);
+  // Три одинаковых ответа: план и два исправления (атака 14 так и остаётся).
+  final a =
+      assistant ??
+      FakeAssistant(List.generate(3, (_) => proposal(floodPlan())));
   await pumpApp(t, content: content, assistant: a);
   await signUp(t, 'a@test.dev');
   await createWorld(t, 'Пепельные копи');

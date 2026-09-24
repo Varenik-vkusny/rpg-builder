@@ -125,7 +125,10 @@ void main() {
         fields: {'description': 'x'},
       ),
     );
-    await openAssistant(t, FakeAssistant([proposal(bad)]));
+    await openAssistant(
+      t,
+      FakeAssistant(List.generate(3, (_) => proposal(bad))),
+    );
     await ask(t);
     expect(
       find.text('Операций вне области: 1 — такой план применить нельзя'),

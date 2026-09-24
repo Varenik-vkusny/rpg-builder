@@ -41,4 +41,3 @@ Future<void> pick(WidgetTester t, String key, String option) async {
   await t.tap(find.text(option).last);
   await t.pumpAndSettle();
 }
-

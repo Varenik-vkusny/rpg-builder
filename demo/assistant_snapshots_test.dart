@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/assistant/plan.dart';
 
 import '../test/assistant_fixtures.dart';
+import '../test/autofix_test.dart' show floodWithAttack;
 import '../test/fakes.dart';
 import 'shots.dart';
 
@@ -30,7 +31,12 @@ void main() {
         ),
       ],
     );
-    final assistant = FakeAssistant([proposal(floodPlan()), proposal(outside)]);
+    // Первый план — атака утопленника 14, исправление — 8 (как в сцене защиты).
+    final assistant = FakeAssistant([
+      proposal(floodWithAttack(14)),
+      proposal(floodWithAttack(8)),
+      for (var i = 0; i < 3; i++) proposal(outside),
+    ]);
     await pumpApp(t, content: content, assistant: assistant, wrap: frame);
     await signUp(t, 'author@test.dev');
     await createWorld(t, 'Пепельные копи');
@@ -45,7 +51,7 @@ void main() {
     );
     await shot(t, '3.1-request');
     await tapShown(t, find.byKey(const Key('assistant-propose')));
-    await shot(t, '3.1-plan');
+    await shot(t, '3.1-plan'); // уже после автоисправления 3.4
 
     // 3.3: план на копии — итог проверки и «было → стало» по операциям.
     final list = find.byType(Scrollable).first;
@@ -55,6 +61,12 @@ void main() {
       scrollable: list,
     );
     await shot(t, '3.3-diff');
+    await t.scrollUntilVisible(
+      find.byKey(const Key('plan-fixes')),
+      -200,
+      scrollable: list,
+    );
+    await shot(t, '3.4-fixed');
 
     // 3.2: операция над «Рынком» вне области — приложение её не пускает.
     await t.scrollUntilVisible(

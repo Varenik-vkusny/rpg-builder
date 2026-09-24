@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'assistant_service.dart';
-import 'plan_preview.dart';
+import 'assistant_flow.dart';
 import 'plan_view.dart';
 
 /// Ассистент: автор выбирает область и пишет просьбу — получает план.
@@ -30,10 +30,12 @@ class _AssistantScreenState extends State<AssistantScreen> {
   String? _slug;
   bool _busy = false;
   String? _error;
-  Proposal? _proposal;
 
-  /// План на копии мира: «было → стало», область, проверка.
-  PlanPreview? _preview;
+  /// Номер текущей попытки, пока ассистент думает (1 — план, 2–3 — исправления).
+  int _attempt = 0;
+
+  /// Последний план после автоисправлений и его проверка на копии.
+  PlanRun? _run;
 
   @override
   void dispose() {
@@ -65,27 +67,22 @@ class _AssistantScreenState extends State<AssistantScreen> {
     setState(() {
       _busy = true;
       _error = null;
-      _proposal = null;
+      _run = null;
     });
     try {
-      final p = await widget.assistant.propose(
-        ProposeRequest(
+      final run = await runAssistant(
+        assistant: widget.assistant,
+        world: widget.snapshot,
+        request: ProposeRequest(
           worldId: widget.world.id,
           scope: Scope(_type, _slug!),
           request: text,
         ),
+        onAttempt: (n) {
+          if (mounted) setState(() => _attempt = n);
+        },
       );
-      final preview = previewPlan(
-        widget.snapshot,
-        p.plan,
-        Scope(_type, _slug!),
-      );
-      if (mounted) {
-        setState(() {
-          _proposal = p;
-          _preview = preview;
-        });
-      }
+      if (mounted) setState(() => _run = run);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
@@ -93,9 +90,34 @@ class _AssistantScreenState extends State<AssistantScreen> {
     }
   }
 
+  List<Widget> _result(PlanRun run) {
+    final error = TextStyle(color: Theme.of(context).colorScheme.error);
+    return [
+      const SizedBox(height: 16),
+      if (run.fixes > 0)
+        Text(
+          'Ассистент исправил план сам: ${run.fixes} из $maxFixes раз',
+          key: const Key('plan-fixes'),
+        ),
+      for (final (i, problems) in run.caught.indexed)
+        for (final p in problems)
+          Text('Поймано перед исправлением ${i + 1}: $p', style: error),
+      if (!run.canApply)
+        Text(
+          run.fixes == maxFixes
+              ? 'Ошибки остались и после $maxFixes исправлений — '
+                    '«Применить» недоступно'
+              : 'В плане ошибки — «Применить» недоступно',
+          key: const Key('plan-blocked'),
+          style: error,
+        ),
+      PlanView(plan: run.proposal.plan, preview: run.preview),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final p = _proposal;
+    final run = _run;
     return Scaffold(
       appBar: AppBar(title: const Text('Ассистент')),
       body: ListView(
@@ -147,12 +169,14 @@ class _AssistantScreenState extends State<AssistantScreen> {
           FilledButton(
             key: const Key('assistant-propose'),
             onPressed: _busy ? null : _propose,
-            child: Text(_busy ? 'Ассистент думает…' : 'Предложить план'),
+            child: Text(switch ((_busy, _attempt)) {
+              (false, _) => 'Предложить план',
+              (true, <= 1) => 'Ассистент думает…',
+              (true, final n) =>
+                'Ассистент исправляет план: попытка $n из ${maxFixes + 1}',
+            }),
           ),
-          if (p != null) ...[
-            const SizedBox(height: 16),
-            PlanView(plan: p.plan, preview: _preview!),
-          ],
+          if (run != null) ..._result(run),
         ],
       ),
     );

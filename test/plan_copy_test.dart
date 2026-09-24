@@ -238,7 +238,10 @@ void main() {
         ),
       ],
     );
-    await openAssistant(t, FakeAssistant([proposal(bad)]));
+    await openAssistant(
+      t,
+      FakeAssistant(List.generate(3, (_) => proposal(bad))),
+    );
     await ask(t);
     expect(
       find.text('Проверка на копии мира — ошибок: 1 · предупреждений: 0'),
