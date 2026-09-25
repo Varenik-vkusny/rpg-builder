@@ -15,6 +15,7 @@ import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
+import 'package:rpg_builder/content/manual_edit.dart';
 import 'package:rpg_builder/content/quest.dart';
 import 'package:rpg_builder/content/slug.dart';
 import 'package:rpg_builder/worlds/world.dart';
@@ -242,6 +243,28 @@ class FakeContent implements ContentRepo {
       version: version,
     ),
   );
+
+  /// Как база: на удаляемый объект ссылаются — отказ; иначе мир после правки.
+  @override
+  Future<void> applyManualEdit(String worldId, ManualEdit edit) async {
+    final before = await snapshotOf(worldId);
+    for (final op in edit.ops) {
+      final id = (op['row'] as Map)['id'] as String?;
+      if (op['action'] == 'delete' && id != null) {
+        final refs = referencesTo(before, id);
+        if (refs.isNotEmpty) throw StateError('на объект ссылаются: $refs');
+      }
+    }
+    _restore(worldId, edit.applyTo(before));
+    _log(worldId, SetStatus.applied, edit.title, edit.title, [
+      for (final op in edit.ops)
+        JournalOp(
+          action: op['action'] as String,
+          type: op['type'] as String,
+          label: op['label'] as String,
+        ),
+    ], before);
+  }
 
   @override
   Future<List<ChangeSetEntry>> history(String worldId) async => [

@@ -1,14 +1,29 @@
 import 'package:flutter/material.dart';
 
+import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'content_repo.dart';
 import 'item.dart';
+import 'manual_edit.dart';
+import 'manual_save.dart';
 
 class NewItemScreen extends StatefulWidget {
-  const NewItemScreen({super.key, required this.world, required this.repo});
+  const NewItemScreen({
+    super.key,
+    required this.world,
+    required this.repo,
+    this.editing,
+    this.snapshot,
+  });
 
   final World world;
   final ContentRepo repo;
+
+  /// Не null — форма правит существующий предмет, а не создаёт новый.
+  final Item? editing;
+
+  /// Мир на момент открытия формы — нужен для сохранения правки.
+  final WorldSnapshot? snapshot;
 
   @override
   State<NewItemScreen> createState() => _NewItemScreenState();
@@ -24,10 +39,27 @@ class _NewItemScreenState extends State<NewItemScreen> {
   bool _busy = false;
   String? _error;
 
+  bool get _editing => widget.editing != null;
+
   @override
   void initState() {
     super.initState();
-    _level.text = '${widget.world.levelMin}';
+    final e = widget.editing;
+    if (e == null) {
+      _level.text = '${widget.world.levelMin}';
+      return;
+    }
+    _kind = e.kind;
+    _rarity = e.rarity;
+    _title.text = e.title;
+    _level.text = '${e.level}';
+    _price.text = '${e.price}';
+    final stat = e.kind == ItemKind.weapon
+        ? e.damage
+        : e.kind == ItemKind.armor
+        ? e.defense
+        : null;
+    if (stat != null) _stat.text = '$stat';
   }
 
   @override
@@ -69,19 +101,35 @@ class _NewItemScreenState extends State<NewItemScreen> {
       _busy = true;
       _error = null;
     });
-    try {
-      await widget.repo.createItem(
+    final now = NewItem(
+      title: title,
+      kind: _kind,
+      rarity: _rarity,
+      level: level!,
+      damage: _kind == ItemKind.weapon ? stat : null,
+      defense: _kind == ItemKind.armor ? stat : null,
+      price: price!,
+    );
+    if (_editing) {
+      final error = await saveManualEdit(
+        widget.repo,
         widget.world.id,
-        NewItem(
-          title: title,
-          kind: _kind,
-          rarity: _rarity,
-          level: level!,
-          damage: _kind == ItemKind.weapon ? stat : null,
-          defense: _kind == ItemKind.armor ? stat : null,
-          price: price!,
-        ),
+        widget.snapshot!,
+        editItem(widget.world.id, widget.editing!, now),
       );
+      if (!mounted) return;
+      if (error == null) {
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          _busy = false;
+          _error = error;
+        });
+      }
+      return;
+    }
+    try {
+      await widget.repo.createItem(widget.world.id, now);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
@@ -90,6 +138,29 @@ class _NewItemScreenState extends State<NewItemScreen> {
           _error = 'Не удалось сохранить: $e';
         });
       }
+    }
+  }
+
+  Future<void> _delete() async {
+    final e = widget.editing!;
+    setState(() => _busy = true);
+    final error = await deleteManually(
+      widget.repo,
+      widget.world.id,
+      widget.snapshot!,
+      type: 'item',
+      id: e.id,
+      slug: e.slug,
+      title: e.title,
+    );
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() {
+        _busy = false;
+        _error = error;
+      });
     }
   }
 
@@ -104,7 +175,18 @@ class _NewItemScreenState extends State<NewItemScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Новый предмет')),
+      appBar: AppBar(
+        title: Text(_editing ? 'Изменить предмет' : 'Новый предмет'),
+        actions: [
+          if (_editing)
+            IconButton(
+              key: const Key('object-delete'),
+              tooltip: 'Удалить',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _busy ? null : _delete,
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -123,7 +205,9 @@ class _NewItemScreenState extends State<NewItemScreen> {
                   key: Key('item-kind-${k.name}'),
                   label: Text(k.label),
                   selected: _kind == k,
-                  onSelected: (_) => setState(() => _kind = k),
+                  onSelected: _editing
+                      ? null
+                      : (_) => setState(() => _kind = k),
                 ),
             ],
           ),
@@ -154,7 +238,7 @@ class _NewItemScreenState extends State<NewItemScreen> {
           FilledButton(
             key: const Key('item-save'),
             onPressed: _busy ? null : _save,
-            child: const Text('Создать'),
+            child: Text(_editing ? 'Сохранить' : 'Создать'),
           ),
         ],
       ),

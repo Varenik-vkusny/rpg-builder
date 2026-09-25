@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
 import 'item.dart';
 import 'location.dart';
+import 'manual_edit.dart';
+import 'manual_save.dart';
 
 class NewCharacterScreen extends StatefulWidget {
   const NewCharacterScreen({
@@ -13,12 +16,20 @@ class NewCharacterScreen extends StatefulWidget {
     required this.repo,
     required this.locations,
     required this.items,
+    this.editing,
+    this.snapshot,
   });
 
   final World world;
   final ContentRepo repo;
   final List<Location> locations;
   final List<Item> items;
+
+  /// Не null — форма правит существующего персонажа, а не создаёт нового.
+  final Character? editing;
+
+  /// Мир на момент открытия формы — нужен для сохранения правки.
+  final WorldSnapshot? snapshot;
 
   @override
   State<NewCharacterScreen> createState() => _NewCharacterScreenState();
@@ -41,6 +52,29 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
   final _loot = <_LootRow>[];
   bool _busy = false;
   String? _error;
+
+  bool get _editing => widget.editing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.editing;
+    if (e == null) return;
+    _role = e.role;
+    _locationId = e.locationId;
+    _title.text = e.title;
+    _description.text = e.description;
+    _level.text = '${e.level}';
+    _hp.text = '${e.hp}';
+    _attack.text = '${e.attack}';
+    for (final l in e.loot) {
+      final row = _LootRow()..itemId = l.itemId;
+      row.chance.text = l.chance == l.chance.roundToDouble()
+          ? '${l.chance.round()}'
+          : '${l.chance}';
+      _loot.add(row);
+    }
+  }
 
   @override
   void dispose() {
@@ -98,20 +132,37 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
       _busy = true;
       _error = null;
     });
-    try {
-      await widget.repo.createCharacter(
+    final now = NewCharacter(
+      title: title,
+      description: _description.text.trim(),
+      role: _role,
+      locationId: _locationId,
+      loot: loot,
+      level: stats!.$1,
+      hp: stats.$2,
+      attack: stats.$3,
+    );
+    if (_editing) {
+      final itemSlugs = {for (final i in widget.snapshot!.items) i.id: i.slug};
+      final error = await saveManualEdit(
+        widget.repo,
         widget.world.id,
-        NewCharacter(
-          title: title,
-          description: _description.text.trim(),
-          role: _role,
-          locationId: _locationId,
-          loot: loot,
-          level: stats!.$1,
-          hp: stats.$2,
-          attack: stats.$3,
-        ),
+        widget.snapshot!,
+        editCharacter(widget.world.id, widget.editing!, now, itemSlugs),
       );
+      if (!mounted) return;
+      if (error == null) {
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          _busy = false;
+          _error = error;
+        });
+      }
+      return;
+    }
+    try {
+      await widget.repo.createCharacter(widget.world.id, now);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
@@ -120,6 +171,29 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
           _error = 'Не удалось сохранить: $e';
         });
       }
+    }
+  }
+
+  Future<void> _delete() async {
+    final e = widget.editing!;
+    setState(() => _busy = true);
+    final error = await deleteManually(
+      widget.repo,
+      widget.world.id,
+      widget.snapshot!,
+      type: 'character',
+      id: e.id,
+      slug: e.slug,
+      title: e.title,
+    );
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() {
+        _busy = false;
+        _error = error;
+      });
     }
   }
 
@@ -171,7 +245,18 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Новый персонаж')),
+      appBar: AppBar(
+        title: Text(_editing ? 'Изменить персонажа' : 'Новый персонаж'),
+        actions: [
+          if (_editing)
+            IconButton(
+              key: const Key('object-delete'),
+              tooltip: 'Удалить',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _busy ? null : _delete,
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -196,7 +281,9 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
                   key: Key('character-role-${r.name}'),
                   label: Text(r.label),
                   selected: _role == r,
-                  onSelected: (_) => setState(() => _role = r),
+                  onSelected: _editing
+                      ? null
+                      : (_) => setState(() => _role = r),
                 ),
             ],
           ),
@@ -243,7 +330,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
           FilledButton(
             key: const Key('character-save'),
             onPressed: _busy ? null : _save,
-            child: const Text('Создать'),
+            child: Text(_editing ? 'Сохранить' : 'Создать'),
           ),
         ],
       ),

@@ -1,14 +1,29 @@
 import 'package:flutter/material.dart';
 
+import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'content_repo.dart';
 import 'location.dart';
+import 'manual_edit.dart';
+import 'manual_save.dart';
 
 class NewLocationScreen extends StatefulWidget {
-  const NewLocationScreen({super.key, required this.world, required this.repo});
+  const NewLocationScreen({
+    super.key,
+    required this.world,
+    required this.repo,
+    this.editing,
+    this.snapshot,
+  });
 
   final World world;
   final ContentRepo repo;
+
+  /// Не null — форма правит существующую локацию, а не создаёт новую.
+  final Location? editing;
+
+  /// Мир на момент открытия формы — нужен для сохранения правки.
+  final WorldSnapshot? snapshot;
 
   @override
   State<NewLocationScreen> createState() => _NewLocationScreenState();
@@ -17,12 +32,25 @@ class NewLocationScreen extends StatefulWidget {
 class _NewLocationScreenState extends State<NewLocationScreen> {
   final _title = TextEditingController();
   final _description = TextEditingController();
-  late RangeValues _levels = RangeValues(
-    widget.world.levelMin.toDouble(),
-    widget.world.levelMax.toDouble(),
-  );
+  late RangeValues _levels;
   bool _busy = false;
   String? _error;
+
+  bool get _editing => widget.editing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.editing;
+    _levels = RangeValues(
+      (e?.levelMin ?? widget.world.levelMin).toDouble(),
+      (e?.levelMax ?? widget.world.levelMax).toDouble(),
+    );
+    if (e != null) {
+      _title.text = e.title;
+      _description.text = e.description;
+    }
+  }
 
   @override
   void dispose() {
@@ -41,16 +69,32 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
       _busy = true;
       _error = null;
     });
-    try {
-      await widget.repo.createLocation(
+    final now = NewLocation(
+      title: title,
+      description: _description.text.trim(),
+      levelMin: _levels.start.round(),
+      levelMax: _levels.end.round(),
+    );
+    if (_editing) {
+      final error = await saveManualEdit(
+        widget.repo,
         widget.world.id,
-        NewLocation(
-          title: title,
-          description: _description.text.trim(),
-          levelMin: _levels.start.round(),
-          levelMax: _levels.end.round(),
-        ),
+        widget.snapshot!,
+        editLocation(widget.world.id, widget.editing!, now),
       );
+      if (!mounted) return;
+      if (error == null) {
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          _busy = false;
+          _error = error;
+        });
+      }
+      return;
+    }
+    try {
+      await widget.repo.createLocation(widget.world.id, now);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
@@ -62,11 +106,45 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
     }
   }
 
+  Future<void> _delete() async {
+    final e = widget.editing!;
+    setState(() => _busy = true);
+    final error = await deleteManually(
+      widget.repo,
+      widget.world.id,
+      widget.snapshot!,
+      type: 'location',
+      id: e.id,
+      slug: e.slug,
+      title: e.title,
+    );
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() {
+        _busy = false;
+        _error = error;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final w = widget.world;
     return Scaffold(
-      appBar: AppBar(title: const Text('Новая локация')),
+      appBar: AppBar(
+        title: Text(_editing ? 'Изменить локацию' : 'Новая локация'),
+        actions: [
+          if (_editing)
+            IconButton(
+              key: const Key('object-delete'),
+              tooltip: 'Удалить',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _busy ? null : _delete,
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -101,7 +179,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
           FilledButton(
             key: const Key('location-save'),
             onPressed: _busy ? null : _save,
-            child: const Text('Создать'),
+            child: Text(_editing ? 'Сохранить' : 'Создать'),
           ),
         ],
       ),

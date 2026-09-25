@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
 import 'item.dart';
 import 'location.dart';
+import 'manual_edit.dart';
+import 'manual_save.dart';
 import 'quest.dart';
 
 class NewQuestScreen extends StatefulWidget {
@@ -15,6 +18,8 @@ class NewQuestScreen extends StatefulWidget {
     required this.locations,
     required this.items,
     required this.characters,
+    this.editing,
+    this.snapshot,
   });
 
   final World world;
@@ -22,6 +27,12 @@ class NewQuestScreen extends StatefulWidget {
   final List<Location> locations;
   final List<Item> items;
   final List<Character> characters;
+
+  /// Не null — форма правит существующий квест, а не создаёт новый.
+  final Quest? editing;
+
+  /// Мир на момент открытия формы — нужен для сохранения правки.
+  final WorldSnapshot? snapshot;
 
   @override
   State<NewQuestScreen> createState() => _NewQuestScreenState();
@@ -53,6 +64,32 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
     for (final c in widget.characters)
       if (c.role == Role.npc) c,
   ];
+
+  bool get _editing => widget.editing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.editing;
+    if (e == null) return;
+    _title.text = e.title;
+    _description.text = e.description;
+    _giverId = e.giverId;
+    for (final s in _steps) {
+      s.amount.dispose();
+    }
+    _steps.clear();
+    for (final s in e.steps) {
+      final row = _StepRow()
+        ..kind = s.kind
+        ..targetId = s.targetId;
+      if (s.amount != null) row.amount.text = '${s.amount}';
+      _steps.add(row);
+    }
+    for (final id in e.rewardIds) {
+      _rewards.add(_RewardRow()..itemId = id);
+    }
+  }
 
   @override
   void dispose() {
@@ -118,17 +155,33 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
       _busy = true;
       _error = null;
     });
-    try {
-      await widget.repo.createQuest(
+    final now = NewQuest(
+      title: title,
+      description: _description.text.trim(),
+      giverId: _giverId!,
+      steps: steps,
+      rewardIds: [for (final r in _rewards) r.itemId!],
+    );
+    if (_editing) {
+      final error = await saveManualEdit(
+        widget.repo,
         widget.world.id,
-        NewQuest(
-          title: title,
-          description: _description.text.trim(),
-          giverId: _giverId!,
-          steps: steps,
-          rewardIds: [for (final r in _rewards) r.itemId!],
-        ),
+        widget.snapshot!,
+        editQuest(widget.world.id, widget.editing!, now),
       );
+      if (!mounted) return;
+      if (error == null) {
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          _busy = false;
+          _error = error;
+        });
+      }
+      return;
+    }
+    try {
+      await widget.repo.createQuest(widget.world.id, now);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
@@ -137,6 +190,29 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
           _error = 'Не удалось сохранить: $e';
         });
       }
+    }
+  }
+
+  Future<void> _delete() async {
+    final e = widget.editing!;
+    setState(() => _busy = true);
+    final error = await deleteManually(
+      widget.repo,
+      widget.world.id,
+      widget.snapshot!,
+      type: 'quest',
+      id: e.id,
+      slug: e.slug,
+      title: e.title,
+    );
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() {
+        _busy = false;
+        _error = error;
+      });
     }
   }
 
@@ -229,7 +305,18 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Новый квест')),
+      appBar: AppBar(
+        title: Text(_editing ? 'Изменить квест' : 'Новый квест'),
+        actions: [
+          if (_editing)
+            IconButton(
+              key: const Key('object-delete'),
+              tooltip: 'Удалить',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _busy ? null : _delete,
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -285,7 +372,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
           FilledButton(
             key: const Key('quest-save'),
             onPressed: _busy ? null : _save,
-            child: const Text('Создать'),
+            child: Text(_editing ? 'Сохранить' : 'Создать'),
           ),
         ],
       ),

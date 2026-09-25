@@ -6,6 +6,7 @@ import '../check/world_check.dart';
 import 'character.dart';
 import 'item.dart';
 import 'location.dart';
+import 'manual_edit.dart';
 import 'quest.dart';
 import 'slug.dart';
 
@@ -38,6 +39,9 @@ abstract class ContentRepo {
 
   /// Откат — обратный набор одной транзакцией; при конфликте база откажет.
   Future<void> revertChangeSet(String worldId, String setId);
+
+  /// Правка или удаление вручную — набором в историю, одной транзакцией.
+  Future<void> applyManualEdit(String worldId, ManualEdit edit);
 }
 
 extension WorldSnapshotLoad on ContentRepo {
@@ -192,6 +196,17 @@ class SupabaseContentRepo implements ContentRepo {
   Future<void> revertChangeSet(String worldId, String setId) => _client.rpc(
     'revert_change_set',
     params: {'p_project_id': worldId, 'p_set': setId},
+  );
+
+  @override
+  Future<void> applyManualEdit(String worldId, ManualEdit edit) => _client.rpc(
+    'apply_manual_edit',
+    params: {
+      'p_project_id': worldId,
+      'p_slug': edit.slug,
+      'p_title': edit.title,
+      'p_ops': edit.ops,
+    },
   );
 
   Future<List<String>> _slugs(String table, String worldId) async {

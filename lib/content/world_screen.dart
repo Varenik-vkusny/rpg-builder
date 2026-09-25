@@ -83,11 +83,24 @@ class _WorldScreenState extends State<WorldScreen> {
       );
 
   /// Квест в списке: выдающий, шаги по порядку, награды — строками.
-  Widget _questTile(Quest q, Map<String, String> titles) => ListTile(
+  /// Тап открывает форму квеста в режиме правки.
+  Widget _questTile(Quest q, WorldSnapshot c) => ListTile(
+    key: Key('open-${q.slug}'),
     leading: const Icon(Icons.flag),
     title: Text(q.title),
-    subtitle: Text(q.lines(titles).join('\n')),
+    subtitle: Text(q.lines(c.titles).join('\n')),
     isThreeLine: true,
+    onTap: () => _open(
+      NewQuestScreen(
+        world: widget.world,
+        repo: widget.repo,
+        locations: c.locations,
+        items: c.items,
+        characters: c.characters,
+        editing: q,
+        snapshot: c,
+      ),
+    ),
   );
 
   @override
@@ -149,9 +162,18 @@ class _WorldScreenState extends State<WorldScreen> {
                 const ListTile(subtitle: Text('Локаций пока нет')),
               for (final l in c.locations)
                 ListTile(
+                  key: Key('open-${l.slug}'),
                   leading: const Icon(Icons.place),
                   title: Text(l.title),
                   subtitle: Text('Уровни ${l.levelMin}–${l.levelMax}'),
+                  onTap: () => _open(
+                    NewLocationScreen(
+                      world: world,
+                      repo: repo,
+                      editing: l,
+                      snapshot: c,
+                    ),
+                  ),
                 ),
               const Divider(),
               _header(
@@ -164,9 +186,18 @@ class _WorldScreenState extends State<WorldScreen> {
                 const ListTile(subtitle: Text('Предметов пока нет')),
               for (final i in c.items)
                 ListTile(
+                  key: Key('open-${i.slug}'),
                   leading: const Icon(Icons.inventory_2),
                   title: Text(i.title),
                   subtitle: Text(i.summary),
+                  onTap: () => _open(
+                    NewItemScreen(
+                      world: world,
+                      repo: repo,
+                      editing: i,
+                      snapshot: c,
+                    ),
+                  ),
                 ),
               const Divider(),
               _header(
@@ -184,12 +215,23 @@ class _WorldScreenState extends State<WorldScreen> {
                 const ListTile(subtitle: Text('Персонажей пока нет')),
               for (final ch in c.characters)
                 ListTile(
+                  key: Key('open-${ch.slug}'),
                   leading: const Icon(Icons.person),
                   title: Text(ch.title),
                   subtitle: Text(
                     ch.summary(
                       {for (final l in c.locations) l.id: l.title},
                       {for (final i in c.items) i.id: i.title},
+                    ),
+                  ),
+                  onTap: () => _open(
+                    NewCharacterScreen(
+                      world: world,
+                      repo: repo,
+                      locations: c.locations,
+                      items: c.items,
+                      editing: ch,
+                      snapshot: c,
                     ),
                   ),
                 ),
@@ -208,7 +250,7 @@ class _WorldScreenState extends State<WorldScreen> {
               ),
               if (c.quests.isEmpty)
                 const ListTile(subtitle: Text('Квестов пока нет')),
-              for (final q in c.quests) _questTile(q, c.titles),
+              for (final q in c.quests) _questTile(q, c),
             ],
           );
         },
