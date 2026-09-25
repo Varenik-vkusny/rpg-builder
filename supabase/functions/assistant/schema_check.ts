@@ -17,7 +17,7 @@ const typeOk = (t: string, v: unknown): boolean => {
   return false;
 };
 
-const allowsNull = (s: Schema): boolean =>
+export const allowsNull = (s: Schema): boolean =>
   s.type === "null" || (Array.isArray(s.anyOf) && s.anyOf.some(allowsNull));
 
 /// Возвращает нормализованное значение и список ошибок по путям («ops[2].fields.kind: …»).
@@ -64,4 +64,16 @@ export function checkSchema(value: unknown, s: Schema, path = ""): { value: unkn
     return { value: out, errors };
   }
   return { value, errors: [] };
+}
+
+/// Та же схема, но поля, которые могут быть null, — необязательные. Для провайдеров, которые
+/// сами отклоняют вызов с пропущенным полем (Groq): модель их часто опускает, а сервер
+/// дописывает null сам (checkSchema).
+export function relaxNullable(s: Schema): Schema {
+  if (Array.isArray(s.anyOf)) return { ...s, anyOf: s.anyOf.map(relaxNullable) };
+  if (s.type === "array" && s.items) return { ...s, items: relaxNullable(s.items) };
+  if (s.type !== "object" || !s.properties) return s;
+  const properties = Object.fromEntries(Object.entries(s.properties as Record<string, Schema>).map(([k, v]) => [k, relaxNullable(v)]));
+  const required = (s.required ?? []).filter((k: string) => !allowsNull((s.properties as Record<string, Schema>)[k]));
+  return { ...s, properties, required };
 }
