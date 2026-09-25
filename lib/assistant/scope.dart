@@ -116,3 +116,32 @@ Map<int, List<String>> outOfScope(Plan plan, Set<String> scope) {
         i: bad,
   };
 }
+
+/// Область для исправления проблемы с объектом [objectId] (экран «Проверка мира»).
+/// Локация, квест, персонаж — сами себе область. Предмет областью быть не может —
+/// берётся тот, кто с ним связан: враг, который его роняет, или квест, где он нужен
+/// или выдаётся. Предмет ни с кем не связан (его нельзя получить) — null, область
+/// выбирает автор.
+Scope? scopeForObject(WorldSnapshot w, String objectId) {
+  for (final l in w.locations) {
+    if (l.id == objectId) return Scope(ScopeType.location, l.slug);
+  }
+  for (final q in w.quests) {
+    if (q.id == objectId) return Scope(ScopeType.quest, q.slug);
+  }
+  for (final c in w.characters) {
+    if (c.id == objectId) return Scope(ScopeType.character, c.slug);
+  }
+  for (final c in w.characters) {
+    if (c.loot.any((l) => l.itemId == objectId)) {
+      return Scope(ScopeType.character, c.slug);
+    }
+  }
+  for (final q in w.quests) {
+    if (q.rewardIds.contains(objectId) ||
+        q.steps.any((s) => s.targetId == objectId)) {
+      return Scope(ScopeType.quest, q.slug);
+    }
+  }
+  return null;
+}

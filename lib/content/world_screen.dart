@@ -115,9 +115,11 @@ class _WorldScreenState extends State<WorldScreen> {
             key: const Key('check-world'),
             tooltip: 'Проверка мира',
             icon: const Icon(Icons.fact_check),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => CheckScreen(world: world, repo: repo),
+            onPressed: () => _openChanging(
+              CheckScreen(
+                world: world,
+                repo: repo,
+                assistant: widget.assistant,
               ),
             ),
           ),

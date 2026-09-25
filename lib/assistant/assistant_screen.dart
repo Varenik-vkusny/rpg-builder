@@ -17,6 +17,8 @@ class AssistantScreen extends StatefulWidget {
     required this.snapshot,
     required this.assistant,
     required this.repo,
+    this.initialScope,
+    this.initialRequest,
   });
 
   final World world;
@@ -25,6 +27,10 @@ class AssistantScreen extends StatefulWidget {
 
   /// Куда пишется применённый или отклонённый набор изменений.
   final ContentRepo repo;
+
+  /// Заранее выбранная область и просьба — с экрана «Проверка мира» (3.8).
+  final Scope? initialScope;
+  final String? initialRequest;
 
   @override
   State<AssistantScreen> createState() => _AssistantScreenState();
@@ -45,6 +51,16 @@ class _AssistantScreenState extends State<AssistantScreen> {
 
   /// Просьба, на которую получен [_run].
   ProposeRequest? _asked;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialScope case final s?) {
+      _type = s.type;
+      _slug = s.slug;
+    }
+    _request.text = widget.initialRequest ?? '';
+  }
 
   @override
   void dispose() {

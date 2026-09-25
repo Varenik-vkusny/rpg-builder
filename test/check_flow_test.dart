@@ -53,7 +53,11 @@ void main() {
   testWidgets('ошибки квеста видны списком с числом ошибок', (t) async {
     await t.pumpWidget(
       MaterialApp(
-        home: CheckScreen(world: world, repo: _BrokenContent()),
+        home: CheckScreen(
+          world: world,
+          repo: _BrokenContent(),
+          assistant: FakeAssistant(),
+        ),
       ),
     );
     await t.pumpAndSettle();
@@ -77,7 +81,11 @@ void main() {
     );
     await t.pumpWidget(
       MaterialApp(
-        home: CheckScreen(world: world, repo: content),
+        home: CheckScreen(
+          world: world,
+          repo: content,
+          assistant: FakeAssistant(),
+        ),
       ),
     );
     await t.pumpAndSettle();
@@ -111,7 +119,11 @@ void main() {
     );
     await t.pumpWidget(
       MaterialApp(
-        home: CheckScreen(world: world, repo: content),
+        home: CheckScreen(
+          world: world,
+          repo: content,
+          assistant: FakeAssistant(),
+        ),
       ),
     );
     await t.pumpAndSettle();
