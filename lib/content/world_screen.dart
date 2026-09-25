@@ -8,7 +8,11 @@ import '../worlds/world_overview.dart';
 import '../check/check_screen.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
+import 'character.dart';
 import 'content_repo.dart';
+import 'filter_bar.dart';
+import 'filters.dart';
+import 'item.dart';
 import 'new_character_screen.dart';
 import 'new_item_screen.dart';
 import 'new_location_screen.dart';
@@ -35,6 +39,27 @@ class WorldScreen extends StatefulWidget {
 class _WorldScreenState extends State<WorldScreen> {
   late Future<WorldSnapshot> _content = _load();
   late Future<List<ChangeSetEntry>> _history = _loadHistory();
+
+  /// Фильтры списков (4.3) — живут, пока открыт мир.
+  ContentFilter _filter = const ContentFilter();
+
+  /// Раскрыты ли чипы фильтра у раздела: «items» / «characters».
+  final _filtersOpen = <String>{};
+
+  /// Кнопка «Фильтр» раздела: сколько выбрано, по нажатию — чипы.
+  Widget _filterToggle(String section, int active) => Align(
+    alignment: Alignment.centerLeft,
+    child: TextButton.icon(
+      key: Key('filter-$section'),
+      icon: const Icon(Icons.filter_list),
+      label: Text(active == 0 ? 'Фильтр' : 'Фильтр: $active'),
+      onPressed: () => setState(() {
+        _filtersOpen.contains(section)
+            ? _filtersOpen.remove(section)
+            : _filtersOpen.add(section);
+      }),
+    ),
+  );
 
   Future<WorldSnapshot> _load() => widget.repo.snapshot(widget.world.id);
   Future<List<ChangeSetEntry>> _loadHistory() =>
@@ -113,7 +138,6 @@ class _WorldScreenState extends State<WorldScreen> {
   @override
   Widget build(BuildContext context) {
     final world = widget.world;
-    final repo = widget.repo;
     return Scaffold(
       appBar: AppBar(
         title: Text(world.title),
@@ -158,109 +182,182 @@ class _WorldScreenState extends State<WorldScreen> {
                 onCheck: _openCheck,
                 onHistory: _openHistory,
               ),
-              _header(
-                'Локации',
-                const Key('new-location'),
-                'Новая локация',
-                NewLocationScreen(world: world, repo: repo),
-              ),
-              if (c.locations.isEmpty)
-                const ListTile(subtitle: Text('Локаций пока нет')),
-              for (final l in c.locations)
-                ListTile(
-                  key: Key('open-${l.slug}'),
-                  leading: const Icon(Icons.place),
-                  title: Text(l.title),
-                  subtitle: Text('Уровни ${l.levelMin}–${l.levelMax}'),
-                  onTap: () => _open(
-                    NewLocationScreen(
-                      world: world,
-                      repo: repo,
-                      editing: l,
-                      snapshot: c,
-                    ),
-                  ),
-                ),
+              ..._locations(c),
               const Divider(),
-              _header(
-                'Предметы',
-                const Key('new-item'),
-                'Новый предмет',
-                NewItemScreen(world: world, repo: repo),
-              ),
-              if (c.items.isEmpty)
-                const ListTile(subtitle: Text('Предметов пока нет')),
-              for (final i in c.items)
-                ListTile(
-                  key: Key('open-${i.slug}'),
-                  leading: const Icon(Icons.inventory_2),
-                  title: Text(i.title),
-                  subtitle: Text(i.summary),
-                  onTap: () => _open(
-                    NewItemScreen(
-                      world: world,
-                      repo: repo,
-                      editing: i,
-                      snapshot: c,
-                    ),
-                  ),
-                ),
+              ..._items(c),
               const Divider(),
-              _header(
-                'Персонажи',
-                const Key('new-character'),
-                'Новый персонаж',
-                NewCharacterScreen(
-                  world: world,
-                  repo: repo,
-                  locations: c.locations,
-                  items: c.items,
-                ),
-              ),
-              if (c.characters.isEmpty)
-                const ListTile(subtitle: Text('Персонажей пока нет')),
-              for (final ch in c.characters)
-                ListTile(
-                  key: Key('open-${ch.slug}'),
-                  leading: const Icon(Icons.person),
-                  title: Text(ch.title),
-                  subtitle: Text(
-                    ch.summary(
-                      {for (final l in c.locations) l.id: l.title},
-                      {for (final i in c.items) i.id: i.title},
-                    ),
-                  ),
-                  onTap: () => _open(
-                    NewCharacterScreen(
-                      world: world,
-                      repo: repo,
-                      locations: c.locations,
-                      items: c.items,
-                      editing: ch,
-                      snapshot: c,
-                    ),
-                  ),
-                ),
+              ..._characters(c),
               const Divider(),
-              _header(
-                'Квесты',
-                const Key('new-quest'),
-                'Новый квест',
-                NewQuestScreen(
-                  world: world,
-                  repo: repo,
-                  locations: c.locations,
-                  items: c.items,
-                  characters: c.characters,
-                ),
-              ),
-              if (c.quests.isEmpty)
-                const ListTile(subtitle: Text('Квестов пока нет')),
-              for (final q in c.quests) _questTile(q, c),
+              ..._quests(c),
             ],
           );
         },
       ),
     );
   }
+
+  List<Widget> _locations(WorldSnapshot c) => [
+    _header(
+      'Локации',
+      const Key('new-location'),
+      'Новая локация',
+      NewLocationScreen(world: widget.world, repo: widget.repo),
+    ),
+    if (c.locations.isEmpty) const ListTile(subtitle: Text('Локаций пока нет')),
+    for (final l in c.locations)
+      ListTile(
+        key: Key('open-${l.slug}'),
+        leading: const Icon(Icons.place),
+        title: Text(l.title),
+        subtitle: Text('Уровни ${l.levelMin}–${l.levelMax}'),
+        onTap: () => _open(
+          NewLocationScreen(
+            world: widget.world,
+            repo: widget.repo,
+            editing: l,
+            snapshot: c,
+          ),
+        ),
+      ),
+  ];
+
+  /// Предметы с фильтром по редкости и виду (4.3).
+  List<Widget> _items(WorldSnapshot c) {
+    final shown = _filter.items(c.items);
+    return [
+      _header(
+        'Предметы',
+        const Key('new-item'),
+        'Новый предмет',
+        NewItemScreen(world: widget.world, repo: widget.repo),
+      ),
+      if (c.items.isNotEmpty)
+        _filterToggle('items', _filter.rarities.length + _filter.kinds.length),
+      if (c.items.isNotEmpty && _filtersOpen.contains('items')) ...[
+        FilterBar(
+          prefix: 'rarity',
+          values: Rarity.values,
+          label: (r) => r.label,
+          selected: _filter.rarities,
+          onToggle: (r) => setState(() {
+            _filter = _filter.copyWith(
+              rarities: ContentFilter.toggle(_filter.rarities, r),
+            );
+          }),
+        ),
+        const SizedBox(height: 4),
+        FilterBar(
+          prefix: 'kind',
+          values: ItemKind.values,
+          label: (k) => k.label,
+          selected: _filter.kinds,
+          onToggle: (k) => setState(() {
+            _filter = _filter.copyWith(
+              kinds: ContentFilter.toggle(_filter.kinds, k),
+            );
+          }),
+        ),
+      ],
+      if (c.items.isEmpty)
+        const ListTile(subtitle: Text('Предметов пока нет'))
+      else if (shown.isEmpty)
+        const ListTile(
+          key: Key('items-filtered-empty'),
+          subtitle: Text('Под фильтр ничего не подходит'),
+        ),
+      for (final i in shown)
+        ListTile(
+          key: Key('open-${i.slug}'),
+          leading: const Icon(Icons.inventory_2),
+          title: Text(i.title),
+          subtitle: Text(i.summary),
+          onTap: () => _open(
+            NewItemScreen(
+              world: widget.world,
+              repo: widget.repo,
+              editing: i,
+              snapshot: c,
+            ),
+          ),
+        ),
+    ];
+  }
+
+  /// Персонажи с фильтром по роли (4.3).
+  List<Widget> _characters(WorldSnapshot c) {
+    final shown = _filter.characters(c.characters);
+    return [
+      _header(
+        'Персонажи',
+        const Key('new-character'),
+        'Новый персонаж',
+        NewCharacterScreen(
+          world: widget.world,
+          repo: widget.repo,
+          locations: c.locations,
+          items: c.items,
+        ),
+      ),
+      if (c.characters.isNotEmpty)
+        _filterToggle('characters', _filter.roles.length),
+      if (c.characters.isNotEmpty && _filtersOpen.contains('characters'))
+        FilterBar(
+          prefix: 'role',
+          values: Role.values,
+          label: (r) => r.label,
+          selected: _filter.roles,
+          onToggle: (r) => setState(() {
+            _filter = _filter.copyWith(
+              roles: ContentFilter.toggle(_filter.roles, r),
+            );
+          }),
+        ),
+      if (c.characters.isEmpty)
+        const ListTile(subtitle: Text('Персонажей пока нет'))
+      else if (shown.isEmpty)
+        const ListTile(
+          key: Key('characters-filtered-empty'),
+          subtitle: Text('Под фильтр ничего не подходит'),
+        ),
+      for (final ch in shown)
+        ListTile(
+          key: Key('open-${ch.slug}'),
+          leading: const Icon(Icons.person),
+          title: Text(ch.title),
+          subtitle: Text(
+            ch.summary(
+              {for (final l in c.locations) l.id: l.title},
+              {for (final i in c.items) i.id: i.title},
+            ),
+          ),
+          onTap: () => _open(
+            NewCharacterScreen(
+              world: widget.world,
+              repo: widget.repo,
+              locations: c.locations,
+              items: c.items,
+              editing: ch,
+              snapshot: c,
+            ),
+          ),
+        ),
+    ];
+  }
+
+  List<Widget> _quests(WorldSnapshot c) => [
+    _header(
+      'Квесты',
+      const Key('new-quest'),
+      'Новый квест',
+      NewQuestScreen(
+        world: widget.world,
+        repo: widget.repo,
+        locations: c.locations,
+        items: c.items,
+        characters: c.characters,
+      ),
+    ),
+    if (c.quests.isEmpty) const ListTile(subtitle: Text('Квестов пока нет')),
+    for (final q in c.quests) _questTile(q, c),
+  ];
 }
