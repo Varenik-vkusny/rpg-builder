@@ -7,9 +7,10 @@ import { callGemini, ModelError } from "./gemini.ts";
 import { handle } from "./handler.ts";
 import { loadWorld } from "./load_world.ts";
 
-// Модель — Gemini (VISION.md, раздел 10). Сверено по документации Gemini API 24.09.2026:
-// gemini-3.8-flash — стабильная. Сменить без выкладки кода — секрет GEMINI_MODEL.
-const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
+// Модель — Gemini (VISION.md, раздел 10). Бесплатный уровень (замер 09.2026): Flash —
+// 5 запросов в минуту и 20 в день, Flash-Lite — 15 и 500. Одна просьба — до 12 вызовов модели
+// (чтение, план, исправления), поэтому Flash-Lite. Сменить без выкладки — секрет GEMINI_MODEL.
+const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.5-flash-lite";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
