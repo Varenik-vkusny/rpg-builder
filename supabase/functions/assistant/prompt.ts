@@ -8,6 +8,8 @@ export function systemPrompt(w: World, scope: Set<string>): string {
   const list = [...scope]
     .map((k) => `- ${k} — «${all.get(k)!.title}»`)
     .join("\n");
+  // Все поля объектов области сразу: модели не нужно читать их по одному (1 вызов на попытку).
+  const data = [...scope].map((k) => `${k}: ${JSON.stringify(all.get(k)!.data)}`).join("\n");
   return `Ты — ассистент правок мира RPG. Автор описывает изменение одной фразой, ты составляешь план изменений.
 В базу ты не пишешь: план увидит автор, код проверит его на копии мира, и только автор решит, применять ли.
 
@@ -16,7 +18,9 @@ export function systemPrompt(w: World, scope: Set<string>): string {
 Область правки — только эти объекты (вид:slug):
 ${list}
 Менять, удалять и упоминать можно только их и объекты, которые план сам создаёт. Остальной мир тебе не виден.
-Поля и связи объектов читай инструментами read_object и find_in_scope. Итог отдай одним вызовом propose_plan.
+Все поля и связи объектов области (ссылки — по slug):
+${data}
+Итог отдай одним вызовом propose_plan.
 
 Операции плана:
 - location, item, character, quest: create / update / delete по slug. Новый slug — латиница, цифры и «_» (ashen_drowned), не совпадает с существующими.

@@ -82,15 +82,43 @@ export function fromGemini(res: Json): ModelResponse {
 }
 
 /// Вызов Gemini по HTTP. Ключ — только из секрета функции (VISION.md, правило 9).
-export async function callGemini(apiKey: string, model: string, call: ModelCall): Promise<ModelResponse> {
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify(toGemini(call)),
-  });
-  const body = await r.json().catch(() => ({}));
-  if (!r.ok) throw new ModelError(r.status, body?.error?.message ?? r.statusText);
-  return fromGemini(body);
+/// [models] — по порядку: модель перегружена у Google (503) — берём следующую.
+/// Упёрлись в лимит в минуту (429) — ждём, сколько просит Gemini (не больше 30 с), и пробуем
+/// ту же модель ещё один раз: на бесплатном Flash лимит 5 запросов в минуту.
+export async function callGemini(
+  apiKey: string,
+  models: string[],
+  call: ModelCall,
+  wait = (ms: number) => new Promise((r) => setTimeout(r, ms)),
+): Promise<ModelResponse> {
+  let waited = false;
+  for (let i = 0; i < models.length; ) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${models[i]}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify(toGemini(call)),
+    });
+    const body = await r.json().catch(() => ({}));
+    if (r.status === 429 && !waited) {
+      waited = true;
+      await wait(Math.min(retryDelayMs(body) ?? 20_000, 30_000));
+      continue;
+    }
+    if (r.status === 503 && i + 1 < models.length) {
+      i++;
+      continue;
+    }
+    if (!r.ok) throw new ModelError(r.status, body?.error?.message ?? r.statusText);
+    return fromGemini(body);
+  }
+  throw new ModelError(500, "нет моделей");
+}
+
+/// «retryDelay»: «12s» из подробностей ошибки 429 — в миллисекундах.
+function retryDelayMs(body: Json): number | null {
+  const d = (body?.error?.details ?? []).find((x: Json) => typeof x?.retryDelay === "string");
+  const s = d ? parseFloat(d.retryDelay) : NaN;
+  return Number.isFinite(s) ? s * 1000 : null;
 }
 
 export class ModelError extends Error {

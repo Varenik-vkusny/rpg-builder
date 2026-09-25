@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { floodPlan, mines, op, scripted, toolUse } from "./fixtures_test_data.ts";
-import { handle, MAX_FIXES } from "./handler.ts";
+import { handle, MAX_FIXES, MAX_TURNS } from "./handler.ts";
 import type { Plan } from "./plan.ts";
 import { outOfScope, TOOLS } from "./plan.ts";
 import { scopeOf } from "./world.ts";
@@ -62,12 +62,12 @@ test("план: read_object вне области не отдаёт объект
   assert.doesNotMatch(toolResult, /Рынок/);
 });
 
-test("план: модель без инструмента получает напоминание, без плана за 8 ходов — 502", async () => {
+test("план: модель без инструмента получает напоминание, без плана за MAX_TURNS ходов — 502", async () => {
   const text = { stop_reason: "end_turn", content: [{ type: "text", text: "думаю" }], usage: { input_tokens: 1, output_tokens: 1 } };
-  const { deps, calls } = scripted(mines, Array.from({ length: 8 }, () => structuredClone(text)));
+  const { deps, calls } = scripted(mines, Array.from({ length: MAX_TURNS }, () => structuredClone(text)));
   const r = await handle(ask(), deps);
   assert.equal(r.status, 502);
-  assert.equal(calls.length, 8);
+  assert.equal(calls.length, MAX_TURNS);
   assert.match(String(calls[1].messages[2].content), /propose_plan/);
 });
 
@@ -174,10 +174,14 @@ test("вне области: второй раз вне области — 422, 
   assert.match(String(r.body.out_of_scope), /item:yabloko/);
 });
 
-test("план: модель читает по кругу — с 5-го хода ей оставлен только propose_plan", async () => {
-  const reads = Array.from({ length: 4 }, (_, i) => toolUse(`r${i}`, "read_object", { type: "location", slug: "shtolnya_3" }));
-  const { deps, calls } = scripted(mines, [...reads, toolUse("p", "propose_plan", floodPlan)]);
+test("план: данные области сразу в подсказке, на каждом ходу — только propose_plan", async () => {
+  const { deps, calls } = scripted(mines, [toolUse("p", "propose_plan", floodPlan)]);
   const r = await handle(ask(), deps);
   assert.equal(r.status, 200);
-  assert.deepEqual(calls.map((c) => c.only ?? "любой"), ["любой", "любой", "любой", "любой", "propose_plan"]);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].only, "propose_plan");
+  // Поля объектов области — в подсказке; объект вне области — нет.
+  assert.match(calls[0].system, /location:shtolnya_3: \{.*обвалившаяся выработка/);
+  assert.match(calls[0].system, /character:slizen: \{.*"attack":5/);
+  assert.doesNotMatch(calls[0].system, /location:rynok:/);
 });

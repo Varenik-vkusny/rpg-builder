@@ -8,9 +8,11 @@ import { handle } from "./handler.ts";
 import { loadWorld } from "./load_world.ts";
 
 // Модель — Gemini (VISION.md, раздел 10). Бесплатный уровень (замер 09.2026): Flash —
-// 5 запросов в минуту и 20 в день, Flash-Lite — 15 и 500. Одна просьба — до 12 вызовов модели
-// (чтение, план, исправления), поэтому Flash-Lite. Сменить без выкладки — секрет GEMINI_MODEL.
-const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.5-flash-lite";
+// 5 запросов в минуту и 20 в день, Flash-Lite — 15 и 500. Flash-Lite сцену не тянула
+// (живой прогон 25.09.2026), поэтому Flash: данные области сразу в подсказке, 1 вызов на
+// попытку, до 3 на сцену. Сменить без выкладки — секрет GEMINI_MODEL. Основная модель
+// перегружена у Google (503) — запасная.
+const MODELS = [Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash", "gemini-3.5-flash"];
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -35,7 +37,7 @@ Deno.serve(async (req) => {
   try {
     const reply = await handle(await req.json(), {
       loadWorld: (id) => loadWorld(db, id),
-      callModel: (call) => callGemini(apiKey, MODEL, call),
+      callModel: (call) => callGemini(apiKey, MODELS, call),
     });
     return json(reply.status, reply.body);
   } catch (e) {

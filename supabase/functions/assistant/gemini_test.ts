@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { fromGemini, toGemini } from "./gemini.ts";
+import { callGemini, fromGemini, ModelError, toGemini } from "./gemini.ts";
 import type { ModelCall } from "./handler.ts";
 import { TOOLS } from "./plan.ts";
 
@@ -68,4 +68,50 @@ test("gemini: блокировка безопасностью — отказ м�
 test("gemini: ход только с одним инструментом — allowedFunctionNames", () => {
   const g = toGemini({ system: "", tools: TOOLS, messages: [{ role: "user", content: "x" }], only: "propose_plan" });
   assert.deepEqual(g.toolConfig, { functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["propose_plan"] } });
+});
+
+/// Подменённый fetch: ответы по очереди, запоминает число вызовов.
+function fakeFetch(answers: { status: number; body: unknown }[]) {
+  let n = 0;
+  globalThis.fetch = (async () => {
+    const a = answers[n++];
+    return new Response(JSON.stringify(a.body), { status: a.status });
+  }) as typeof fetch;
+  return () => n;
+}
+const call: ModelCall = { system: "", tools: TOOLS, messages: [{ role: "user", content: "x" }] };
+const limit = { error: { message: "quota", details: [{ retryDelay: "12s" }] } };
+
+test("gemini: лимит в минуту (429) — ждём сколько просит Gemini и пробуем ещё раз", async () => {
+  const calls = fakeFetch([{ status: 429, body: limit }, { status: 200, body: res }]);
+  const waited: number[] = [];
+  const r = await callGemini("k", ["m"], call, async (ms) => { waited.push(ms); });
+  assert.equal(r.stop_reason, "tool_use");
+  assert.deepEqual(waited, [12_000]);
+  assert.equal(calls(), 2);
+});
+
+test("gemini: 429 дважды подряд — ошибка модели, третьей попытки нет", async () => {
+  const calls = fakeFetch([{ status: 429, body: limit }, { status: 429, body: limit }, { status: 200, body: res }]);
+  await assert.rejects(callGemini("k", ["m"], call, async () => {}), (e) => e instanceof ModelError && e.status === 429);
+  assert.equal(calls(), 2);
+});
+
+test("gemini: основная модель перегружена (503) — отвечает запасная", async () => {
+  const urls: string[] = [];
+  let n = 0;
+  const answers = [{ status: 503, body: { error: { message: "high demand" } } }, { status: 200, body: res }];
+  globalThis.fetch = (async (url: string) => {
+    urls.push(url);
+    const a = answers[n++];
+    return new Response(JSON.stringify(a.body), { status: a.status });
+  }) as typeof fetch;
+  const r = await callGemini("k", ["main", "spare"], call, async () => {});
+  assert.equal(r.stop_reason, "tool_use");
+  assert.deepEqual(urls.map((u) => u.split("/models/")[1].split(":")[0]), ["main", "spare"]);
+});
+
+test("gemini: перегружены все модели — ошибка 503", async () => {
+  fakeFetch([{ status: 503, body: {} }, { status: 503, body: {} }]);
+  await assert.rejects(callGemini("k", ["a", "b"], call, async () => {}), (e) => e instanceof ModelError && e.status === 503);
 });

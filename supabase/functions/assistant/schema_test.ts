@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { floodPlan, mines, scripted, toolUse } from "./fixtures_test_data.ts";
-import { handle } from "./handler.ts";
+import { handle, MAX_TURNS } from "./handler.ts";
 import { TOOLS } from "./plan.ts";
 import { checkSchema } from "./schema_check.ts";
 
@@ -68,11 +68,11 @@ test("схема: план не по схеме не уходит на теле�
 
 test("схема: модель так и не прислала план по схеме — 502, кривой план не отдан", async () => {
   const bad = { summary: "x", ops: [{ action: "explode" }] };
-  const { deps } = scripted(mines, Array.from({ length: 8 }, (_, i) => toolUse(`t${i}`, "propose_plan", bad)));
+  const { deps } = scripted(mines, Array.from({ length: MAX_TURNS }, (_, i) => toolUse(`t${i}`, "propose_plan", bad)));
   const r = await handle(ask, deps);
   assert.equal(r.status, 502);
   assert.equal(r.body.plan, undefined);
   // Что делала модель — в ответе: так видно, почему плана нет.
-  assert.match(String(r.body.error), /8 ходов: план не по схеме \(ops\[0\]\.action/);
-  assert.equal((r.body.trace as string[]).length, 8);
+  assert.match(String(r.body.error), /4 ходов: план не по схеме \(ops\[0\]\.action/);
+  assert.equal((r.body.trace as string[]).length, MAX_TURNS);
 });
