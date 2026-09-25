@@ -51,7 +51,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
       await widget.repo.revertChangeSet(widget.world.id, set.id);
       _changed = true;
-      setState(() => _data = _load());
+      setState(() {
+        _data = _load();
+      });
     } catch (e) {
       setState(() => _errors[set.id] = '$e');
     } finally {
@@ -112,6 +114,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         '${s.createdAt.minute.toString().padLeft(2, '0')}';
     return ExpansionTile(
       key: Key('history-${s.id}'),
+      maintainState: true,
       title: Text(s.summary.isEmpty ? s.request : s.summary),
       subtitle: Text(
         '${s.status.label} · $when · «${s.request}»'

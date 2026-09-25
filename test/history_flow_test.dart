@@ -40,6 +40,10 @@ void main() {
     expect(find.textContaining('Изменить · Локация'), findsOneWidget);
 
     await tapButton(t, 'revert-set-0');
+    expect(
+      find.byKey(const Key('revert-error-set-0'), skipOffstage: false),
+      findsNothing,
+    );
     expect(find.text('Откат: $flood'), findsOneWidget);
     expect(find.textContaining('Откачен'), findsOneWidget);
     expect(find.byKey(const Key('revert-set-0')), findsNothing);
