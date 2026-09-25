@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/app.dart';
 import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/assistant/change_set.dart';
+import 'package:rpg_builder/assistant/history.dart';
+import 'package:rpg_builder/assistant/plan.dart';
 import 'package:rpg_builder/assistant/plan_apply.dart';
 import 'package:rpg_builder/auth/auth_service.dart';
 import 'package:rpg_builder/check/world_check.dart';
@@ -163,25 +165,136 @@ class FakeContent implements ContentRepo {
 
   final changeSets = <FakeChangeSet>[];
 
+  /// Журнал наборов: мир до и после набора. Откат возвращает «до», если мир
+  /// с тех пор не трогали; иначе — конфликт (грубее базы: по миру целиком).
+  final journal = <FakeJournalSet>[];
+
+  /// Растёт на каждой записи в мир — так подменённая база видит «меняли после набора».
+  int version = 0;
+
   /// Как база: план на мир целиком, любая невыполнимая операция — ничего не пишется.
   @override
   Future<void> applyChangeSet(String worldId, ChangeSetDraft draft) async {
-    final (copy, results) = applyToCopy(
-      await snapshotOf(worldId),
-      draft.plan,
-    );
+    final before = await snapshotOf(worldId);
+    final (copy, results) = applyToCopy(before, draft.plan);
     final failed = results.where((r) => r.error != null);
     if (failed.isNotEmpty) throw StateError(failed.first.error!);
-    _locations[worldId] = [...copy.locations];
-    _items[worldId] = [...copy.items];
-    _characters[worldId] = [...copy.characters];
-    _quests[worldId] = [...copy.quests];
+    _restore(worldId, copy);
     changeSets.add((status: 'applied', draft: draft));
+    _log(worldId, SetStatus.applied, draft.request, draft.plan.summary, [
+      for (final r in results)
+        JournalOp(
+          action: r.op.action.name,
+          type: r.op.typeName,
+          label: _label(r.op),
+          before: {for (final c in r.changes) c.label: c.before},
+          after: {for (final c in r.changes) c.label: c.after},
+        ),
+    ], before);
   }
 
   @override
   Future<void> rejectChangeSet(String worldId, ChangeSetDraft draft) async {
     changeSets.add((status: 'rejected', draft: draft));
+    _log(worldId, SetStatus.rejected, draft.request, draft.plan.summary, [
+      for (final op in draft.plan.ops)
+        JournalOp(action: op.action.name, type: op.typeName, label: _label(op)),
+    ], null);
+  }
+
+  void _restore(String worldId, WorldSnapshot w) {
+    _locations[worldId] = [...w.locations];
+    _items[worldId] = [...w.items];
+    _characters[worldId] = [...w.characters];
+    _quests[worldId] = [...w.quests];
+    version++;
+  }
+
+  /// Подпись операции, как в базе: slug, «враг/предмет», «квест#шаг».
+  static String _label(PlanOp op) => switch (op.type) {
+    OpType.loot => '${op.character}/${op.item}',
+    OpType.questReward => '${op.quest}/${op.item}',
+    OpType.questStep => '${op.quest}#${op.position}',
+    _ => op.slug ?? '',
+  };
+
+  void _log(
+    String worldId,
+    SetStatus status,
+    String request,
+    String summary,
+    List<JournalOp> ops,
+    WorldSnapshot? before, {
+    String? revertsId,
+  }) => journal.add(
+    FakeJournalSet(
+      worldId: worldId,
+      entry: ChangeSetEntry(
+        id: 'set-${journal.length}',
+        status: status,
+        request: request,
+        summary: summary,
+        createdAt: DateTime(2026, 9, 24, 12, journal.length),
+        revertsId: revertsId,
+        ops: ops,
+      ),
+      before: before,
+      version: version,
+    ),
+  );
+
+  @override
+  Future<List<ChangeSetEntry>> history(String worldId) async => [
+    for (final s in journal.reversed)
+      if (s.worldId == worldId) s.entry,
+  ];
+
+  @override
+  Future<List<RevertConflict>> revertConflicts(
+    String worldId,
+    String setId,
+  ) async {
+    final s = journal.firstWhere((s) => s.entry.id == setId);
+    return s.version == version
+        ? []
+        : [const RevertConflict('world', 'мир', 'изменён после набора')];
+  }
+
+  @override
+  Future<void> revertChangeSet(String worldId, String setId) async {
+    final i = journal.indexWhere((s) => s.entry.id == setId);
+    final s = journal[i];
+    if (!s.entry.canRevert) {
+      throw StateError('откатить можно только применённый');
+    }
+    if ((await revertConflicts(worldId, setId)).isNotEmpty) {
+      throw StateError('конфликт отката');
+    }
+    final now = await snapshotOf(worldId);
+    _restore(worldId, s.before!);
+    journal[i] = s.reverted();
+    _log(
+      worldId,
+      SetStatus.applied,
+      s.entry.request,
+      'Откат: ${s.entry.summary}',
+      [
+        for (final op in s.entry.ops.reversed)
+          JournalOp(
+            action: switch (op.action) {
+              'create' => 'delete',
+              'delete' => 'create',
+              _ => 'update',
+            },
+            type: op.type,
+            label: op.label,
+            before: op.after,
+            after: op.before,
+          ),
+      ],
+      now,
+      revertsId: setId,
+    );
   }
 
   Future<WorldSnapshot> snapshotOf(String worldId) async => WorldSnapshot(
@@ -189,6 +302,36 @@ class FakeContent implements ContentRepo {
     items: await items(worldId),
     characters: await characters(worldId),
     quests: await quests(worldId),
+  );
+}
+
+/// Набор в журнале подменённой базы: запись истории, мир до него и номер версии после.
+class FakeJournalSet {
+  const FakeJournalSet({
+    required this.worldId,
+    required this.entry,
+    required this.before,
+    required this.version,
+  });
+
+  final String worldId;
+  final ChangeSetEntry entry;
+  final WorldSnapshot? before;
+  final int version;
+
+  FakeJournalSet reverted() => FakeJournalSet(
+    worldId: worldId,
+    entry: ChangeSetEntry(
+      id: entry.id,
+      status: SetStatus.reverted,
+      request: entry.request,
+      summary: entry.summary,
+      createdAt: entry.createdAt,
+      revertsId: entry.revertsId,
+      ops: entry.ops,
+    ),
+    before: before,
+    version: version,
   );
 }
 

@@ -28,7 +28,7 @@
 - [x] Ассистент сам исправляет план по ошибкам проверки, не больше двух раз; дальше «Применить» недоступно | flutter test --no-pub test/autofix_test.dart --name "исправлени" && bash scripts/fn-test.sh "исправлени"
 - [x] Автор применяет план — всё пишется одной транзакцией или не пишется ничего | bash -c 'set -a; . ./.env.test; flutter test --no-pub test/change_set_db_test.dart test/apply_flow_test.dart --name "применить"'
 - [x] Автор отклоняет план — в базе ничего не меняется | bash -c 'set -a; . ./.env.test; flutter test --no-pub test/change_set_db_test.dart test/apply_flow_test.dart --name "отклонить"'
-- Автор видит историю наборов изменений и откатывает любой
+- [x] Автор видит историю наборов изменений и откатывает любой; объект меняли после набора — конфликт, откат не идёт | bash -c 'set -a; . ./.env.test; flutter test --no-pub test/revert_db_test.dart test/journal_db_test.dart test/history_flow_test.dart'
 - Автор просит ассистента исправить проблему прямо с экрана «Проверка мира»
 - Сцена «штольня» проходит вживую: 6 изменений, атака 14 поймана (потолок 3 ур. = 10) и исправлена до ≤ 10, применить, откатить
 

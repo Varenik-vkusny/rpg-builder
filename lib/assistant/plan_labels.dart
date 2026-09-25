@@ -43,6 +43,12 @@ const _types = {
   OpType.questReward: 'Награда',
 };
 
+/// Заголовок операции из журнала: «Изменить · Локация «Штольня №3»».
+String journalOpTitle(String action, String type, String what) {
+  final t = opTypeByName(type);
+  return '${_actions[OpAction.values.byName(action)]} · ${t == null ? type : _types[t]} $what';
+}
+
 /// Подписи по текущему состоянию копии мира: названия берутся из [world].
 class PlanLabels {
   PlanLabels(this.world);
@@ -88,7 +94,10 @@ class PlanLabels {
       'kind' => ItemKind.values.byName(raw as String).label,
       'rarity' => Rarity.values.byName(raw as String).label,
       'role' => Role.values.byName(raw as String).label,
-      'chance' => LootDrop(itemId: '', chance: raw as double).chanceLabel,
+      'chance' => LootDrop(
+        itemId: '',
+        chance: (raw as num).toDouble(),
+      ).chanceLabel,
       _ => '$raw',
     };
   }

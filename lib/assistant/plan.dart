@@ -15,6 +15,9 @@ const _typeNames = {
   'quest_reward': OpType.questReward,
 };
 
+/// Вид операции по имени из журнала или функции («quest_step»); неизвестное — null.
+OpType? opTypeByName(String name) => _typeNames[name];
+
 /// Одна операция плана. [fields] — только заданные поля (null в плане = «не задаю»).
 class PlanOp {
   const PlanOp({

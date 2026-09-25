@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../assistant/assistant_screen.dart';
 import '../assistant/assistant_service.dart';
+import '../assistant/history_screen.dart';
 import '../check/check_screen.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
@@ -45,25 +46,29 @@ class _WorldScreenState extends State<WorldScreen> {
     }
   }
 
-  /// Ассистент на текущем снимке мира; вернулся с изменениями — перечитать мир.
-  Future<void> _openAssistant() async {
-    final snapshot = await _content;
-    if (!mounted) return;
-    final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => AssistantScreen(
-          world: widget.world,
-          snapshot: snapshot,
-          assistant: widget.assistant,
-          repo: widget.repo,
-        ),
-      ),
-    );
+  /// Экран, после которого мир мог поменяться: вернулся с true — перечитать мир.
+  Future<void> _openChanging(Widget screen) async {
+    final changed = await Navigator.of(context)
+        .push<bool>(MaterialPageRoute(builder: (_) => screen));
     if (changed == true) {
       setState(() {
         _content = _load();
       });
     }
+  }
+
+  /// Ассистент на текущем снимке мира.
+  Future<void> _openAssistant() async {
+    final snapshot = await _content;
+    if (!mounted) return;
+    await _openChanging(
+      AssistantScreen(
+        world: widget.world,
+        snapshot: snapshot,
+        assistant: widget.assistant,
+        repo: widget.repo,
+      ),
+    );
   }
 
   Widget _header(String title, Key addKey, String tooltip, Widget form) =>
@@ -98,6 +103,13 @@ class _WorldScreenState extends State<WorldScreen> {
             tooltip: 'Ассистент',
             icon: const Icon(Icons.auto_awesome),
             onPressed: _openAssistant,
+          ),
+          IconButton(
+            key: const Key('history-open'),
+            tooltip: 'История изменений',
+            icon: const Icon(Icons.history),
+            onPressed: () =>
+                _openChanging(HistoryScreen(world: world, repo: repo)),
           ),
           IconButton(
             key: const Key('check-world'),

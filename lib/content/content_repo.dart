@@ -1,6 +1,7 @@
 import 'package:supabase/supabase.dart';
 
 import '../assistant/change_set.dart';
+import '../assistant/history.dart';
 import '../check/world_check.dart';
 import 'character.dart';
 import 'item.dart';
@@ -28,6 +29,15 @@ abstract class ContentRepo {
 
   /// Отклонённый план: мир не меняется, набор пишется в журнал как rejected.
   Future<void> rejectChangeSet(String worldId, ChangeSetDraft draft);
+
+  /// История наборов мира, новые сверху, с операциями «было → стало».
+  Future<List<ChangeSetEntry>> history(String worldId);
+
+  /// Что помешает откатить набор: объекты, которые меняли после него.
+  Future<List<RevertConflict>> revertConflicts(String worldId, String setId);
+
+  /// Откат — обратный набор одной транзакцией; при конфликте база откажет.
+  Future<void> revertChangeSet(String worldId, String setId);
 }
 
 extension WorldSnapshotLoad on ContentRepo {
@@ -152,6 +162,37 @@ class SupabaseContentRepo implements ContentRepo {
   @override
   Future<void> rejectChangeSet(String worldId, ChangeSetDraft draft) =>
       _client.rpc('reject_change_set', params: draft.toParams(worldId));
+
+  @override
+  Future<List<ChangeSetEntry>> history(String worldId) async {
+    final rows = await _client
+        .from('change_sets')
+        .select('*, change_ops(*)')
+        .eq('project_id', worldId)
+        .order('created_at', ascending: false);
+    return rows.map(ChangeSetEntry.fromRow).toList();
+  }
+
+  @override
+  Future<List<RevertConflict>> revertConflicts(
+    String worldId,
+    String setId,
+  ) async {
+    final rows = await _client.rpc(
+      'change_set_conflicts',
+      params: {'p_set': setId},
+    );
+    return [
+      for (final r in rows as List)
+        RevertConflict.fromRow(r as Map<String, dynamic>),
+    ];
+  }
+
+  @override
+  Future<void> revertChangeSet(String worldId, String setId) => _client.rpc(
+    'revert_change_set',
+    params: {'p_project_id': worldId, 'p_set': setId},
+  );
 
   Future<List<String>> _slugs(String table, String worldId) async {
     final rows = await _client

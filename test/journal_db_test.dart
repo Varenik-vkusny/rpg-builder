@@ -135,7 +135,10 @@ void main() {
         ),
       ),
     );
-    expect(await lastOps(), ['delete loot krot/kirka', 'delete character krot']);
+    expect(await lastOps(), [
+      'delete loot krot/kirka',
+      'delete character krot',
+    ]);
     final loot = await a
         .from('change_ops')
         .select('before')
@@ -171,10 +174,7 @@ void main() {
   });
 
   test('журнал: враг без добычи роль сменить может', () async {
-    await a
-        .from('loot')
-        .delete()
-        .eq('project_id', world.id);
+    await a.from('loot').delete().eq('project_id', world.id);
     await a
         .from('characters')
         .update({'role': 'npc'})
