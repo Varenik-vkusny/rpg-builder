@@ -44,7 +44,9 @@ export function toGemini(call: ModelCall): Json {
       })),
     }],
     // Каждый ход — вызов инструмента: чтение или итоговый план.
-    toolConfig: { functionCallingConfig: { mode: "ANY" } },
+    toolConfig: {
+      functionCallingConfig: { mode: "ANY", ...(call.only ? { allowedFunctionNames: [call.only] } : {}) },
+    },
   };
 }
 

@@ -11,6 +11,9 @@ import { checkSchema } from "./schema_check.ts";
 export const MAX_FIXES = 2;
 /// Ходов модели внутри одного запроса: чтение объектов и сам план.
 export const MAX_TURNS = 8;
+/// С этого хода (с нуля) модели остаётся один инструмент — propose_plan: слабая модель
+/// иначе читает объекты по кругу и плана не отдаёт (живой прогон на Flash-Lite, 25.09.2026).
+export const FORCE_PLAN_FROM = 4;
 /// Сколько раз модель может предложить план с операциями вне области, прежде чем
 /// функция откажет (VISION.md, правило 5).
 export const MAX_OUT_OF_SCOPE = 2;
@@ -41,6 +44,8 @@ export interface ModelCall {
   system: string;
   tools: typeof TOOLS;
   messages: { role: "user" | "assistant"; content: unknown }[];
+  /// Только этот инструмент на этом ходу (нет — любой).
+  only?: string;
 }
 
 export interface Deps {
@@ -135,7 +140,10 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
   };
   const usage = { input_tokens: 0, output_tokens: 0 };
   let outside = 0;
+  // Что модель делала по ходам — уходит в ответ, если плана так и не будет.
+  const trace: string[] = [];
   for (let turn = 0; turn < MAX_TURNS; turn++) {
+    if (turn >= FORCE_PLAN_FROM) call.only = "propose_plan";
     const res = await deps.callModel(call);
     usage.input_tokens += res.usage.input_tokens;
     usage.output_tokens += res.usage.output_tokens;
@@ -148,6 +156,7 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
       // Схему держит сервер: модель может прислать план не по форме.
       const shape = checkSchema(proposed.input, PLAN_SCHEMA);
       if (shape.errors.length > 0) {
+        trace.push(`план не по схеме (${shape.errors[0]})`);
         call.messages.push(rejectPlan(uses, proposed, [
           "План не по схеме propose_plan:", ...shape.errors.slice(0, 20), "Отдай план заново строго по схеме.",
         ]));
@@ -157,6 +166,7 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
       const bad = outOfScope(plan, scope);
       if (bad.length === 0) return { status: 200, body: { plan, usage } };
       // Вне области: план отклонён. Модель узнаёт почему и может исправить.
+      trace.push(`план вне области (${bad[0]})`);
       if (++outside >= MAX_OUT_OF_SCOPE) return fail(422, "операции вне области", { out_of_scope: bad, usage });
       call.messages.push(rejectPlan(uses, proposed, [
         "План отклонён — операции вне области:", ...bad, "Предложи план заново только в границах области.",
@@ -164,9 +174,11 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
       continue;
     }
     if (uses.length === 0) {
+      trace.push(`без инструмента (${res.stop_reason ?? "?"})`);
       call.messages.push({ role: "user", content: "Отдай итог инструментом propose_plan." });
       continue;
     }
+    trace.push(uses.map((u) => u.name).join("+"));
     call.messages.push({
       role: "user",
       content: uses.map((u) => ({
@@ -176,5 +188,5 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
       })),
     });
   }
-  return fail(502, "модель не предложила план", { usage });
+  return fail(502, `модель не предложила план за ${MAX_TURNS} ходов: ${trace.join("; ")}`, { usage, trace });
 }

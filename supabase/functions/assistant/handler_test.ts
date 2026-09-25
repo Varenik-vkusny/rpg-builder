@@ -173,3 +173,11 @@ test("вне области: второй раз вне области — 422, 
   assert.equal(calls.length, 2);
   assert.match(String(r.body.out_of_scope), /item:yabloko/);
 });
+
+test("план: модель читает по кругу — с 5-го хода ей оставлен только propose_plan", async () => {
+  const reads = Array.from({ length: 4 }, (_, i) => toolUse(`r${i}`, "read_object", { type: "location", slug: "shtolnya_3" }));
+  const { deps, calls } = scripted(mines, [...reads, toolUse("p", "propose_plan", floodPlan)]);
+  const r = await handle(ask(), deps);
+  assert.equal(r.status, 200);
+  assert.deepEqual(calls.map((c) => c.only ?? "любой"), ["любой", "любой", "любой", "любой", "propose_plan"]);
+});

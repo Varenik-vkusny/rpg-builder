@@ -72,4 +72,7 @@ test("схема: модель так и не прислала план по с�
   const r = await handle(ask, deps);
   assert.equal(r.status, 502);
   assert.equal(r.body.plan, undefined);
+  // Что делала модель — в ответе: так видно, почему плана нет.
+  assert.match(String(r.body.error), /8 ходов: план не по схеме \(ops\[0\]\.action/);
+  assert.equal((r.body.trace as string[]).length, 8);
 });

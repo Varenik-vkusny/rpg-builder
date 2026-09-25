@@ -64,3 +64,8 @@ test("gemini: блокировка безопасностью — отказ м�
   assert.equal(fromGemini({ candidates: [{ finishReason: "SAFETY" }] }).stop_reason, "refusal");
   assert.equal(fromGemini({ promptFeedback: { blockReason: "OTHER" } }).stop_reason, "refusal");
 });
+
+test("gemini: ход только с одним инструментом — allowedFunctionNames", () => {
+  const g = toGemini({ system: "", tools: TOOLS, messages: [{ role: "user", content: "x" }], only: "propose_plan" });
+  assert.deepEqual(g.toolConfig, { functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["propose_plan"] } });
+});
