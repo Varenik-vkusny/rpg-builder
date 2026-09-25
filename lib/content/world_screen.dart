@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../assistant/assistant_screen.dart';
 import '../assistant/assistant_service.dart';
+import '../assistant/history.dart';
 import '../assistant/history_screen.dart';
+import '../worlds/world_overview.dart';
 import '../check/check_screen.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
@@ -32,36 +34,41 @@ class WorldScreen extends StatefulWidget {
 
 class _WorldScreenState extends State<WorldScreen> {
   late Future<WorldSnapshot> _content = _load();
+  late Future<List<ChangeSetEntry>> _history = _loadHistory();
 
   Future<WorldSnapshot> _load() => widget.repo.snapshot(widget.world.id);
+  Future<List<ChangeSetEntry>> _loadHistory() =>
+      widget.repo.history(widget.world.id);
 
-  /// Открывает форму создания; после сохранения перечитывает мир.
-  Future<void> _open(Widget form) async {
-    final created = await Navigator.of(context)
-        .push<bool>(MaterialPageRoute(builder: (_) => form));
-    if (created == true) {
-      setState(() {
-        _content = _load();
-      });
-    }
-  }
-
-  /// Экран, после которого мир мог поменяться: вернулся с true — перечитать мир.
-  Future<void> _openChanging(Widget screen) async {
+  /// Форма или экран, после которого мир мог поменяться: вернулся с true —
+  /// перечитать мир и обзор.
+  Future<void> _open(Widget screen) async {
     final changed = await Navigator.of(context)
         .push<bool>(MaterialPageRoute(builder: (_) => screen));
     if (changed == true) {
       setState(() {
         _content = _load();
+        _history = _loadHistory();
       });
     }
   }
+
+  void _openHistory() =>
+      _open(HistoryScreen(world: widget.world, repo: widget.repo));
+
+  void _openCheck() => _open(
+    CheckScreen(
+      world: widget.world,
+      repo: widget.repo,
+      assistant: widget.assistant,
+    ),
+  );
 
   /// Ассистент на текущем снимке мира.
   Future<void> _openAssistant() async {
     final snapshot = await _content;
     if (!mounted) return;
-    await _openChanging(
+    await _open(
       AssistantScreen(
         world: widget.world,
         snapshot: snapshot,
@@ -121,25 +128,18 @@ class _WorldScreenState extends State<WorldScreen> {
             key: const Key('history-open'),
             tooltip: 'История изменений',
             icon: const Icon(Icons.history),
-            onPressed: () =>
-                _openChanging(HistoryScreen(world: world, repo: repo)),
+            onPressed: _openHistory,
           ),
           IconButton(
             key: const Key('check-world'),
             tooltip: 'Проверка мира',
             icon: const Icon(Icons.fact_check),
-            onPressed: () => _openChanging(
-              CheckScreen(
-                world: world,
-                repo: repo,
-                assistant: widget.assistant,
-              ),
-            ),
+            onPressed: _openCheck,
           ),
         ],
       ),
-      body: FutureBuilder<WorldSnapshot>(
-        future: _content,
+      body: FutureBuilder(
+        future: (_content, _history).wait,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
@@ -149,9 +149,15 @@ class _WorldScreenState extends State<WorldScreen> {
               child: Text('Не удалось загрузить мир: ${snap.error}'),
             );
           }
-          final c = snap.data!;
+          final (c, history) = snap.data!;
           return ListView(
             children: [
+              WorldOverview(
+                world: c,
+                history: history,
+                onCheck: _openCheck,
+                onHistory: _openHistory,
+              ),
               _header(
                 'Локации',
                 const Key('new-location'),
