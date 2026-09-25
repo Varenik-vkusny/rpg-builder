@@ -54,7 +54,7 @@ test("openai: запрос — система, просьба, ход модел
   assert.deepEqual(o.tools[0].function.parameters.required, ["summary", "ops"]);
   const free = toOpenAI(call, "m");
   assert.equal(free.tool_choice, "required");
-  assert.equal(free.tools.length, 3);
+  assert.equal(free.tools.length, 4);
 });
 
 test("openai: фильтр содержимого — отказ модели", () => {
@@ -92,4 +92,15 @@ test("openai: ключ в заголовке; 429 — пауза из retry-afte
 test("openai: ошибка без запасной — ModelError с кодом", async () => {
   fakeFetch([{ status: 401, body: { error: { message: "bad key" } } }]);
   await assert.rejects(callOpenAI("u", "k", ["m"], call, async () => {}), (e) => e instanceof ModelError && e.status === 401);
+});
+
+test("openai: 429 с паузой меньше 2 с — ждём 2 с (лимит токенов в минуту не успевает освободиться)", async () => {
+  fakeFetch([
+    { status: 429, body: {}, headers: { "retry-after": "0.3" } },
+    { status: 429, body: {}, headers: { "retry-after": "1" } },
+    { status: 200, body: res },
+  ]);
+  const waited: number[] = [];
+  await callOpenAI("u", "k", ["m"], call, async (ms) => { waited.push(ms); });
+  assert.deepEqual(waited, [2_000, 2_000]);
 });

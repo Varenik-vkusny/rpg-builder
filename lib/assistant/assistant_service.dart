@@ -19,8 +19,40 @@ class Scope {
   final String slug;
 }
 
+/// Ответ автора на вопрос ассистента.
+class Answer {
+  const Answer(this.question, this.answer);
+  final String question;
+  final String answer;
+}
+
+/// Вопрос ассистента: просьба спорит с правилами мира или неоднозначна.
+/// Первый вариант — тот, что ассистент советует; свой ответ автор может вписать всегда.
+class AuthorQuestion {
+  const AuthorQuestion(this.question, this.options);
+  final String question;
+  final List<({String label, String description})> options;
+
+  factory AuthorQuestion.fromJson(Map<String, dynamic> j) =>
+      AuthorQuestion(j['question'] as String, [
+        for (final o in j['options'] as List)
+          (
+            label: (o as Map)['label'] as String,
+            description: o['description'] as String,
+          ),
+      ]);
+}
+
+/// Ассистент не составит план, пока автор не ответит на [question].
+class QuestionAsked implements Exception {
+  const QuestionAsked(this.question);
+  final AuthorQuestion question;
+  @override
+  String toString() => 'Ассистент спрашивает: ${question.question}';
+}
+
 /// Просьба к ассистенту. [attempt] 0 — первая; 1–2 — исправление [previous]
-/// по списку [problems] проверки на копии.
+/// по списку [problems] проверки на копии. [answers] — ответы автора на вопросы ассистента.
 class ProposeRequest {
   const ProposeRequest({
     required this.worldId,
@@ -29,6 +61,7 @@ class ProposeRequest {
     this.attempt = 0,
     this.previous,
     this.problems = const [],
+    this.answers = const [],
   });
 
   final String worldId;
@@ -37,6 +70,7 @@ class ProposeRequest {
   final int attempt;
   final Plan? previous;
   final List<String> problems;
+  final List<Answer> answers;
 
   Map<String, dynamic> toJson() => {
     'project_id': worldId,
@@ -45,6 +79,9 @@ class ProposeRequest {
     'attempt': attempt,
     'previous_plan': previous?.toJson(),
     'problems': problems,
+    'answers': [
+      for (final a in answers) {'question': a.question, 'answer': a.answer},
+    ],
   };
 }
 
@@ -66,6 +103,7 @@ class AssistantException implements Exception {
 
 /// Ассистент правок. Ключа API в приложении нет — только серверная функция.
 abstract class AssistantService {
+  /// План или [QuestionAsked], если ассистенту нужен ответ автора.
   Future<Proposal> propose(ProposeRequest request);
 }
 
@@ -81,6 +119,9 @@ class SupabaseAssistantService implements AssistantService {
         body: request.toJson(),
       );
       final body = res.data as Map<String, dynamic>;
+      if (body['question'] case final Map<String, dynamic> q) {
+        throw QuestionAsked(AuthorQuestion.fromJson(q));
+      }
       final usage = body['usage'] as Map<String, dynamic>? ?? const {};
       return Proposal(
         Plan.fromJson(body['plan'] as Map<String, dynamic>),
@@ -90,7 +131,10 @@ class SupabaseAssistantService implements AssistantService {
     } on FunctionException catch (e) {
       final details = e.details;
       final text = details is Map ? details['error'] : details;
-      throw AssistantException('Ассистент не ответил: ${text ?? e.status}');
+      // Что именно вышло за область — автору видно, о чём переспросить.
+      final outside = details is Map ? details['out_of_scope'] : null;
+      final why = outside is List ? ': ${outside.join('; ')}' : '';
+      throw AssistantException('Ассистент не ответил: ${text ?? e.status}$why');
     }
   }
 }

@@ -7,6 +7,7 @@ import 'assistant_service.dart';
 import 'change_set.dart';
 import 'assistant_flow.dart';
 import 'plan_view.dart';
+import 'question_dialog.dart';
 
 /// Ассистент: автор выбирает область и пишет просьбу — получает план.
 /// В базу отсюда не пишется ничего.
@@ -95,24 +96,42 @@ class _AssistantScreenState extends State<AssistantScreen> {
       _run = null;
     });
     try {
-      final asked = ProposeRequest(
-        worldId: widget.world.id,
-        scope: Scope(_type, _slug!),
-        request: text,
-      );
-      final run = await runAssistant(
-        assistant: widget.assistant,
-        world: widget.snapshot,
-        request: asked,
-        onAttempt: (n) {
-          if (mounted) setState(() => _attempt = n);
-        },
-      );
-      if (mounted) {
-        setState(() {
-          _run = run;
-          _asked = asked;
-        });
+      // Ассистент может сначала спросить автора — ответы копятся и уходят с просьбой.
+      var answers = <Answer>[];
+      while (true) {
+        final asked = ProposeRequest(
+          worldId: widget.world.id,
+          scope: Scope(_type, _slug!),
+          request: text,
+          answers: answers,
+        );
+        try {
+          final run = await runAssistant(
+            assistant: widget.assistant,
+            world: widget.snapshot,
+            request: asked,
+            onAttempt: (n) {
+              if (mounted) setState(() => _attempt = n);
+            },
+          );
+          if (mounted) {
+            setState(() {
+              _run = run;
+              _asked = asked;
+            });
+          }
+          return;
+        } on QuestionAsked catch (q) {
+          if (!mounted) return;
+          final answer = await askAuthor(context, q.question);
+          if (answer == null) {
+            if (mounted) {
+              setState(() => _error = 'Без ответа ассистент план не составит');
+            }
+            return;
+          }
+          answers = [...answers, Answer(q.question.question, answer)];
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');

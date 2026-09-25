@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { callGemini, fromGemini, ModelError, toGemini } from "./gemini.ts";
+import { RATE_WAITS } from "./model_http.ts";
 import type { ModelCall } from "./handler.ts";
 import { TOOLS } from "./plan.ts";
 
@@ -41,8 +42,8 @@ test("gemini: ход модели уходит обратно как был — 
   assert.deepEqual(g.contents[1], turn);
   assert.deepEqual(g.contents[2].parts[0].functionResponse, { id: "fc1", name: "read_object", response: { result: "{\"title\":\"Штольня\"}" } });
   assert.deepEqual(g.toolConfig, { functionCallingConfig: { mode: "ANY" } });
-  assert.deepEqual(g.tools[0].functionDeclarations.map((f: { name: string }) => f.name), ["find_in_scope", "read_object", "propose_plan"]);
-  assert.equal(g.tools[0].functionDeclarations[2].parametersJsonSchema, TOOLS[2].input_schema);
+  assert.deepEqual(g.tools[0].functionDeclarations.map((f: { name: string }) => f.name), ["find_in_scope", "read_object", "ask_author", "propose_plan"]);
+  assert.equal(g.tools[0].functionDeclarations[3].parametersJsonSchema, TOOLS[3].input_schema);
 });
 
 test("gemini: ошибка инструмента уходит как error; вызов без id — без id и обратно", () => {
@@ -91,10 +92,10 @@ test("gemini: лимит в минуту (429) — ждём сколько пр�
   assert.equal(calls(), 2);
 });
 
-test("gemini: 429 дважды подряд — ошибка модели, третьей попытки нет", async () => {
-  const calls = fakeFetch([{ status: 429, body: limit }, { status: 429, body: limit }, { status: 200, body: res }]);
+test("gemini: 429 больше RATE_WAITS раз подряд — ошибка модели, дальше не ждём", async () => {
+  const calls = fakeFetch([...Array(RATE_WAITS + 1).fill({ status: 429, body: limit }), { status: 200, body: res }]);
   await assert.rejects(callGemini("k", ["m"], call, async () => {}), (e) => e instanceof ModelError && e.status === 429);
-  assert.equal(calls(), 2);
+  assert.equal(calls(), RATE_WAITS + 1);
 });
 
 test("gemini: основная модель перегружена (503) — отвечает запасная", async () => {

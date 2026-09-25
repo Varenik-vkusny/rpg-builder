@@ -7,7 +7,7 @@ import { floodPlan, mines, op, scripted, toolUse } from "./fixtures_test_data.ts
 import { handle, MAX_FIXES, MAX_TURNS } from "./handler.ts";
 import type { Plan } from "./plan.ts";
 import { outOfScope, TOOLS } from "./plan.ts";
-import { scopeOf } from "./world.ts";
+import { objectsByKey, scopeOf } from "./world.ts";
 
 const ask = (extra: Record<string, unknown> = {}) => ({
   project_id: "w1",
@@ -33,8 +33,8 @@ test("план: модель читает область и возвращает
   assert.match(toolResult, /обвалившаяся выработка/);
 });
 
-test("план: у модели только чтение и propose_plan", () => {
-  assert.deepEqual(TOOLS.map((t) => t.name), ["find_in_scope", "read_object", "propose_plan"]);
+test("план: у модели только чтение, вопрос автору и propose_plan", () => {
+  assert.deepEqual(TOOLS.map((t) => t.name), ["find_in_scope", "read_object", "ask_author", "propose_plan"]);
 });
 
 test("план: область — объект и связанное до двух связей", async () => {
@@ -174,14 +174,75 @@ test("вне области: второй раз вне области — 422, 
   assert.match(String(r.body.out_of_scope), /item:yabloko/);
 });
 
-test("план: данные области сразу в подсказке, на каждом ходу — только propose_plan", async () => {
+test("план: данные области сразу в подсказке, чтения нет — только вопрос автору или план", async () => {
   const { deps, calls } = scripted(mines, [toolUse("p", "propose_plan", floodPlan)]);
   const r = await handle(ask(), deps);
   assert.equal(r.status, 200);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].only, "propose_plan");
+  assert.deepEqual(calls[0].tools.map((t) => t.name), ["ask_author", "propose_plan"]);
   // Поля объектов области — в подсказке; объект вне области — нет.
   assert.match(calls[0].system, /location:shtolnya_3: \{.*обвалившаяся выработка/);
   assert.match(calls[0].system, /character:slizen: \{.*"attack":5/);
   assert.doesNotMatch(calls[0].system, /location:rynok:/);
+});
+
+const question = {
+  question: "Вы просили атаку 14, но у врага 3 уровня потолок 10.",
+  options: [
+    { label: "Поставить 10", description: "баланс в норме" },
+    { label: "Оставить 14", description: "будет предупреждение" },
+  ],
+};
+
+test("вопрос: просьба спорит с правилами — модель спрашивает, вопрос уходит автору, плана нет", async () => {
+  const { deps } = scripted(mines, [toolUse("q", "ask_author", question)]);
+  const r = await handle(ask(), deps);
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.question, question);
+  assert.equal(r.body.plan, undefined);
+});
+
+test("вопрос: вариантов не 2–4 — модель получает ошибку и спрашивает заново", async () => {
+  const one = { ...question, options: question.options.slice(0, 1) };
+  const { deps, calls } = scripted(mines, [toolUse("q1", "ask_author", one), toolUse("q2", "ask_author", question)]);
+  const r = await handle(ask(), deps);
+  assert.deepEqual(r.body.question, question);
+  const reply = (calls[1].messages[2].content as { is_error: boolean; content: string }[])[0];
+  assert.equal(reply.is_error, true);
+  assert.match(reply.content, /вариантов 1, нужно 2–4/);
+});
+
+test("вопрос: ответы автора — в просьбе к модели; после двух вопросов и в исправлении — только план", async () => {
+  const answers = [{ question: question.question, answer: "Поставить 10" }];
+  const once = scripted(mines, [toolUse("p", "propose_plan", floodPlan)]);
+  await handle(ask({ answers }), once.deps);
+  assert.match(String(once.calls[0].messages[0].content), /Ответ: Поставить 10/);
+  assert.deepEqual(once.calls[0].tools.map((t) => t.name), ["ask_author", "propose_plan"]);
+
+  const twice = scripted(mines, [toolUse("p", "propose_plan", floodPlan)]);
+  await handle(ask({ answers: [...answers, ...answers] }), twice.deps);
+  assert.deepEqual(twice.calls[0].tools.map((t) => t.name), ["propose_plan"]);
+  assert.equal(twice.calls[0].only, "propose_plan");
+
+  const fix = scripted(mines, [toolUse("p", "propose_plan", floodPlan)]);
+  await handle(ask({ attempt: 1, previous_plan: floodPlan, problems: ["x"] }), fix.deps);
+  assert.deepEqual(fix.calls[0].tools.map((t) => t.name), ["propose_plan"]);
+});
+
+test("вопрос: кривые ответы и больше двух — 400", async () => {
+  const { deps } = scripted(mines, []);
+  assert.equal((await handle(ask({ answers: [{ question: "q", answer: " " }] }), deps)).status, 400);
+  const a = { question: "q", answer: "a" };
+  assert.equal((await handle(ask({ answers: [a, a, a] }), deps)).status, 400);
+});
+
+test("вне области: не указан slug и опечатка в slug — модель узнаёт точную причину", () => {
+  const ops = floodPlan.ops;
+  const noSlug = { ...ops[0], slug: null };
+  const typo = { ...ops[3], character: "utoplenik_3" };
+  const world = new Set(objectsByKey(mines).keys());
+  const bad = outOfScope({ summary: "", ops: [noSlug, typo] }, shaftScope(), world);
+  assert.equal(bad.length, 2, bad.join("\n"));
+  assert.match(bad[0], /операция 1 .*не указан slug \(location\)/);
+  assert.match(bad[1], /операция 2 .*character:utoplenik_3 нет в мире, и план его не создаёт/);
 });

@@ -20,6 +20,7 @@ List<String> lines(OpResult r) => [
 Plan one(PlanOp op) => Plan(summary: '', ops: [op]);
 
 void main() {
+  copyDeleteRefs();
   test('копия: план затопления — было → стало по каждой операции', () async {
     final world = await mines();
     final (copy, results) = applyToCopy(world, floodPlan());
@@ -62,24 +63,24 @@ void main() {
     ], contains('«Утопленник»: атака 14 выше потолка 10 (ур. 3)'));
   });
 
-  test('копия: удалённый объект со ссылками — ошибка проверки', () async {
-    final (copy, results) = applyToCopy(
-      await mines(),
-      one(
-        const PlanOp(
-          action: OpAction.delete,
-          type: OpType.character,
-          slug: 'slizen',
+  // Ловит сама операция, до проверки мира: база не даст удалить объект со ссылками.
+  test(
+    'копия: удалённый объект со ссылками — операция не выполняется',
+    () async {
+      final (_, results) = applyToCopy(
+        await mines(),
+        one(
+          const PlanOp(
+            action: OpAction.delete,
+            type: OpType.character,
+            slug: 'slizen',
+          ),
         ),
-      ),
-    );
-    expect(results.single.error, isNull);
-    expect(results.single.title, 'Удалить · Персонаж «Слизень»');
-    expect([
-      for (final p in checkWorld(copy))
-        if (p.severity == Severity.error) p.rule,
-    ], contains('broken_link'));
-  });
+      );
+      expect(results.single.title, 'Удалить · Персонаж «Слизень»');
+      expect(results.single.error, contains('шаг 2 квеста «Обвал»'));
+    },
+  );
 
   for (final (name, op, error) in [
     (
@@ -251,5 +252,32 @@ void main() {
       find.text('Не выполнить: этот предмет уже в добыче'),
       findsOneWidget,
     );
+  });
+}
+
+/// Операция «удалить слизня» по образцу из плана затопления.
+PlanOp deleteSlime() {
+  final j = Map<String, dynamic>.of(
+    (floodPlanJson()['ops'] as List)[1] as Map<String, dynamic>,
+  );
+  j['action'] = 'delete';
+  j['slug'] = 'slizen';
+  j['fields'] = {for (final k in (j['fields'] as Map).keys) k: null};
+  return PlanOp.fromJson(j);
+}
+
+void copyDeleteRefs() {
+  test('копия: удалить врага, пока на него ссылается шаг квеста, — ошибка, как в базе', () async {
+    final flood = floodPlan().ops;
+    // Живой прогон 25.09: слизень удалён раньше, чем шаг квеста переписан на утопленника.
+    final early = Plan(summary: '', ops: [flood[1], deleteSlime(), flood[4]]);
+    final (_, bad) = applyToCopy(await mines(), early);
+    expect(bad[1].error, contains('шаг 2 квеста «Обвал»'));
+
+    // Сначала ссылки убраны — удаление проходит; своя добыча уходит вместе со слизнем.
+    final late = Plan(summary: '', ops: [flood[1], flood[4], deleteSlime()]);
+    final (copy, ok) = applyToCopy(await mines(), late);
+    expect(ok.map((r) => r.error), everyElement(isNull));
+    expect(copy.characters.map((c) => c.slug), isNot(contains('slizen')));
   });
 }

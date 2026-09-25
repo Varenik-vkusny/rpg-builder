@@ -1,5 +1,6 @@
 // Экран ассистента на подменённой базе и подменённом ассистенте.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/assistant/assistant_service.dart';
 
 import 'assistant_fixtures.dart';
 import 'fakes.dart';
@@ -72,8 +73,19 @@ void main() {
       'attempt',
       'previous_plan',
       'problems',
+      'answers',
     ]);
     expect(json['scope'], {'type': 'location', 'slug': 'shtolnya_3'});
+    // Ответы автора на вопросы ассистента — как их разбирает функция.
+    final answered = const ProposeRequest(
+      worldId: minesId,
+      scope: Scope(ScopeType.location, 'shtolnya_3'),
+      request: 'x',
+      answers: [Answer('Атака 14 выше потолка 10?', 'Поставить 10')],
+    ).toJson();
+    expect(answered['answers'], [
+      {'question': 'Атака 14 выше потолка 10?', 'answer': 'Поставить 10'},
+    ]);
     // План туда и обратно — тот же, что в общем образце.
     expect(floodPlan().toJson(), floodPlanJson());
   });

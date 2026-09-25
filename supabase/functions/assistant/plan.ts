@@ -91,7 +91,7 @@ const opSchema = {
   additionalProperties: false,
 };
 
-/// Инструменты модели: только чтение и «предложить план». Записи нет (VISION.md, правило 1).
+/// Инструменты модели: чтение, вопрос автору и «предложить план». Записи нет (VISION.md, правило 1).
 /// Схему плана сервер проверяет сам (schema_check.ts): Gemini не держит её строго.
 export const TOOLS = [
   {
@@ -117,6 +117,33 @@ export const TOOLS = [
         slug: { type: "string" },
       },
       required: ["type", "slug"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "ask_author",
+    description:
+      "Спрашивает автора, когда просьба спорит с правилами мира или её можно понять по-разному. " +
+      "Не исправляй просьбу молча — спроси. Автор увидит вопрос и варианты и сможет вписать свой.",
+    input_schema: {
+      type: "object",
+      properties: {
+        question: { type: "string", description: "Коротко: что просил автор и почему так нельзя или неясно" },
+        options: {
+          type: "array",
+          description: "2–4 варианта, первый — тот, что советуешь",
+          items: {
+            type: "object",
+            properties: {
+              label: { type: "string", description: "Что сделать, 2–6 слов" },
+              description: { type: "string", description: "Чем это обернётся" },
+            },
+            required: ["label", "description"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["question", "options"],
       additionalProperties: false,
     },
   },
@@ -159,15 +186,28 @@ function touched(op: PlanOp): { changes: string[]; creates: string | null; refs:
 
 /// Операции вне области — человеческими строками. Пусто — план в границах.
 /// Меняет, удаляет или ссылается на объект вне области — нельзя; созданное планом — можно.
-export function outOfScope(plan: Plan, scope: Set<string>): string[] {
+/// [world] — все ключи мира: тогда причина точнее — объект не указан или его нет вовсе
+/// (опечатка в slug), а не «вне области»; иначе модель повторяет ту же ошибку.
+export function outOfScope(plan: Plan, scope: Set<string>, world?: Set<string>): string[] {
   const created = new Set(plan.ops.map(touched).map((t) => t.creates).filter((k): k is string => k !== null));
   const allowed = (k: string) => scope.has(k) || created.has(k);
   const out: string[] = [];
   plan.ops.forEach((op, i) => {
     const t = touched(op);
     for (const k of [...t.changes, ...t.refs]) {
-      if (!allowed(k)) out.push(`операция ${i + 1} (${op.action} ${op.type}): ${k} вне области`);
+      if (allowed(k)) continue;
+      const at = `операция ${i + 1} (${op.action} ${op.type})`;
+      const [type, slug] = k.split(":");
+      if (!slug) out.push(`${at}: не указан slug (${type})`);
+      else if (world && !world.has(k)) out.push(`${at}: ${k} нет в мире, и план его не создаёт — проверь написание slug`);
+      else out.push(`${at}: ${k} вне области`);
     }
   });
   return out;
+}
+
+/// Вопрос ассистента автору: просьба спорит с правилами мира или неоднозначна.
+export interface AuthorQuestion {
+  question: string;
+  options: { label: string; description: string }[];
 }

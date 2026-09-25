@@ -67,6 +67,7 @@ Future<PlanRun> runAssistant({
         attempt: attempt,
         previous: proposal.plan,
         problems: caught.last,
+        answers: request.answers,
       ),
     );
   }

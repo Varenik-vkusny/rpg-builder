@@ -4,6 +4,7 @@ import '../check/world_check.dart';
 import '../content/character.dart';
 import '../content/item.dart';
 import '../content/location.dart';
+import '../content/manual_edit.dart' show referencesTo;
 import '../content/quest.dart';
 import 'plan.dart';
 import 'plan_labels.dart';
@@ -111,6 +112,18 @@ class _Copy {
     return -1;
   }
 
+  /// Удалить можно, только если на объект уже ничего не ссылается — как в базе
+  /// (внешние ключи): иначе копия пропустит план, который база отвергнет.
+  void _removeUnreferenced<T>(List<T> list, int i, String id) {
+    final refs = referencesTo(snapshot, id);
+    if (refs.isNotEmpty) {
+      throw _OpError(
+        'на него ещё ссылаются (${refs.join('; ')}) — сначала убери ссылки',
+      );
+    }
+    list.removeAt(i);
+  }
+
   void _newSlug(String? slug, Iterable<String> taken) {
     if (slug == null || !_slugFormat.hasMatch(slug)) {
       throw _OpError('slug «$slug» — только латиница, цифры и «_»');
@@ -139,7 +152,7 @@ class _Copy {
     final i = _slot(op, locations, (x) => x.slug, 'локации');
     final old = i < 0 ? null : locations[i];
     if (op.action == OpAction.delete) {
-      locations.removeAt(i);
+      _removeUnreferenced(locations, i, old!.id);
       return const [];
     }
     final min = _int(
@@ -176,7 +189,7 @@ class _Copy {
     final i = _slot(op, items, (x) => x.slug, 'предмета');
     final old = i < 0 ? null : items[i];
     if (op.action == OpAction.delete) {
-      items.removeAt(i);
+      _removeUnreferenced(items, i, old!.id);
       return const [];
     }
     if (old != null &&
@@ -240,7 +253,7 @@ class _Copy {
     final i = _slot(op, characters, (x) => x.slug, 'персонажа');
     final old = i < 0 ? null : characters[i];
     if (op.action == OpAction.delete) {
-      characters.removeAt(i);
+      _removeUnreferenced(characters, i, old!.id);
       return const [];
     }
     if (old != null &&
@@ -277,7 +290,7 @@ class _Copy {
     final i = _slot(op, quests, (x) => x.slug, 'квеста');
     final old = i < 0 ? null : quests[i];
     if (op.action == OpAction.delete) {
-      quests.removeAt(i);
+      _removeUnreferenced(quests, i, old!.id);
       return const [];
     }
     final giver = op.str('giver');

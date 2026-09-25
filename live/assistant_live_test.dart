@@ -33,6 +33,43 @@ String show(WorldSnapshot w) {
   ].join('\n');
 }
 
+/// Живой ассистент, который на вопрос автору получает первый (рекомендуемый) вариант.
+/// Возвращает прогон и заданные вопросы.
+Future<(PlanRun, List<AuthorQuestion>)> runAnswering({
+  required AssistantService assistant,
+  required WorldSnapshot world,
+  required ProposeRequest request,
+  void Function(int attempt)? onAttempt,
+}) async {
+  final asked = <AuthorQuestion>[];
+  var answers = <Answer>[];
+  while (true) {
+    try {
+      final run = await runAssistant(
+        assistant: assistant,
+        world: world,
+        request: ProposeRequest(
+          worldId: request.worldId,
+          scope: request.scope,
+          request: request.request,
+          answers: answers,
+        ),
+        onAttempt: onAttempt,
+      );
+      return (run, asked);
+    } on QuestionAsked catch (q) {
+      asked.add(q.question);
+      debugPrint('ВОПРОС: ${q.question.question}');
+      for (final o in q.question.options) {
+        debugPrint('  ○ ${o.label} — ${o.description}');
+      }
+      final pick = q.question.options.first.label;
+      debugPrint('  ОТВЕТ АВТОРА: $pick');
+      answers = [...answers, Answer(q.question.question, pick)];
+    }
+  }
+}
+
 void main() {
   test('живой прогон: затопить штольню — применить; повтор — отклонить', () async {
     final a = await author(env('RPGB_TEST_EMAIL_A'), env('RPGB_TEST_PASSWORD'));
@@ -59,7 +96,7 @@ void main() {
     final before = await repo.snapshot(world.id);
     debugPrint('МИР ДО:\n${show(before)}');
     final sw = Stopwatch()..start();
-    final run = await runAssistant(
+    final (run, _) = await runAnswering(
       assistant: assistant,
       world: before,
       request: ask,
@@ -95,7 +132,7 @@ void main() {
     expect(show(applied), isNot(show(before)));
 
     // Повтор той же просьбы → «Отклонить» → мир не изменился.
-    final again = await runAssistant(
+    final (again, _) = await runAnswering(
       assistant: assistant,
       world: applied,
       request: ask,

@@ -21,6 +21,10 @@ ${list}
 Все поля и связи объектов области (ссылки — по slug):
 ${data}
 Итог отдай одним вызовом propose_plan.
+Просьба спорит с правилами мира (потолки, уровни) или её можно понять по-разному — не исправляй
+молча и не угадывай: если доступен ask_author, спроси автора (что просил, почему так нельзя, 2–4 варианта,
+первым — тот, что советуешь). Один вопрос — одна развилка; вопрос и варианты — по-русски, словами автора,
+без slug и названий полей. Просьба ясна и не спорит с правилами — сразу план.
 
 Операции плана:
 - location, item, character, quest: create / update / delete по slug. Новый slug — латиница, цифры и «_» (ashen_drowned), не совпадает с существующими.
@@ -44,8 +48,11 @@ ${data}
 
 export function userPrompt(req: AssistantRequest): string {
   const ask = `Область: ${req.scope.type}:${req.scope.slug}.\nПросьба автора: ${req.request}`;
-  if (req.attempt === 0) return ask;
-  return `${ask}
+  const answered = req.answers.length === 0 ? "" : `
+Ответы автора на твои вопросы — следуй им:
+${req.answers.map((a) => `- Вопрос: ${a.question}\n  Ответ: ${a.answer}`).join("\n")}`;
+  if (req.attempt === 0) return ask + answered;
+  return `${ask}${answered}
 
 Твой прошлый план проверка на копии мира не пропустила. Исправь его и отдай целиком заново.
 Прошлый план:

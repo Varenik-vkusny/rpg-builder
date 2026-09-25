@@ -363,9 +363,10 @@ typedef FakeChangeSet = ({String status, ChangeSetDraft draft});
 
 /// Подменённый ассистент: отдаёт заранее заданные планы по очереди
 /// и запоминает просьбы. Кончились планы — ошибка, как у упавшей функции.
+/// [answers] — по очереди: [Proposal] — план, [AuthorQuestion] — вопрос автору.
 class FakeAssistant implements AssistantService {
-  FakeAssistant([List<Proposal>? answers]) : answers = answers ?? [];
-  final List<Proposal> answers;
+  FakeAssistant([List<Object>? answers]) : answers = answers ?? [];
+  final List<Object> answers;
   final requests = <ProposeRequest>[];
 
   @override
@@ -374,7 +375,10 @@ class FakeAssistant implements AssistantService {
     if (answers.isEmpty) {
       throw const AssistantException('Ассистент не ответил: нет плана');
     }
-    return answers.removeAt(0);
+    return switch (answers.removeAt(0)) {
+      final AuthorQuestion q => throw QuestionAsked(q),
+      final a => a as Proposal,
+    };
   }
 }
 
