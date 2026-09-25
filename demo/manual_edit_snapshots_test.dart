@@ -24,6 +24,11 @@ void main() {
     await createWorld(t, 'Пепельные копи');
     await openWorld(t, 'Пепельные копи');
 
+    await t.scrollUntilVisible(
+      find.byKey(const Key('open-slizen')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tapShown(t, find.byKey(const Key('open-slizen')));
     await shot(t, '4.1-edit-slime');
     await t.enterText(
@@ -32,6 +37,11 @@ void main() {
     );
     await tapShown(t, find.byKey(const Key('character-save')));
 
+    await t.scrollUntilVisible(
+      find.byKey(const Key('open-klyuch')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tapShown(t, find.byKey(const Key('open-klyuch')));
     await tapShown(t, find.byKey(const Key('object-delete')));
     await shot(t, '4.1-delete-refused');
