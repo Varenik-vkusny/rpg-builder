@@ -23,8 +23,9 @@ export const PROVIDERS: Record<string, Provider> = {
   mistral: {
     secret: "MISTRAL_API_KEY",
     url: "https://api.mistral.ai/v1/chat/completions",
-    // Бесплатный тариф 26.09: large — 403 «не в вашем тарифе», medium — 429 сразу.
-    models: ["mistral-small-latest", "mistral-medium-latest", "mistral-large-latest"],
+    // Бесплатный тариф (страница Limits, 26.09): large-2512 — 250 000 токенов/мин; medium и small —
+    // по 20 000 (прогон сцены ≈ 20 000). «mistral-large-latest» тарифом закрыт (403).
+    models: ["mistral-large-2512", "mistral-medium-latest", "mistral-small-2603"],
   },
   zai: {
     secret: "ZAI_API_KEY",

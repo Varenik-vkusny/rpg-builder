@@ -7,7 +7,7 @@ import { pickModel } from "./providers.ts";
 const env = (keys: Record<string, string>) => (name: string) => keys[name];
 
 test("провайдер: модель из списка и ключ есть — вызов готов", () => {
-  assert.equal(typeof pickModel("mistral:mistral-large-latest", env({ MISTRAL_API_KEY: "k" })), "function");
+  assert.equal(typeof pickModel("mistral:mistral-large-2512", env({ MISTRAL_API_KEY: "k" })), "function");
   assert.equal(typeof pickModel("groq:qwen/qwen3.8-27b", env({ GROQ_API_KEY: "k" })), "function");
 });
 
