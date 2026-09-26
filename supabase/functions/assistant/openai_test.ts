@@ -76,9 +76,10 @@ function fakeFetch(answers: { status: number; body: unknown; headers?: Record<st
   return seen;
 }
 
-test("openai: ключ в заголовке; 429 — пауза из retry-after и повтор; 503 — запасная модель", async () => {
+test("openai: ключ в заголовке; 429 — пауза из retry-after и повтор; 503 — повтор, потом запасная модель", async () => {
   const seen = fakeFetch([
     { status: 429, body: {}, headers: { "retry-after": "7" } },
+    { status: 503, body: {} },
     { status: 503, body: {} },
     { status: 200, body: res },
   ]);
@@ -86,7 +87,7 @@ test("openai: ключ в заголовке; 429 — пауза из retry-afte
   const r = await callOpenAI("https://x/v1", "KEY", ["main", "spare"], call, async (ms) => { waited.push(ms); });
   assert.equal(r.stop_reason, "tool_use");
   assert.deepEqual(waited, [7000]);
-  assert.deepEqual(seen.map((s) => s.model), ["main", "main", "spare"]);
+  assert.deepEqual(seen.map((s) => s.model), ["main", "main", "main", "spare"]);
   assert.equal(seen[0].auth, "Bearer KEY");
 });
 

@@ -85,7 +85,7 @@ export function fromGemini(res: Json): ModelResponse {
 }
 
 /// Вызов Gemini по HTTP. Ключ — только из секрета функции (VISION.md, правило 9).
-/// Повторы — общие (model_http.ts): перегружена (503) — запасная модель, 429 — пауза Gemini.
+/// Повторы — общие (model_http.ts): перегружена (503) — повтор, потом запасная; 429 — пауза Gemini.
 export function callGemini(
   apiKey: string,
   models: string[],
@@ -94,15 +94,17 @@ export function callGemini(
 ): Promise<ModelResponse> {
   return postModel({
     models,
-    send: (model) =>
+    send: (model, signal) =>
       fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: "POST",
+        signal,
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify(toGemini(call)),
       }),
     retryAfterMs: (_r, body) => retryDelayMs(body),
-    fallbackOn: [503],
+    fallbackOn: [],
     wait,
+    deadline: call.deadline,
   }).then(fromGemini);
 }
 

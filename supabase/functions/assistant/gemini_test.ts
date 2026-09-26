@@ -98,10 +98,10 @@ test("gemini: 429 больше RATE_WAITS раз подряд — ошибка �
   assert.equal(calls(), RATE_WAITS + 1);
 });
 
-test("gemini: основная модель перегружена (503) — отвечает запасная", async () => {
+test("gemini: основная модель перегружена (503) — повтор, потом отвечает запасная", async () => {
   const urls: string[] = [];
   let n = 0;
-  const answers = [{ status: 503, body: { error: { message: "high demand" } } }, { status: 200, body: res }];
+  const answers = [503, 503].map((status) => ({ status, body: { error: { message: "high demand" } } as unknown })).concat([{ status: 200, body: res }]);
   globalThis.fetch = (async (url: string) => {
     urls.push(url);
     const a = answers[n++];
@@ -109,10 +109,10 @@ test("gemini: основная модель перегружена (503) — о�
   }) as typeof fetch;
   const r = await callGemini("k", ["main", "spare"], call, async () => {});
   assert.equal(r.stop_reason, "tool_use");
-  assert.deepEqual(urls.map((u) => u.split("/models/")[1].split(":")[0]), ["main", "spare"]);
+  assert.deepEqual(urls.map((u) => u.split("/models/")[1].split(":")[0]), ["main", "main", "spare"]);
 });
 
 test("gemini: перегружены все модели — ошибка 503", async () => {
-  fakeFetch([{ status: 503, body: {} }, { status: 503, body: {} }]);
+  fakeFetch(Array(4).fill({ status: 503, body: {} }));
   await assert.rejects(callGemini("k", ["a", "b"], call, async () => {}), (e) => e instanceof ModelError && e.status === 503);
 });

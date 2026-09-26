@@ -78,8 +78,8 @@ export function fromOpenAI(res: Json): ModelResponse {
   return { stop_reason: stop, content, usage };
 }
 
-/// Вызов по HTTP. Повторы — общие (model_http.ts): модель недоступна (503, 404) — следующая,
-/// 429 — ждём, сколько просит провайдер (retry-after).
+/// Вызов по HTTP. Повторы — общие (model_http.ts): сбой или таймаут — повтор, потом следующая
+/// модель; нет модели (404) — сразу следующая; 429 — ждём, сколько просит провайдер (retry-after).
 export function callOpenAI(
   url: string,
   apiKey: string,
@@ -89,9 +89,10 @@ export function callOpenAI(
 ): Promise<ModelResponse> {
   return postModel({
     models,
-    send: (model) =>
+    send: (model, signal) =>
       fetch(url, {
         method: "POST",
+        signal,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify(toOpenAI(call, model)),
       }),
@@ -99,7 +100,8 @@ export function callOpenAI(
       const s = parseFloat(r.headers.get("retry-after") ?? "");
       return Number.isFinite(s) ? s * 1000 : null;
     },
-    fallbackOn: [503, 404],
+    fallbackOn: [404],
     wait,
+    deadline: call.deadline,
   }).then(fromOpenAI);
 }

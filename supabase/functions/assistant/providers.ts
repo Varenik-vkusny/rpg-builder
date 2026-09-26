@@ -43,22 +43,26 @@ export const DEFAULT_ORDER = ["groq", "gemini"];
 
 export type CallModel = (call: ModelCall) => Promise<ModelResponse>;
 
-/// «провайдер:модель» из запроса (или по умолчанию) → вызов модели.
+/// «провайдер:модель» из запроса (или по умолчанию) → вызов модели; остальные модели провайдера —
+/// запасные (сбой или таймаут — model_http.ts; ответы не по схеме — call.tier в handler.ts).
 /// Строка — что не так: чужая модель или у провайдера нет ключа.
 export function pickModel(requested: unknown, env: (name: string) => string | undefined): CallModel | string {
   const bind = (name: string, models: string[]): CallModel | string => {
     const p = PROVIDERS[name];
     const key = env(p.secret);
     if (!key) return `у функции нет секрета ${p.secret}`;
+    // Запасная модель (call.tier) — следующая по списку; дальше конца списка не уходим.
+    const from = (call: ModelCall) => models.slice(Math.min(call.tier ?? 0, models.length - 1));
     return p.url
-      ? (call) => callOpenAI(p.url!, key, models, call)
-      : (call) => callGemini(key, models, call);
+      ? (call) => callOpenAI(p.url!, key, from(call), call)
+      : (call) => callGemini(key, from(call), call);
   };
   if (typeof requested === "string" && requested) {
     const [name, ...rest] = requested.split(":");
     const model = rest.join(":");
     if (!PROVIDERS[name]?.models.includes(model)) return `модель ${requested} не из списка бесплатных`;
-    return bind(name, [model]);
+    // Выбранная — первой, запасные — остальные модели провайдера по порядку.
+    return bind(name, [model, ...PROVIDERS[name].models.filter((m) => m !== model)]);
   }
   for (const name of DEFAULT_ORDER) {
     if (env(PROVIDERS[name].secret)) return bind(name, PROVIDERS[name].models);

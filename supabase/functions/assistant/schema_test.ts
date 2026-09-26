@@ -84,5 +84,6 @@ test("схема: модель так и не прислала план по с�
   assert.equal(r.body.plan, undefined);
   // Что делала модель — в ответе: так видно, почему плана нет.
   assert.match(String(r.body.error), /4 ходов: план не по схеме \(ops\[0\]\.action/);
-  assert.equal((r.body.trace as string[]).length, MAX_TURNS);
+  const trace = r.body.trace as string[];
+  assert.equal(trace.filter((t) => t.startsWith("план не по схеме")).length, MAX_TURNS);
 });

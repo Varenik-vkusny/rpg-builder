@@ -23,6 +23,11 @@ export const FORCE_PLAN_FROM = 0;
 export const MAX_OUT_OF_SCOPE = 2;
 /// Сколько вопросов ассистент может задать автору на одну просьбу; дальше — только план.
 export const MAX_QUESTIONS = 2;
+/// Весь ответ функции — не дольше 120 с: платформа обрывает функцию на 150 с (546 без объяснений),
+/// 30 с — запас на чтение мира и ответ. Не уложились — 504 с тем, что модель успела сделать.
+export const TOTAL_MS = 120_000;
+/// Ответов не по схеме подряд, после которых берём запасную модель провайдера.
+export const SCHEMA_FAILS_TO_FALLBACK = 2;
 
 /// Ответ автора на вопрос ассистента.
 export interface Answer {
@@ -60,11 +65,16 @@ export interface ModelCall {
   messages: { role: "user" | "assistant"; content: unknown }[];
   /// Только этот инструмент на этом ходу (нет — любой).
   only?: string;
+  /// Когда кончается время всего ответа (мс с 1970) — вызов модели не ждёт дольше.
+  deadline?: number;
+  /// Какая модель из списка провайдера: 0 — основная; после двух ответов не по схеме — следующая.
+  tier?: number;
 }
 
 export interface Deps {
   loadWorld(projectId: string): Promise<World | null>;
   callModel(call: ModelCall): Promise<ModelResponse>;
+  now?: () => number;
 }
 
 export interface Reply {
@@ -202,6 +212,25 @@ function readReplies(uses: ModelBlock[], w: World, scope: Set<string>) {
   };
 }
 
+/// Первый вызов модели: правила мира, просьба, инструменты и срок всего ответа.
+function firstCall(req: AssistantRequest, world: World, scope: Set<string>, mayAsk: boolean, deadline: number): ModelCall {
+  return {
+    system: systemPrompt(world, scope),
+    tools: mayAsk ? [tool("ask_author"), tool("propose_plan")] : [tool("propose_plan")],
+    messages: [{ role: "user", content: userPrompt(req) }],
+    deadline,
+  };
+}
+
+/// Ответ не по схеме: после SCHEMA_FAILS_TO_FALLBACK подряд следующий ход — у запасной модели.
+/// Возвращает новый счётчик подряд идущих провалов.
+function onSchemaFail(call: ModelCall, fails: number, trace: string[]): number {
+  if (fails < SCHEMA_FAILS_TO_FALLBACK) return fails;
+  call.tier = (call.tier ?? 0) + 1;
+  trace.push("дальше запасная модель");
+  return 0;
+}
+
 export async function handle(body: unknown, deps: Deps): Promise<Reply> {
   const req = parseRequest(body);
   if (typeof req === "string") return fail(400, req);
@@ -212,17 +241,15 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
 
   // Спросить автора можно только о самой просьбе (не в исправлении) и не больше MAX_QUESTIONS раз.
   const mayAsk = req.attempt === 0 && req.answers.length < MAX_QUESTIONS;
-  const call: ModelCall = {
-    system: systemPrompt(world, scope),
-    tools: mayAsk ? [tool("ask_author"), tool("propose_plan")] : [tool("propose_plan")],
-    messages: [{ role: "user", content: userPrompt(req) }],
-  };
+  const now = deps.now ?? Date.now;
+  const call = firstCall(req, world, scope, mayAsk, now() + TOTAL_MS);
   const worldKeys = new Set(objectsByKey(world).keys());
   const usage = { input_tokens: 0, output_tokens: 0 };
-  let outside = 0;
+  let outside = 0, schemaFails = 0;
   // Что модель делала по ходам — уходит в ответ, если плана так и не будет.
   const trace: string[] = [];
   for (let turn = 0; turn < MAX_TURNS; turn++) {
+    if (now() >= call.deadline!) return fail(504, `модель не уложилась в ${TOTAL_MS / 1000} с: ${trace.join("; ")}`, { usage, trace });
     if (turn >= FORCE_PLAN_FROM && !mayAsk) call.only = "propose_plan";
     const res = await deps.callModel(call);
     usage.input_tokens += res.usage.input_tokens;
@@ -236,6 +263,7 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
       const r = questionReply(asked.input, usage);
       if (!Array.isArray(r)) return r;
       trace.push(`вопрос не по схеме (${r[1]})`);
+      schemaFails = onSchemaFail(call, schemaFails + 1, trace);
       call.messages.push(rejectPlan(uses, asked, r));
       continue;
     }
@@ -244,6 +272,7 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
       const r = planReply(proposed.input, scope, worldKeys, usage);
       if ("status" in r) return r;
       trace.push(r.trace);
+      if (!r.outside) schemaFails = onSchemaFail(call, schemaFails + 1, trace);
       if (r.outside && ++outside >= MAX_OUT_OF_SCOPE) {
         return fail(422, "операции вне области", { out_of_scope: r.outside, usage });
       }

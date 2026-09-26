@@ -21,3 +21,24 @@ test("провайдер: без выбора — первый по порядк
   assert.equal(typeof pickModel(undefined, env({ GEMINI_API_KEY: "k" })), "function");
   assert.match(String(pickModel(undefined, env({}))), /нет ключа ни одного провайдера/);
 });
+
+/// Какую модель спросили: подменённый fetch запоминает поле model и отвечает планом.
+function seenModels() {
+  const seen: string[] = [];
+  globalThis.fetch = (async (_url: string, init: RequestInit) => {
+    seen.push(JSON.parse(String(init.body)).model);
+    return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content: "ok" } }] }), { status: 200 });
+  }) as typeof fetch;
+  return seen;
+}
+const call = { system: "", tools: [], messages: [{ role: "user" as const, content: "x" }] };
+
+test("запасная: выбранная модель первой, после двух ответов не по схеме (tier 1) — следующая по списку", async () => {
+  const seen = seenModels();
+  const m = pickModel("groq:openai/gpt-oss-20b", env({ GROQ_API_KEY: "k" }));
+  if (typeof m === "string") throw new Error(m);
+  await m(call);
+  await m({ ...call, tier: 1 });
+  await m({ ...call, tier: 9 });
+  assert.deepEqual(seen, ["openai/gpt-oss-20b", "qwen/qwen3.8-27b", "openai/gpt-oss-120b"]);
+});
