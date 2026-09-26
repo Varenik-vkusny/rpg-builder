@@ -7,6 +7,7 @@ import '../assistant/history_screen.dart';
 import '../worlds/world_overview.dart';
 import '../check/check_screen.dart';
 import '../check/world_check.dart';
+import '../export/export_action.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
@@ -103,6 +104,13 @@ class _WorldScreenState extends State<WorldScreen> {
     );
   }
 
+  /// Экспорт текущего снимка мира в JSON → «Поделиться» (4.5).
+  Future<void> _export() async {
+    final snapshot = await _content;
+    if (!mounted) return;
+    await exportAndShare(context, widget.world, snapshot);
+  }
+
   Widget _header(String title, Key addKey, String tooltip, Widget form) =>
       ListTile(
         title: Text(title, style: Theme.of(context).textTheme.titleMedium),
@@ -159,6 +167,12 @@ class _WorldScreenState extends State<WorldScreen> {
             tooltip: 'Проверка мира',
             icon: const Icon(Icons.fact_check),
             onPressed: _openCheck,
+          ),
+          IconButton(
+            key: const Key('world-export'),
+            tooltip: 'Экспорт в JSON',
+            icon: const Icon(Icons.ios_share),
+            onPressed: _export,
           ),
         ],
       ),
