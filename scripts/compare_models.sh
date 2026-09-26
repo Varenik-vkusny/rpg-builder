@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Сравнение бесплатных моделей Groq на живой сцене «штольня» (3.9): N прогонов на модель.
-# Модели идут параллельно — у каждой свой лимит 8000 токенов в минуту.
+# Модели идут по очереди: параллельные flutter test в одной папке дерутся за build/test_cache
+# (Windows, 26.09 — прогон висел 16 минут). Лимит Groq — 200 000 токенов в сутки на модель ≈ 10 прогонов.
 # Запуск: bash scripts/compare_models.sh N провайдер:модель...  → build/compare/<модель>.log и таблица.
 # Пример: bash scripts/compare_models.sh 10 mistral:mistral-large-latest zai:glm-4.7-flash
 # Модели — из supabase/functions/assistant/providers.ts.
@@ -21,8 +22,7 @@ run_model() {
     echo "$i|$ok|$((SECONDS - t0))|$asked|$why" >> "$f"
   done
 }
-for m in "${MODELS[@]}"; do run_model "$m" & done
-wait
+for m in "${MODELS[@]}"; do run_model "$m"; done
 printf "%-22s %-8s %-10s %-9s\n" "модель" "прошло" "сек/прогон" "спросил"
 for m in "${MODELS[@]}"; do
   f="build/compare/$(tr ':/' '__' <<<"$m").log"

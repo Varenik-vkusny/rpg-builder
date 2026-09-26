@@ -34,6 +34,8 @@ export interface PlanOp {
   quest: string | null;
   position: number | null;
   fields: PlanFields;
+  /// Что сервер поправил в операции (repair.ts) — автор видит пометкой в «было → стало».
+  repairs?: string[];
 }
 
 export interface Plan {

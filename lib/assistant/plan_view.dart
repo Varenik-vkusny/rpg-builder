@@ -65,6 +65,11 @@ class PlanView extends StatelessWidget {
         spacing: 4,
         children: [
           Text(r.title, style: theme.textTheme.titleSmall),
+          for (final fix in r.op.repairs)
+            Text(
+              'Поправлено сервером: $fix',
+              style: TextStyle(color: theme.colorScheme.tertiary),
+            ),
           if (preview.outside[i] case final keys?)
             Text(
               'Вне области: ${keys.join(', ')}',

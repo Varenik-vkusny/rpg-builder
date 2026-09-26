@@ -29,6 +29,7 @@ class PlanOp {
     this.quest,
     this.position,
     this.fields = const {},
+    this.repairs = const [],
   });
 
   final OpAction action;
@@ -39,6 +40,10 @@ class PlanOp {
   final String? quest;
   final int? position;
   final Map<String, Object> fields;
+
+  /// Что сервер поправил в операции до проверки (опечатка в slug, порядок) — автору видно.
+  /// В журнал не пишется: это пометка к плану, а не часть правки.
+  final List<String> repairs;
 
   String get typeName =>
       _typeNames.entries.firstWhere((e) => e.value == type).key;
@@ -61,6 +66,7 @@ class PlanOp {
             in ((j['fields'] as Map?) ?? const {}).entries)
           if (value != null) key as String: value as Object,
       },
+      repairs: [for (final r in (j['repairs'] as List? ?? const [])) r as String],
     );
   }
 

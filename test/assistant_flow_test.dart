@@ -1,6 +1,7 @@
 // Экран ассистента на подменённой базе и подменённом ассистенте.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/assistant/assistant_service.dart';
+import 'package:rpg_builder/assistant/plan.dart';
 
 import 'assistant_fixtures.dart';
 import 'fakes.dart';
@@ -54,6 +55,22 @@ void main() {
     await ask(t, request: '   ');
     expect(find.text('Напиши просьбу'), findsOneWidget);
     expect(assistant.requests, isEmpty);
+  });
+
+  testWidgets('план: починку сервера автор видит пометкой у операции', (t) async {
+    // Сервер поправил опечатку в slug (repair.ts) — пометка приходит в операции плана.
+    final j = floodPlanJson();
+    (j['ops'] as List)[0]['repairs'] = ['опечатка в slug: shtolnya3 → shtolnya_3'];
+    await openAssistant(
+      t,
+      FakeAssistant(List.generate(3, (_) => proposal(Plan.fromJson(j)))),
+    );
+    await ask(t);
+    expect(
+      find.text('Поправлено сервером: опечатка в slug: shtolnya3 → shtolnya_3'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Поправлено сервером'), findsOneWidget);
   });
 
   testWidgets('план: ошибка ассистента видна автору, мир не тронут', (t) async {

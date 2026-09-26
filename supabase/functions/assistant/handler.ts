@@ -7,6 +7,7 @@ import { key, objectsByKey, scopeOf } from "./world.ts";
 import { systemPrompt, userPrompt } from "./prompt.ts";
 import { checkSchema } from "./schema_check.ts";
 import { toPlan } from "./ops.ts";
+import { repairPlan } from "./repair.ts";
 
 /// Не больше двух исправлений плана по ошибкам проверки (VISION.md, раздел 10).
 export const MAX_FIXES = 2;
@@ -161,8 +162,10 @@ function planReply(
       outside: null,
     };
   }
-  const bad = outOfScope(plan, scope, worldKeys);
-  if (bad.length === 0) return { status: 200, body: { plan, usage } };
+  // Опечатки в slug и порядок операций сервер чинит сам — с пометкой для автора.
+  const fixed = repairPlan(plan, scope, worldKeys);
+  const bad = outOfScope(fixed, scope, worldKeys);
+  if (bad.length === 0) return { status: 200, body: { plan: fixed, usage } };
   // Вне области: план отклонён. Модель узнаёт почему и может исправить.
   return {
     lines: ["План отклонён — операции вне области:", ...bad, "Предложи план заново только в границах области."],
