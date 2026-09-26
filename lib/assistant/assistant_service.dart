@@ -108,15 +108,19 @@ abstract class AssistantService {
 }
 
 class SupabaseAssistantService implements AssistantService {
-  SupabaseAssistantService(this._client);
+  SupabaseAssistantService(this._client, {this.model});
   final SupabaseClient _client;
+
+  /// Только для сравнения моделей живыми прогонами (live/): «провайдер:модель» из списка
+  /// функции (providers.ts). Приложение не задаёт — модель выбирает сервер.
+  final String? model;
 
   @override
   Future<Proposal> propose(ProposeRequest request) async {
     try {
       final res = await _client.functions.invoke(
         'assistant',
-        body: request.toJson(),
+        body: {...request.toJson(), 'model': ?model},
       );
       final body = res.data as Map<String, dynamic>;
       if (body['question'] case final Map<String, dynamic> q) {

@@ -1,22 +1,12 @@
-// Серверная функция Supabase «assistant»: телефон → сюда → модель (Groq или Gemini) → план на телефон.
-// Ключи API — только секреты функции GROQ_API_KEY / GEMINI_API_KEY (VISION.md, правило 9).
+// Серверная функция Supabase «assistant»: телефон → сюда → модель → план на телефон.
+// Ключи API — только секреты функции (VISION.md, правило 9); какие — providers.ts.
 // Мир читается с правами автора (его JWT): чужой мир RLS не отдаст.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-import { callGemini } from "./gemini.ts";
 import { ModelError } from "./model_http.ts";
-import { callOpenAI } from "./openai_compat.ts";
 import { handle } from "./handler.ts";
-import type { ModelCall } from "./handler.ts";
 import { loadWorld } from "./load_world.ts";
-
-// Модель. Владелец не платит (25.09.2026): бесплатные провайдеры без карты.
-// Есть секрет GROQ_API_KEY — Groq (1000 запросов в день, отвечает за секунды), иначе Gemini.
-// Модель меняется секретом GROQ_MODEL / GEMINI_MODEL, без выкладки; вторая в списке — запасная.
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODELS = [Deno.env.get("GROQ_MODEL") ?? "openai/gpt-oss-120b", "llama-3.3-70b-versatile"];
-// Gemini бесплатно: Flash — 5 в минуту и 20 в день; перегружена (503) — запасная.
-const GEMINI_MODELS = [Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash", "gemini-3.5-flash"];
+import { pickModel } from "./providers.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -31,19 +21,16 @@ const json = (status: number, body: unknown) =>
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
-  const groqKey = Deno.env.get("GROQ_API_KEY");
-  const geminiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!groqKey && !geminiKey) return json(500, { error: "у функции нет секрета GROQ_API_KEY или GEMINI_API_KEY" });
-  const callModel = groqKey
-    ? (call: ModelCall) => callOpenAI(GROQ_URL, groqKey, GROQ_MODELS, call)
-    : (call: ModelCall) => callGemini(geminiKey!, GEMINI_MODELS, call);
+  const body = await req.json().catch(() => null);
+  const callModel = pickModel(body?.model, (name) => Deno.env.get(name));
+  if (typeof callModel === "string") return json(500, { error: callModel });
 
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
   });
 
   try {
-    const reply = await handle(await req.json(), {
+    const reply = await handle(body, {
       loadWorld: (id) => loadWorld(db, id),
       callModel,
     });

@@ -56,7 +56,9 @@ void main() {
     );
     addTearDown(() => a.from('projects').delete().eq('id', world.id));
     await fillMines(repo, world.id);
-    final assistant = Recording(SupabaseAssistantService(a));
+    // RPGB_MODEL — «провайдер:модель» из providers.ts для сравнения (scripts/compare_models.sh).
+    final model = Platform.environment['RPGB_MODEL'];
+    final assistant = Recording(SupabaseAssistantService(a, model: model));
     final ask = ProposeRequest(
       worldId: world.id,
       scope: const Scope(ScopeType.location, 'shtolnya_3'),
@@ -64,6 +66,7 @@ void main() {
     );
 
     final before = await repo.snapshot(world.id);
+    debugPrint('МОДЕЛЬ: ${model ?? 'по умолчанию'}');
     debugPrint('МИР ДО:\n${show(before)}');
     final sw = Stopwatch()..start();
     final (run, asked) = await runAnswering(

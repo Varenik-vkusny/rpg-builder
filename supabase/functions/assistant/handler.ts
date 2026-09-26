@@ -132,6 +132,45 @@ function rejectPlan(uses: ModelBlock[], proposed: ModelBlock, lines: string[]) {
   };
 }
 
+type Usage = { input_tokens: number; output_tokens: number };
+
+/// Вопрос автору по схеме (2–4 варианта) — ответ телефону; иначе — строки отказа модели.
+function questionReply(input: unknown, usage: Usage): Reply | string[] {
+  const q = checkSchema(input, QUESTION_SCHEMA);
+  const n = (q.value as AuthorQuestion | undefined)?.options?.length ?? 0;
+  const errors = [...q.errors, ...(q.errors.length === 0 && (n < 2 || n > 4) ? [`вариантов ${n}, нужно 2–4`] : [])];
+  if (errors.length === 0) return { status: 200, body: { question: q.value, usage } };
+  return ["Вопрос не по схеме ask_author:", ...errors.slice(0, 20), "Задай вопрос заново строго по схеме."];
+}
+
+/// План по схеме и в области — ответ телефону. Иначе — строки отказа модели, запись для
+/// трассировки и (если план вне области) что именно вне её.
+/// Схему держит сервер: модель может прислать план не по форме.
+function planReply(
+  input: unknown,
+  scope: Set<string>,
+  worldKeys: Set<string>,
+  usage: Usage,
+): Reply | { lines: string[]; trace: string; outside: string[] | null } {
+  const shape = checkSchema(input, PLAN_SCHEMA);
+  if (shape.errors.length > 0) {
+    return {
+      lines: ["План не по схеме propose_plan:", ...shape.errors.slice(0, 20), "Отдай план заново строго по схеме."],
+      trace: `план не по схеме (${shape.errors[0]})`,
+      outside: null,
+    };
+  }
+  const plan = shape.value as Plan;
+  const bad = outOfScope(plan, scope, worldKeys);
+  if (bad.length === 0) return { status: 200, body: { plan, usage } };
+  // Вне области: план отклонён. Модель узнаёт почему и может исправить.
+  return {
+    lines: ["План отклонён — операции вне области:", ...bad, "Предложи план заново только в границах области."],
+    trace: `план вне области (${bad[0]})`,
+    outside: bad,
+  };
+}
+
 /// Ответ инструмента чтения. Всё — только внутри области.
 function readTool(name: string, input: Record<string, unknown>, w: World, scope: Set<string>): unknown {
   const all = objectsByKey(w);
@@ -146,6 +185,18 @@ function readTool(name: string, input: Record<string, unknown>, w: World, scope:
   const k = key(String(input.type), String(input.slug));
   if (!scope.has(k)) return { error: `${k} вне области или не существует` };
   return all.get(k)!.data;
+}
+
+/// Ответы на вызовы чтения — одним сообщением, каждому вызову свой.
+function readReplies(uses: ModelBlock[], w: World, scope: Set<string>) {
+  return {
+    role: "user" as const,
+    content: uses.map((u) => ({
+      type: "tool_result",
+      tool_use_id: u.id,
+      content: JSON.stringify(readTool(u.name!, u.input as Record<string, unknown>, w, scope)),
+    })),
+  };
 }
 
 export async function handle(body: unknown, deps: Deps): Promise<Reply> {
@@ -163,6 +214,7 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
     tools: mayAsk ? [tool("ask_author"), tool("propose_plan")] : [tool("propose_plan")],
     messages: [{ role: "user", content: userPrompt(req) }],
   };
+  const worldKeys = new Set(objectsByKey(world).keys());
   const usage = { input_tokens: 0, output_tokens: 0 };
   let outside = 0;
   // Что модель делала по ходам — уходит в ответ, если плана так и не будет.
@@ -178,34 +230,21 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
     const uses = res.content.filter((b) => b.type === "tool_use");
     const asked = mayAsk ? uses.find((b) => b.name === "ask_author") : undefined;
     if (asked) {
-      const q = checkSchema(asked.input, QUESTION_SCHEMA);
-      const n = (q.value as AuthorQuestion | undefined)?.options?.length ?? 0;
-      const errors = [...q.errors, ...(q.errors.length === 0 && (n < 2 || n > 4) ? [`вариантов ${n}, нужно 2–4`] : [])];
-      if (errors.length === 0) return { status: 200, body: { question: q.value, usage } };
-      trace.push(`вопрос не по схеме (${errors[0]})`);
-      call.messages.push(rejectPlan(uses, asked, ["Вопрос не по схеме ask_author:", ...errors.slice(0, 20), "Задай вопрос заново строго по схеме."]));
+      const r = questionReply(asked.input, usage);
+      if (!Array.isArray(r)) return r;
+      trace.push(`вопрос не по схеме (${r[1]})`);
+      call.messages.push(rejectPlan(uses, asked, r));
       continue;
     }
     const proposed = uses.find((b) => b.name === "propose_plan");
     if (proposed) {
-      // Схему держит сервер: модель может прислать план не по форме.
-      const shape = checkSchema(proposed.input, PLAN_SCHEMA);
-      if (shape.errors.length > 0) {
-        trace.push(`план не по схеме (${shape.errors[0]})`);
-        call.messages.push(rejectPlan(uses, proposed, [
-          "План не по схеме propose_plan:", ...shape.errors.slice(0, 20), "Отдай план заново строго по схеме.",
-        ]));
-        continue;
+      const r = planReply(proposed.input, scope, worldKeys, usage);
+      if ("status" in r) return r;
+      trace.push(r.trace);
+      if (r.outside && ++outside >= MAX_OUT_OF_SCOPE) {
+        return fail(422, "операции вне области", { out_of_scope: r.outside, usage });
       }
-      const plan = shape.value as Plan;
-      const bad = outOfScope(plan, scope, new Set(objectsByKey(world).keys()));
-      if (bad.length === 0) return { status: 200, body: { plan, usage } };
-      // Вне области: план отклонён. Модель узнаёт почему и может исправить.
-      trace.push(`план вне области (${bad[0]})`);
-      if (++outside >= MAX_OUT_OF_SCOPE) return fail(422, "операции вне области", { out_of_scope: bad, usage });
-      call.messages.push(rejectPlan(uses, proposed, [
-        "План отклонён — операции вне области:", ...bad, "Предложи план заново только в границах области.",
-      ]));
+      call.messages.push(rejectPlan(uses, proposed, r.lines));
       continue;
     }
     if (uses.length === 0) {
@@ -214,14 +253,7 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
       continue;
     }
     trace.push(uses.map((u) => u.name).join("+"));
-    call.messages.push({
-      role: "user",
-      content: uses.map((u) => ({
-        type: "tool_result",
-        tool_use_id: u.id,
-        content: JSON.stringify(readTool(u.name!, u.input as Record<string, unknown>, world, scope)),
-      })),
-    });
+    call.messages.push(readReplies(uses, world, scope));
   }
   return fail(502, `модель не предложила план за ${MAX_TURNS} ходов: ${trace.join("; ")}`, { usage, trace });
 }

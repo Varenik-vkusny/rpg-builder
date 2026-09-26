@@ -27,6 +27,12 @@ export interface ModelHttp {
   wait: (ms: number) => Promise<unknown>;
 }
 
+/// Текст ошибки провайдера: у OpenAI, Groq, Gemini — error.message, у Mistral — message или detail.
+function errorText(body: Json): string | null {
+  const t = body?.error?.message ?? body?.message ?? body?.detail;
+  return t == null ? null : typeof t === "string" ? t : JSON.stringify(t);
+}
+
 /// Тело успешного ответа или ModelError.
 export async function postModel(h: ModelHttp): Promise<Json> {
   let waits = 0;
@@ -42,7 +48,7 @@ export async function postModel(h: ModelHttp): Promise<Json> {
       i++;
       continue;
     }
-    if (!r.ok) throw new ModelError(r.status, body?.error?.message ?? r.statusText);
+    if (!r.ok) throw new ModelError(r.status, errorText(body) ?? r.statusText);
     return body;
   }
   throw new ModelError(500, "нет моделей");

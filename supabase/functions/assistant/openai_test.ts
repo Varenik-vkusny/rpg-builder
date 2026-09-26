@@ -104,3 +104,11 @@ test("openai: 429 с паузой меньше 2 с — ждём 2 с (лими�
   await callOpenAI("u", "k", ["m"], call, async (ms) => { waited.push(ms); });
   assert.deepEqual(waited, [2_000, 2_000]);
 });
+
+test("openai: у Mistral текст ошибки в message — доходит до автора, а не «Forbidden»", async () => {
+  fakeFetch([{ status: 403, body: { message: "No access to model mistral-large-latest" } }]);
+  await assert.rejects(
+    callOpenAI("u", "k", ["m"], call, async () => {}),
+    (e) => e instanceof ModelError && e.status === 403 && /No access to model/.test(e.message),
+  );
+});
