@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../assistant/assistant_service.dart';
 import '../content/content_repo.dart';
 import '../content/world_screen.dart';
+import '../open5e/open5e_api.dart';
 import 'new_world_screen.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
@@ -14,12 +15,14 @@ class WorldsScreen extends StatefulWidget {
     required this.content,
     required this.assistant,
     required this.onSignOut,
+    this.open5e = const HttpOpen5e(),
   });
 
   final WorldsRepo repo;
   final ContentRepo content;
   final AssistantService assistant;
   final VoidCallback onSignOut;
+  final Open5eApi open5e;
 
   @override
   State<WorldsScreen> createState() => _WorldsScreenState();
@@ -88,6 +91,7 @@ class _WorldsScreenState extends State<WorldsScreen> {
                         world: w,
                         repo: widget.content,
                         assistant: widget.assistant,
+                        open5e: widget.open5e,
                       ),
                     ),
                   ),

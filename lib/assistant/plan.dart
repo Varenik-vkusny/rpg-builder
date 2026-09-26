@@ -66,7 +66,9 @@ class PlanOp {
             in ((j['fields'] as Map?) ?? const {}).entries)
           if (value != null) key as String: value as Object,
       },
-      repairs: [for (final r in (j['repairs'] as List? ?? const [])) r as String],
+      repairs: [
+        for (final r in (j['repairs'] as List? ?? const [])) r as String,
+      ],
     );
   }
 
@@ -79,7 +81,12 @@ class PlanOp {
     'item': item,
     'quest': quest,
     'position': position,
-    'fields': {for (final f in planFieldNames) f: fields[f]},
+    'fields': {
+      for (final f in planFieldNames) f: fields[f],
+      // Источник образца — только у импорта (4.6); модель его не пишет и не видит.
+      for (final f in importFieldNames)
+        if (fields[f] != null) f: fields[f],
+    },
   };
 
   String? str(String f) => fields[f] as String?;
@@ -108,6 +115,9 @@ const planFieldNames = [
   'amount',
   'chance',
 ];
+
+/// Поля импорта образца (Open5e): в JSON плана — только если заданы.
+const importFieldNames = ['source', 'source_ref'];
 
 class Plan {
   const Plan({required this.summary, required this.ops});

@@ -148,6 +148,8 @@ ManualEdit editItem(String worldId, Item old, NewItem now) {
         damage: now.damage,
         defense: now.defense,
         price: now.price,
+        source: old.source,
+        sourceRef: old.sourceRef,
       ),
     ),
   );

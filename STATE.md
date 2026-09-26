@@ -19,13 +19,19 @@ demo/export_snapshots_test.dart` → build/snapshots/4.5-*.png и build/export/p
 providers.ts. Лимит у неё свой (200 000 токенов/сутки на модель) — замер 3.9 на gpt-oss-120b его не съест.
 Сегодня её сутки исчерпаны (429) — начинать после сброса ~27.09 утром.
 
-**4.6 Open5e — не начат в коде:** нужна миграция (у предметов нет полей source / source_ref, apply_plan_op
-их не пишет) — агенту не дали права менять боевую базу. Разведка: api.open5e.com/v2/items и /magicitems
-отдают key, name, desc, cost, weapon.damage_dice, armor.ac_base, rarity, document (SRD 5.1/5.2, CC BY 4.0).
+**4.6 Open5e закрыт (26.09):** в разделе «Предметы» — «Образец из Open5e» → поиск (api.open5e.com/v2 /items и
+/magicitems) → план «создать предмет» с `source=Open5e`, `source_ref=<ключ образца>` → «было → стало» и проверка на
+копии → «Импортировать» через apply_change_set (область `import`, журнала модели нет) → в историю, откатывается.
+Перевод: оружие — средний урон по костям, броня — ac_base, цена — золотые, very-rare → эпический, уровень 1.
+Миграция `20260926000016_item_source.sql` применена к боевой базе 26.09 (разрешение владельца).
+Приборы: `bash -c 'set -a; . ./.env.test; flutter test --no-pub test/open5e_test.dart test/open5e_db_test.dart'`
+(видели красным: без ключа образца, область manual вместо import). Живой Open5e: `flutter test --no-pub
+live/open5e_live_test.dart`. Показ: `flutter test --no-pub demo/open5e_snapshots_test.dart` → build/snapshots/4.6-*.png.
+Экспорт несёт `source`/`sourceRef` у предметов.
 
 Батч «модель бесплатная — план упрощается под неё» (VISION §10, 26.09): А1 → А2 → В, каждый с замером.
-Функция `assistant` на сервере — v29 (коммит «Mistral: имена моделей»), там по умолчанию ещё qwen.
-**В коде (не выложено — выкладку на прод агенту не дали права, ждёт владельца):** модель по умолчанию —
+Функция `assistant` на сервере — v30 (коммит 51f448e).
+**Выложено 26.09 как v30 (13/13 файлов сверены с сервером):** модель по умолчанию —
 Groq `openai/gpt-oss-120b` (владелец 26.09; прибор `bash scripts/fn-test.sh "по умолчанию у Groq"`, видели
 красным на старом порядке) и сведённый долг ниже.
 

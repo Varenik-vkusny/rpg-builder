@@ -38,7 +38,7 @@ void main() {
     final set = content.changeSets.single;
     expect(set.status, 'applied');
     expect((set.draft.attempts, set.draft.inputTokens), (2, 2000));
-    expect(set.draft.scope.slug, 'shtolnya_3');
+    expect(set.draft.scope!.slug, 'shtolnya_3');
     final chars = await content.characters(minesId);
     expect(chars.firstWhere((c) => c.slug == 'utoplennik').attack, 8);
   });

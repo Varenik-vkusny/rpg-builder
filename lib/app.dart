@@ -4,6 +4,7 @@ import 'assistant/assistant_service.dart';
 import 'auth/auth_screen.dart';
 import 'auth/auth_service.dart';
 import 'content/content_repo.dart';
+import 'open5e/open5e_api.dart';
 import 'worlds/worlds_repo.dart';
 import 'worlds/worlds_screen.dart';
 
@@ -15,12 +16,14 @@ class RpgBuilderApp extends StatelessWidget {
     required this.worlds,
     required this.content,
     required this.assistant,
+    this.open5e = const HttpOpen5e(),
   });
 
   final AuthService auth;
   final WorldsRepo worlds;
   final ContentRepo content;
   final AssistantService assistant;
+  final Open5eApi open5e;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +39,7 @@ class RpgBuilderApp extends StatelessWidget {
                 repo: worlds,
                 content: content,
                 assistant: assistant,
+                open5e: open5e,
                 onSignOut: auth.signOut,
               )
             : AuthScreen(auth: auth),

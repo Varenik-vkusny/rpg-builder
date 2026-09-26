@@ -8,6 +8,8 @@ import '../worlds/world_overview.dart';
 import '../check/check_screen.dart';
 import '../check/world_check.dart';
 import '../export/export_action.dart';
+import '../open5e/open5e_api.dart';
+import '../open5e/open5e_screen.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
@@ -27,11 +29,15 @@ class WorldScreen extends StatefulWidget {
     required this.world,
     required this.repo,
     required this.assistant,
+    this.open5e = const HttpOpen5e(),
   });
 
   final World world;
   final ContentRepo repo;
   final AssistantService assistant;
+
+  /// Библиотека образцов (4.6).
+  final Open5eApi open5e;
 
   @override
   State<WorldScreen> createState() => _WorldScreenState();
@@ -244,6 +250,22 @@ class _WorldScreenState extends State<WorldScreen> {
         const Key('new-item'),
         'Новый предмет',
         NewItemScreen(world: widget.world, repo: widget.repo),
+      ),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          key: const Key('open5e-open'),
+          icon: const Icon(Icons.local_library),
+          label: const Text('Образец из Open5e'),
+          onPressed: () => _open(
+            Open5eScreen(
+              world: widget.world,
+              snapshot: c,
+              repo: widget.repo,
+              api: widget.open5e,
+            ),
+          ),
+        ),
       ),
       if (c.items.isNotEmpty)
         _filterToggle('items', _filter.rarities.length + _filter.kinds.length),

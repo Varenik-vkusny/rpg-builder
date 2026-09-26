@@ -16,6 +16,8 @@ const _fieldLabels = {
   'damage': 'Урон',
   'defense': 'Защита',
   'price': 'Цена',
+  'source': 'Источник',
+  'source_ref': 'Образец',
   'role': 'Роль',
   'hp': 'Здоровье',
   'attack': 'Атака',

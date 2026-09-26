@@ -236,6 +236,9 @@ class _Copy {
         'price',
         old?.price ?? _need(op.integer('price'), 'цена'),
       ),
+      // Источник задаётся только при создании (импорт) и дальше не меняется.
+      source: old == null ? op.str('source') : old.source,
+      sourceRef: old == null ? op.str('source_ref') : old.sourceRef,
     );
     i < 0 ? items.add(it) : items[i] = it;
     return _diff({
@@ -246,6 +249,8 @@ class _Copy {
       'damage': (old?.damage, it.damage),
       'defense': (old?.defense, it.defense),
       'price': (old?.price, it.price),
+      'source': (old?.source, it.source),
+      'source_ref': (old?.sourceRef, it.sourceRef),
     });
   }
 

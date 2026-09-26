@@ -18,6 +18,7 @@ import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/content/manual_edit.dart';
 import 'package:rpg_builder/content/quest.dart';
 import 'package:rpg_builder/content/slug.dart';
+import 'package:rpg_builder/open5e/open5e_api.dart';
 import 'package:rpg_builder/worlds/world.dart';
 import 'package:rpg_builder/worlds/worlds_repo.dart';
 
@@ -389,6 +390,7 @@ Future<FakeAuth> pumpApp(
   FakeContent? content,
   AssistantService? assistant,
   GlobalKey? wrap,
+  Open5eApi? open5e,
 }) async {
   final auth = FakeAuth();
   final app = RpgBuilderApp(
@@ -396,6 +398,7 @@ Future<FakeAuth> pumpApp(
     worlds: FakeWorlds(auth),
     content: content ?? FakeContent(),
     assistant: assistant ?? FakeAssistant(),
+    open5e: open5e ?? const HttpOpen5e(),
   );
   await t.pumpWidget(
     wrap == null ? app : RepaintBoundary(key: wrap, child: app),

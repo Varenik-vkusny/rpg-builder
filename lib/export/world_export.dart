@@ -53,6 +53,9 @@ Map<String, Object> exportWorld(World world, WorldSnapshot w) {
           'damage': i.damage ?? 0,
           'defense': i.defense ?? 0,
           'price': i.price,
+          // Атрибуция образца (Open5e, CC BY 4.0); у своих предметов — "".
+          'source': i.source ?? '',
+          'sourceRef': i.sourceRef ?? '',
         },
     ],
     'characters': [
