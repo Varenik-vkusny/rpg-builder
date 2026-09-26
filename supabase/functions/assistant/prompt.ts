@@ -2,6 +2,7 @@
 import type { AssistantRequest } from "./handler.ts";
 import type { World } from "./world.ts";
 import { objectsByKey } from "./world.ts";
+import { toShort } from "./ops.ts";
 
 export function systemPrompt(w: World, scope: Set<string>): string {
   const all = objectsByKey(w);
@@ -31,7 +32,7 @@ ${data}
 - loot (добыча врага): character + item, поле chance (0 < шанс ≤ 100). update меняет шанс, delete убирает.
 - quest_step: quest + position (с 1). create — только в конец (position = число шагов + 1); delete сдвигает следующие шаги; поля step_kind, target (slug), amount. С target всегда указывай и step_kind.
 - quest_reward: quest + item, create / delete.
-В fields null значит «не задаю / не меняю». role и kind задаются только при создании.
+У каждой операции только поля своего вида; поле не указано — «не задаю / не меняю». role и kind задаются только при создании.
 Удаление врага само убирает его добычу, удаление квеста — его шаги и награды: отдельные операции для них не нужны и будут ошибкой.
 Операции выполняются по порядку: объект, на который что-то ссылается, удаляй после того, как убрал эти ссылки.
 
@@ -56,7 +57,7 @@ ${req.answers.map((a) => `- Вопрос: ${a.question}\n  Ответ: ${a.answe
 
 Твой прошлый план проверка на копии мира не пропустила. Исправь его и отдай целиком заново.
 Прошлый план:
-${JSON.stringify(req.previous_plan)}
+${JSON.stringify(req.previous_plan ? toShort(req.previous_plan) : null)}
 Проблемы:
 ${req.problems.map((p) => `- ${p}`).join("\n")}`;
 }

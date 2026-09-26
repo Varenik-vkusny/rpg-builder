@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { floodPlan, mines, op, scripted, toolUse } from "./fixtures_test_data.ts";
+import { floodPlan, mines, op, planUse, scripted, toolUse } from "./fixtures_test_data.ts";
 import { handle, MAX_FIXES, MAX_TURNS } from "./handler.ts";
 import type { Plan } from "./plan.ts";
 import { outOfScope, TOOLS } from "./plan.ts";
@@ -22,7 +22,7 @@ const ask = (extra: Record<string, unknown> = {}) => ({
 test("план: модель читает область и возвращает план, токены сложены", async () => {
   const { deps, calls } = scripted(mines, [
     toolUse("t1", "read_object", { type: "location", slug: "shtolnya_3" }),
-    toolUse("t2", "propose_plan", floodPlan),
+    planUse("t2", floodPlan),
   ]);
   const r = await handle(ask(), deps);
   assert.equal(r.status, 200);
@@ -38,7 +38,7 @@ test("план: у модели только чтение, вопрос авто
 });
 
 test("план: область — объект и связанное до двух связей", async () => {
-  const { deps, calls } = scripted(mines, [toolUse("t1", "propose_plan", floodPlan)]);
+  const { deps, calls } = scripted(mines, [planUse("t1", floodPlan)]);
   await handle(ask(), deps);
   const system = calls[0].system;
   // 1 связь: слизень; 2 связи: ключ (добыча слизня), квест (убить слизня).
@@ -54,7 +54,7 @@ test("план: область — объект и связанное до дв�
 test("план: read_object вне области не отдаёт объект", async () => {
   const { deps, calls } = scripted(mines, [
     toolUse("t1", "read_object", { type: "location", slug: "rynok" }),
-    toolUse("t2", "propose_plan", floodPlan),
+    planUse("t2", floodPlan),
   ]);
   await handle(ask(), deps);
   const toolResult = (calls[1].messages[2].content as { content: string }[])[0].content;
@@ -112,7 +112,7 @@ test("исправлени: попытка сверх двух — 400 без в
 });
 
 test("исправлени: модель получает прошлый план и список проблем", async () => {
-  const { deps, calls } = scripted(mines, [toolUse("t1", "propose_plan", floodPlan)]);
+  const { deps, calls } = scripted(mines, [planUse("t1", floodPlan)]);
   const r = await handle(
     ask({ attempt: 1, previous_plan: floodPlan, problems: ["«Утопленник»: атака 14 выше потолка 10 (ур. 3)"] }),
     deps,
@@ -155,7 +155,7 @@ for (const [name, extra, what] of [
 
 test("вне области: функция отклоняет план, модель исправляет — уходит исправленный", async () => {
   const bad = withOutside(op({ type: "location", slug: "rynok", fields: { description: "x" } }));
-  const { deps, calls } = scripted(mines, [toolUse("t1", "propose_plan", bad), toolUse("t2", "propose_plan", floodPlan)]);
+  const { deps, calls } = scripted(mines, [planUse("t1", bad), planUse("t2", floodPlan)]);
   const r = await handle(ask(), deps);
   assert.equal(r.status, 200);
   assert.deepEqual(r.body.plan, floodPlan);
@@ -166,7 +166,7 @@ test("вне области: функция отклоняет план, мод�
 
 test("вне области: второй раз вне области — 422, плана нет", async () => {
   const bad = withOutside(op({ action: "delete", type: "item", slug: "yabloko" }));
-  const { deps, calls } = scripted(mines, [toolUse("t1", "propose_plan", bad), toolUse("t2", "propose_plan", bad)]);
+  const { deps, calls } = scripted(mines, [planUse("t1", bad), planUse("t2", bad)]);
   const r = await handle(ask(), deps);
   assert.equal(r.status, 422);
   assert.equal(r.body.plan, undefined);
@@ -175,7 +175,7 @@ test("вне области: второй раз вне области — 422, 
 });
 
 test("план: данные области сразу в подсказке, чтения нет — только вопрос автору или план", async () => {
-  const { deps, calls } = scripted(mines, [toolUse("p", "propose_plan", floodPlan)]);
+  const { deps, calls } = scripted(mines, [planUse("p", floodPlan)]);
   const r = await handle(ask(), deps);
   assert.equal(r.status, 200);
   assert.equal(calls.length, 1);
@@ -214,17 +214,17 @@ test("вопрос: вариантов не 2–4 — модель получа�
 
 test("вопрос: ответы автора — в просьбе к модели; после двух вопросов и в исправлении — только план", async () => {
   const answers = [{ question: question.question, answer: "Поставить 10" }];
-  const once = scripted(mines, [toolUse("p", "propose_plan", floodPlan)]);
+  const once = scripted(mines, [planUse("p", floodPlan)]);
   await handle(ask({ answers }), once.deps);
   assert.match(String(once.calls[0].messages[0].content), /Ответ: Поставить 10/);
   assert.deepEqual(once.calls[0].tools.map((t) => t.name), ["ask_author", "propose_plan"]);
 
-  const twice = scripted(mines, [toolUse("p", "propose_plan", floodPlan)]);
+  const twice = scripted(mines, [planUse("p", floodPlan)]);
   await handle(ask({ answers: [...answers, ...answers] }), twice.deps);
   assert.deepEqual(twice.calls[0].tools.map((t) => t.name), ["propose_plan"]);
   assert.equal(twice.calls[0].only, "propose_plan");
 
-  const fix = scripted(mines, [toolUse("p", "propose_plan", floodPlan)]);
+  const fix = scripted(mines, [planUse("p", floodPlan)]);
   await handle(ask({ attempt: 1, previous_plan: floodPlan, problems: ["x"] }), fix.deps);
   assert.deepEqual(fix.calls[0].tools.map((t) => t.name), ["propose_plan"]);
 });

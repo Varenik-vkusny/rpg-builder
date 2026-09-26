@@ -1,13 +1,13 @@
-// Схема плана держит сервер: Gemini не гарантирует её, как `strict` у Claude.
+// Схему плана держит сервер: бесплатные модели её не гарантируют, как `strict` у Claude.
+// Модель пишет короткий формат (у каждого вида — свои поля), телефон получает прежний (ops.ts).
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { floodPlan, mines, scripted, toolUse } from "./fixtures_test_data.ts";
+import { floodPlan, mines, planUse, scripted, toolUse } from "./fixtures_test_data.ts";
 import { handle, MAX_TURNS } from "./handler.ts";
+import { OP_TYPES, PLAN_INPUT_SCHEMA, toPlan, toShort } from "./ops.ts";
 import { TOOLS } from "./plan.ts";
-import { checkSchema } from "./schema_check.ts";
 
-const PLAN = TOOLS.find((t) => t.name === "propose_plan")!.input_schema;
 const ask = {
   project_id: "w1",
   scope: { type: "location", slug: "shtolnya_3" },
@@ -17,57 +17,67 @@ const ask = {
   problems: [],
 };
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+type Short = { summary: string; ops: Record<string, unknown>[] } & Record<string, unknown>;
+const short = () => clone(toShort(floodPlan)) as Short;
 
-test("схема: образец плана проходит без ошибок и не меняется", () => {
-  const r = checkSchema(floodPlan, PLAN);
-  assert.deepEqual(r.errors, []);
-  assert.deepEqual(r.value, floodPlan);
+test("короткая схема: модель видит у каждого вида только его поля", () => {
+  assert.equal(TOOLS.find((t) => t.name === "propose_plan")!.input_schema, PLAN_INPUT_SCHEMA);
+  const kinds = PLAN_INPUT_SCHEMA.properties.ops.items.anyOf;
+  assert.deepEqual(kinds.map((k) => k.properties.type.enum[0]), OP_TYPES);
+  const props = (t: string) => Object.keys(kinds.find((k) => k.properties.type.enum[0] === t)!.properties);
+  assert.deepEqual(props("loot"), ["action", "type", "character", "item", "chance"]);
+  assert.deepEqual(props("quest_reward"), ["action", "type", "quest", "item"]);
+  assert.ok(!props("location").includes("attack"));
+  // Самый длинный вид — не больше 10 полей (было ~25 у каждой операции).
+  assert.ok(Math.max(...kinds.map((k) => Object.keys(k.properties).length)) <= 10);
 });
 
-test("схема: пропущенные null-поля дополняются null", () => {
-  const p = clone(floodPlan) as unknown as { ops: Record<string, unknown>[] };
-  delete p.ops[0].character;
-  delete (p.ops[0].fields as Record<string, unknown>).hp;
-  const r = checkSchema(p, PLAN);
+test("короткая схема: образец в коротком формате без пустых полей и переводится обратно без потерь", () => {
+  const s = short();
+  assert.deepEqual(s.ops[2], { action: "delete", type: "loot", character: "slizen", item: "klyuch" });
+  assert.ok(!JSON.stringify(s).includes("null"));
+  const r = toPlan(s);
   assert.deepEqual(r.errors, []);
-  assert.deepEqual(r.value, floodPlan);
+  assert.deepEqual(r.plan, floodPlan);
 });
 
-test("схема: чужой вид, дробный уровень, строка вместо числа, лишнее поле — ошибки с путём", () => {
-  const p = clone(floodPlan) as unknown as { ops: Record<string, Record<string, unknown>>[] } & Record<string, unknown>;
-  p.ops[0].fields.kind = "sword";
-  p.ops[0].fields.level = 2.5;
-  p.ops[0].fields.attack = "8";
-  p.extra = 1;
-  const { errors } = checkSchema(p, PLAN);
-  assert.equal(errors.length, 4, errors.join("\n"));
-  for (const k of ["ops[0].fields.kind", "ops[0].fields.level", "ops[0].fields.attack", "extra"]) {
+test("короткая схема: поле чужого вида, дробный уровень, строка вместо числа, лишнее поле — ошибки с путём", () => {
+  const s = short();
+  s.ops[0].attack = 3; // у локации атаки нет
+  s.ops[1].level = 2.5;
+  s.ops[1].hp = "8";
+  s.extra = 1;
+  const { plan, errors } = toPlan(s);
+  assert.equal(plan, null);
+  assert.equal(errors.length, 4, errors.join("; "));
+  for (const k of ["extra", "ops[0].attack", "ops[1].level", "ops[1].hp"]) {
     assert.ok(errors.some((e) => e.startsWith(k)), k);
   }
 });
 
-test("схема: без summary и без ops — ошибка", () => {
-  assert.equal(checkSchema({}, PLAN).errors.length, 2);
-  assert.equal(checkSchema({ summary: "x", ops: "нет" }, PLAN).errors.length, 1);
+test("короткая схема: чужой вид операции, без summary и без ops — ошибка", () => {
+  assert.match(toPlan({ summary: "x", ops: [{ action: "create", type: "dragon" }] }).errors[0], /ops\[0\]\.type: "dragon" не из location\|/);
+  assert.equal(toPlan({}).errors.length, 2);
+  assert.equal(toPlan({ summary: "x", ops: "нет" }).errors.length, 1);
 });
 
 test("схема: план не по схеме не уходит на телефон — модель получает ошибку и исправляет", async () => {
-  const bad = clone(floodPlan) as unknown as { ops: Record<string, Record<string, unknown>>[] };
-  bad.ops[0].fields.role = "boss";
+  const bad = short();
+  bad.ops[1].role = "boss";
   const { deps, calls } = scripted(mines, [
     toolUse("t1", "propose_plan", bad),
-    toolUse("t2", "propose_plan", floodPlan),
+    planUse("t2", floodPlan),
   ]);
   const r = await handle(ask, deps);
   assert.equal(r.status, 200);
   assert.deepEqual(r.body.plan, floodPlan);
   const reply = (calls[1].messages[2].content as { is_error: boolean; content: string }[])[0];
   assert.equal(reply.is_error, true);
-  assert.match(reply.content, /не по схеме[\s\S]*ops\[0\]\.fields\.role/);
+  assert.match(reply.content, /не по схеме[\s\S]*ops\[1\]\.role/);
 });
 
 test("схема: модель так и не прислала план по схеме — 502, кривой план не отдан", async () => {
-  const bad = { summary: "x", ops: [{ action: "explode" }] };
+  const bad = { summary: "x", ops: [{ action: "explode", type: "location", slug: "shtolnya_3" }] };
   const { deps } = scripted(mines, Array.from({ length: MAX_TURNS }, (_, i) => toolUse(`t${i}`, "propose_plan", bad)));
   const r = await handle(ask, deps);
   assert.equal(r.status, 502);

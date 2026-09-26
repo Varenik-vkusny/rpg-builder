@@ -6,6 +6,7 @@ import type { ScopeType, World } from "./world.ts";
 import { key, objectsByKey, scopeOf } from "./world.ts";
 import { systemPrompt, userPrompt } from "./prompt.ts";
 import { checkSchema } from "./schema_check.ts";
+import { toPlan } from "./ops.ts";
 
 /// Не больше двух исправлений плана по ошибкам проверки (VISION.md, раздел 10).
 export const MAX_FIXES = 2;
@@ -115,7 +116,6 @@ export function parseRequest(b: unknown): AssistantRequest | string {
 }
 
 const tool = (name: string) => TOOLS.find((t) => t.name === name)!;
-const PLAN_SCHEMA = tool("propose_plan").input_schema;
 const QUESTION_SCHEMA = tool("ask_author").input_schema;
 
 /// Ответ модели «план отклонён»: ошибка на propose_plan, остальным вызовам — «не выполнено».
@@ -145,22 +145,22 @@ function questionReply(input: unknown, usage: Usage): Reply | string[] {
 
 /// План по схеме и в области — ответ телефону. Иначе — строки отказа модели, запись для
 /// трассировки и (если план вне области) что именно вне её.
-/// Схему держит сервер: модель может прислать план не по форме.
+/// Схему держит сервер: модель может прислать план не по форме. Модель пишет короткий формат,
+/// телефон получает прежний (ops.ts).
 function planReply(
   input: unknown,
   scope: Set<string>,
   worldKeys: Set<string>,
   usage: Usage,
 ): Reply | { lines: string[]; trace: string; outside: string[] | null } {
-  const shape = checkSchema(input, PLAN_SCHEMA);
-  if (shape.errors.length > 0) {
+  const { plan, errors } = toPlan(input);
+  if (!plan) {
     return {
-      lines: ["План не по схеме propose_plan:", ...shape.errors.slice(0, 20), "Отдай план заново строго по схеме."],
-      trace: `план не по схеме (${shape.errors[0]})`,
+      lines: ["План не по схеме propose_plan:", ...errors.slice(0, 20), "Отдай план заново строго по схеме."],
+      trace: `план не по схеме (${errors[0]})`,
       outside: null,
     };
   }
-  const plan = shape.value as Plan;
   const bad = outOfScope(plan, scope, worldKeys);
   if (bad.length === 0) return { status: 200, body: { plan, usage } };
   // Вне области: план отклонён. Модель узнаёт почему и может исправить.

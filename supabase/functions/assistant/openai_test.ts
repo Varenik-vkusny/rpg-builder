@@ -48,9 +48,10 @@ test("openai: запрос — система, просьба, ход модел
   // Разрешён только план — модель видит только его.
   assert.deepEqual(o.tools.map((t: { function: { name: string } }) => t.function.name), ["propose_plan"]);
   // Пустые поля плана — необязательные для провайдера; обязательные остаются.
-  const op = o.tools[0].function.parameters.properties.ops.items;
-  assert.deepEqual(op.required, ["action", "type", "fields"]);
-  assert.deepEqual(op.properties.fields.required, []);
+  const loot = o.tools[0].function.parameters.properties.ops.items.anyOf.find(
+    (k: { properties: { type: { enum: string[] } } }) => k.properties.type.enum[0] === "loot",
+  );
+  assert.deepEqual(loot.required, ["action", "type", "character", "item"]);
   assert.deepEqual(o.tools[0].function.parameters.required, ["summary", "ops"]);
   const free = toOpenAI(call, "m");
   assert.equal(free.tool_choice, "required");

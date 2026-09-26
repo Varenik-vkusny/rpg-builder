@@ -2,6 +2,7 @@
 import type { Deps, ModelCall, ModelResponse } from "./handler.ts";
 import type { Plan, PlanFields, PlanOp } from "./plan.ts";
 import type { World } from "./world.ts";
+import { toShort } from "./ops.ts";
 
 export const mines: World = {
   title: "Пепельные копи",
@@ -70,6 +71,9 @@ export const toolUse = (id: string, name: string, input: unknown): ModelResponse
   content: [{ type: "tool_use", id, name, input }],
   usage: { input_tokens: 100, output_tokens: 20 },
 });
+
+/// Модель предлагает план — коротким форматом, как настоящая (ops.ts).
+export const planUse = (id: string, plan: Plan): ModelResponse => toolUse(id, "propose_plan", toShort(plan));
 
 /// Подменённая модель: отвечает по списку и запоминает, что ей прислали.
 export function scripted(world: World | null, answers: ModelResponse[]) {

@@ -14,8 +14,9 @@ run_model() {
   for i in $(seq 1 "$N"); do
     local t0=$SECONDS out
     out=$(RPGB_MODEL="$m" bash -c 'set -a; . ./.env.test; flutter test --no-pub live/shtolnya_scene_live_test.dart' 2>&1)
+    echo "$out" > "${f%.log}-$i.out"  # полный вывод прогона — разбирать провалы
     local ok=0; grep -q "All tests passed" <<<"$out" && ok=1
-    local why; why=$(grep -E "Ассистент не ответил|reason:|Expected:" <<<"$out" | head -1 | cut -c1-160)
+    local why; why=$(grep -E "Ассистент не ответил|reason:|Expected:" <<<"$out" | head -1 | cut -c1-400)
     local asked; asked=$(grep -c "^ВОПРОС" <<<"$out")
     echo "$i|$ok|$((SECONDS - t0))|$asked|$why" >> "$f"
   done
