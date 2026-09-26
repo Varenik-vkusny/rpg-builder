@@ -14,6 +14,11 @@ demo/export_snapshots_test.dart` → build/snapshots/4.5-*.png и build/export/p
 НЕ проверено: настоящий JsonUtility в Unity (Unity не подключён) и «Поделиться» на телефоне (телефона нет) —
 приёмка владельца: экспорт «Пепельных копей» → Telegram.
 
+**4.4 Скетч — разведка (26.09):** модель с картинками у Groq — `qwen/qwen3.8-27b` (console.groq.com/docs/vision):
+до 3 картинок до 20 МБ, картинка = 2048 входных токенов, инструменты вместе с картинкой работают. Уже в списке
+providers.ts. Лимит у неё свой (200 000 токенов/сутки на модель) — замер 3.9 на gpt-oss-120b его не съест.
+Сегодня её сутки исчерпаны (429) — начинать после сброса ~27.09 утром.
+
 **4.6 Open5e — не начат в коде:** нужна миграция (у предметов нет полей source / source_ref, apply_plan_op
 их не пишет) — агенту не дали права менять боевую базу. Разведка: api.open5e.com/v2/items и /magicitems
 отдают key, name, desc, cost, weapon.damage_dice, armor.ac_base, rarity, document (SRD 5.1/5.2, CC BY 4.0).
