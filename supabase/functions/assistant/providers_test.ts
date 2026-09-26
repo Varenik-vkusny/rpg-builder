@@ -40,5 +40,13 @@ test("запасная: выбранная модель первой, после
   await m(call);
   await m({ ...call, tier: 1 });
   await m({ ...call, tier: 9 });
-  assert.deepEqual(seen, ["openai/gpt-oss-20b", "qwen/qwen3.8-27b", "openai/gpt-oss-120b"]);
+  assert.deepEqual(seen, ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"]);
+});
+
+test("провайдер: по умолчанию у Groq — gpt-oss-120b (владелец, 26.09)", async () => {
+  const seen = seenModels();
+  const m = pickModel(undefined, env({ GROQ_API_KEY: "k", GEMINI_API_KEY: "k" }));
+  if (typeof m === "string") throw new Error(m);
+  await m(call);
+  assert.deepEqual(seen, ["openai/gpt-oss-120b"]);
 });

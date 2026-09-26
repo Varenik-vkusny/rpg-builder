@@ -22,6 +22,7 @@ import 'package:rpg_builder/worlds/worlds_repo.dart';
 import '../test/assistant_fixtures.dart';
 import '../test/db_helpers.dart';
 import 'assistant_live_test.dart' show runAnswering, show;
+import 'attack_question.dart';
 
 const request =
     'Третья штольня затоплена, слизни там жить не могут. '
@@ -99,9 +100,9 @@ void main() {
     }
 
     expect(
-      asked.where((q) => q.question.contains('14')),
+      asked.where(askedAboutAttack),
       isNotEmpty,
-      reason: 'ассистент спросил автора про атаку 14, а не исправил молча',
+      reason: 'ассистент спросил автора про атаку выше потолка, а не исправил молча',
     );
     expect(run.canApply, isTrue, reason: 'после исправлений ошибок нет');
 

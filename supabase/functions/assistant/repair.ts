@@ -3,10 +3,8 @@
 // 1) Опечатка в slug: чинится ТОЛЬКО если близкий slug один — среди объектов области и созданных
 //    этим планом, — и рядом нет похожего объекта вне области. Иначе остаётся ошибкой модели.
 // 2) Порядок: сначала создать, потом переписать ссылки, потом удалить.
-import type { Plan, PlanOp } from "./plan.ts";
-import { key, stepTargetType } from "./world.ts";
-
-const OBJECTS = ["location", "item", "character", "quest"];
+import { createdKey, OBJECTS, type Plan, type PlanOp, refKeys, refSlots } from "./plan.ts";
+import { key } from "./world.ts";
 
 /// Расстояние правки (Левенштейн).
 function distance(a: string, b: string): number {
@@ -27,28 +25,14 @@ export function isTypo(a: string, b: string): boolean {
   return distance(a, b) <= (n <= 5 ? 1 : n <= 10 ? 2 : 3);
 }
 
-/// Где в операции стоит ссылка на объект: вид объекта, значение, как заменить.
-function slots(op: PlanOp): { type: string; get: () => string | null; set: (v: string) => void }[] {
-  const out: { type: string; get: () => string | null; set: (v: string) => void }[] = [];
-  const f = op.fields;
-  if (OBJECTS.includes(op.type) && op.action !== "create") out.push({ type: op.type, get: () => op.slug, set: (v) => (op.slug = v) });
-  if (op.type === "loot") out.push({ type: "character", get: () => op.character, set: (v) => (op.character = v) });
-  if (op.type === "loot" || op.type === "quest_reward") out.push({ type: "item", get: () => op.item, set: (v) => (op.item = v) });
-  if (op.type === "quest_step" || op.type === "quest_reward") out.push({ type: "quest", get: () => op.quest, set: (v) => (op.quest = v) });
-  if (f.location) out.push({ type: "location", get: () => f.location, set: (v) => (f.location = v) });
-  if (f.giver) out.push({ type: "character", get: () => f.giver, set: (v) => (f.giver = v) });
-  if (f.target && f.step_kind) out.push({ type: stepTargetType(f.step_kind), get: () => f.target, set: (v) => (f.target = v) });
-  return out;
-}
-
 const note = (op: PlanOp, text: string) => (op.repairs = [...(op.repairs ?? []), text]);
 
 /// Опечатки в slug — там, где починка однозначна.
 function fixTypos(ops: PlanOp[], scope: Set<string>, world: Set<string>) {
-  const created = new Set(ops.filter((o) => o.action === "create" && OBJECTS.includes(o.type)).map((o) => key(o.type, o.slug ?? "")));
+  const created = new Set(ops.map(createdKey).filter((k): k is string => k !== null));
   const known = [...scope, ...created];
   for (const op of ops) {
-    for (const s of slots(op)) {
+    for (const s of refSlots(op)) {
       const v = s.get();
       if (!v) continue;
       const k = key(s.type, v);
@@ -65,8 +49,6 @@ function fixTypos(ops: PlanOp[], scope: Set<string>, world: Set<string>) {
   }
 }
 
-/// Ключи объектов, на которые операция ссылается или которые меняет (кроме создаваемого).
-const refs = (op: PlanOp) => slots(op).map((s) => key(s.type, s.get() ?? ""));
 const own = (op: PlanOp) => key(op.type, op.slug ?? "");
 const isObj = (op: PlanOp) => OBJECTS.includes(op.type);
 
@@ -77,7 +59,7 @@ function fixOrder(ops: PlanOp[]): PlanOp[] {
   const made = new Set(ops.filter((o) => isObj(o) && o.action === "create").map(own));
   if (ops.some((o) => isObj(o) && o.action === "delete" && made.has(own(o)))) return ops;
   const early = ops.filter((o, i) =>
-    isObj(o) && o.action === "create" && ops.slice(0, i).some((x) => refs(x).includes(own(o)))
+    isObj(o) && o.action === "create" && ops.slice(0, i).some((x) => refKeys(x).includes(own(o)))
   );
   // Удаление — всегда после правок: шаг квеста, переписанный с удаляемого врага на нового,
   // в самой операции удаляемого не упоминает (живой прогон 26.09, gpt-oss-120b).

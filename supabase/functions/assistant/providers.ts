@@ -17,8 +17,8 @@ export const PROVIDERS: Record<string, Provider> = {
   groq: {
     secret: "GROQ_API_KEY",
     url: "https://api.groq.com/openai/v1/chat/completions",
-    // Первая — лучшая по сравнению 25.09 (сцена 3.9): qwen 3/9, gpt-oss-120b 1/10, gpt-oss-20b 1/9.
-    models: ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"],
+    // Первая — модель по умолчанию (владелец, 26.09): gpt-oss-120b после А2 прошла сцену 3.9 5/5.
+    models: ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"],
   },
   mistral: {
     secret: "MISTRAL_API_KEY",
