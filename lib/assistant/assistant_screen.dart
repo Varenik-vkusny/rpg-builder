@@ -120,6 +120,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
               _run = run;
               _asked = asked;
             });
+            _showPlan();
           }
           return;
         } on QuestionAsked catch (q) {
@@ -141,7 +142,22 @@ class _AssistantScreenState extends State<AssistantScreen> {
     }
   }
 
+  /// Начало плана — сюда экран сам прокручивается, когда план пришёл.
+  final _planTop = GlobalKey();
+
+  void _showPlan() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    final c = _planTop.currentContext;
+    if (c != null && c.mounted) {
+      Scrollable.ensureVisible(
+        c,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  });
+
   List<Widget> _result(PlanRun run) => [
+    SizedBox(key: _planTop, height: 0),
     const SizedBox(height: 24),
     if (run.fixes > 0)
       Align(

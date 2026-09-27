@@ -174,7 +174,11 @@ class _WorldScreenState extends State<WorldScreen> {
   Widget build(BuildContext context) {
     final world = widget.world;
     return Scaffold(
-      appBar: AppBar(title: Text(world.title), actions: _actions()),
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: Text(world.title, style: const TextStyle(fontSize: 20)),
+        actions: _actions(),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('assistant-open'),
         onPressed: _openAssistant,

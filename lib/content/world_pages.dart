@@ -113,7 +113,7 @@ class WorldPages {
                       ? Symbols.deployed_code_rounded
                       : itemIcon(items[d.itemId]!),
                   title: items[d.itemId]?.title ?? '?',
-                  stats: [(Symbols.percent_rounded, d.chanceLabel)],
+                  stats: [(Symbols.casino_rounded, d.chanceLabel)],
                 ),
             ]),
           ),

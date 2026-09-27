@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Вход и база Supabase, Open5e, ассистент — без этого в боевой сборке нет сети. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="rpg_builder"
+        android:label="RPG Builder"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

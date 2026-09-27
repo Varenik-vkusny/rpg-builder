@@ -20,9 +20,10 @@ class StatTile extends StatelessWidget {
         color: s.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
       ),
+      // Значок и число сверху, подпись снизу во всю ширину: «Здоровье» не режется.
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 6,
+        spacing: 4,
         children: [
           Row(
             spacing: 6,
@@ -30,18 +31,19 @@ class StatTile extends StatelessWidget {
               Icon(icon, size: 18, color: s.onSurfaceVariant),
               Flexible(
                 child: Text(
-                  label,
+                  value,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: s.onSurfaceVariant),
+                  style: const TextStyle(fontSize: 22),
                 ),
               ),
             ],
           ),
           Text(
-            value,
+            label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 22),
+            style: TextStyle(fontSize: 12.5, color: s.onSurfaceVariant),
           ),
         ],
       ),
