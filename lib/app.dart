@@ -5,6 +5,7 @@ import 'auth/auth_screen.dart';
 import 'auth/auth_service.dart';
 import 'content/content_repo.dart';
 import 'open5e/open5e_api.dart';
+import 'ui/theme.dart';
 import 'worlds/worlds_repo.dart';
 import 'worlds/worlds_screen.dart';
 
@@ -29,6 +30,8 @@ class RpgBuilderApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'RPG Builder',
+      theme: appTheme(Brightness.light),
+      darkTheme: appTheme(Brightness.dark),
       home: StreamBuilder<bool>(
         stream: auth.signedInChanges,
         initialData: auth.isSignedIn,
