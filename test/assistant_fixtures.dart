@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/assistant/plan.dart';
+import 'package:rpg_builder/assistant/plan_cards.dart';
+import 'package:rpg_builder/ui/parts.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/item.dart';
@@ -163,5 +165,35 @@ Future<void> ask(
   }
   await t.enterText(find.byKey(const Key('assistant-request')), request);
   await t.tap(find.byKey(const Key('assistant-propose')));
+  await t.pumpAndSettle();
+}
+
+/// На экране плана поле показано как «было → стало» (null — нет значения).
+void expectChange(String label, String? before, String? after) => expect(
+  find.byWidgetPredicate(
+    (w) =>
+        w is BeforeAfter &&
+        w.label == label &&
+        w.before == before &&
+        w.after == after,
+  ),
+  findsOneWidget,
+  reason: '$label: $before → $after',
+);
+
+/// На экране плана есть карточка операции [title] и на ней видно название [name].
+void expectOp(String title, String name) => expect(
+  find.descendant(
+    of: find.byWidgetPredicate((w) => w is OpCard && w.result.title == title),
+    matching: find.text(name),
+  ),
+  // У новой карточки название видно и в шапке, и в поле «Название».
+  findsWidgets,
+  reason: title,
+);
+
+/// Открывает шторку проблем плана.
+Future<void> openVerdict(WidgetTester t) async {
+  await t.tap(find.byKey(const Key('plan-verdict')));
   await t.pumpAndSettle();
 }

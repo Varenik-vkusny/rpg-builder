@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
@@ -140,50 +141,97 @@ class _AssistantScreenState extends State<AssistantScreen> {
     }
   }
 
-  List<Widget> _result(PlanRun run) {
-    final error = TextStyle(color: Theme.of(context).colorScheme.error);
-    return [
-      const SizedBox(height: 16),
-      if (run.fixes > 0)
-        Text(
-          'Ассистент исправил план сам: ${run.fixes} из $maxFixes раз',
+  List<Widget> _result(PlanRun run) => [
+    const SizedBox(height: 24),
+    if (run.fixes > 0)
+      Align(
+        alignment: Alignment.centerLeft,
+        child: ActionChip(
           key: const Key('plan-fixes'),
+          avatar: const Icon(Symbols.auto_fix_high_rounded),
+          label: Text('Ассистент исправил сам: ${run.fixes} из $maxFixes'),
+          onPressed: () => showProblems(
+            context,
+            const [],
+            title: 'Что ассистент исправил сам',
+            notes: [
+              for (final (i, problems) in run.caught.indexed)
+                for (final p in problems)
+                  'Поймано перед исправлением ${i + 1}: $p',
+            ],
+          ),
         ),
-      for (final (i, problems) in run.caught.indexed)
-        for (final p in problems)
-          Text('Поймано перед исправлением ${i + 1}: $p', style: error),
-      if (!run.canApply)
-        Text(
+      ),
+    const SizedBox(height: 8),
+    PlanView(plan: run.proposal.plan, preview: run.preview),
+  ];
+
+  /// Почему «Применить» заперто — над кнопкой, со значком замка.
+  Widget _blocked(PlanRun run, Color error) => Row(
+    spacing: 8,
+    children: [
+      Icon(Symbols.lock_rounded, size: 18, color: error),
+      Expanded(
+        child: Text(
           run.fixes == maxFixes
               ? 'Ошибки остались и после $maxFixes исправлений — '
                     '«Применить» недоступно'
               : 'В плане ошибки — «Применить» недоступно',
           key: const Key('plan-blocked'),
-          style: error,
+          style: TextStyle(color: error),
         ),
-      Row(
-        spacing: 8,
-        children: [
-          Expanded(
-            child: FilledButton(
-              key: const Key('plan-apply'),
-              onPressed: _busy || !run.canApply ? null : () => _decide(true),
-              child: const Text('Применить'),
-            ),
-          ),
-          Expanded(
-            child: OutlinedButton(
-              key: const Key('plan-reject'),
-              onPressed: _busy ? null : () => _decide(false),
-              child: const Text('Отклонить'),
-            ),
-          ),
-        ],
       ),
-      if (_error != null) _errorText(),
-      const SizedBox(height: 16),
-      PlanView(plan: run.proposal.plan, preview: run.preview),
-    ];
+    ],
+  );
+
+  /// «Применить» / «Отклонить» всегда на виду; при ошибке — замок и причина.
+  Widget _decision(PlanRun run) {
+    final error = Theme.of(context).colorScheme.error;
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 10,
+            children: [
+              if (!run.canApply) _blocked(run, error),
+              if (_error != null) _errorText(),
+              Row(
+                spacing: 8,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: OutlinedButton(
+                      key: const Key('plan-reject'),
+                      onPressed: _busy ? null : () => _decide(false),
+                      child: const Text('Отклонить'),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: FilledButton.icon(
+                      key: const Key('plan-apply'),
+                      onPressed: _busy || !run.canApply
+                          ? null
+                          : () => _decide(true),
+                      icon: Icon(
+                        run.canApply
+                            ? Symbols.check_rounded
+                            : Symbols.lock_rounded,
+                      ),
+                      label: const Text('Применить'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _errorText() => Text(
@@ -222,6 +270,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     final run = _run;
     return Scaffold(
       appBar: AppBar(title: const Text('Ассистент')),
+      bottomNavigationBar: run == null ? null : _decision(run),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

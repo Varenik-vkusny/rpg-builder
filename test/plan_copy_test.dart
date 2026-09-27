@@ -201,22 +201,15 @@ void main() {
     final (content, _) = await openAssistant(t);
     await ask(t);
 
-    expect(find.text('Изменить · Локация «Штольня №3»'), findsOneWidget);
-    expect(
-      find.text('Описание: обвалившаяся выработка → затоплена по пояс'),
-      findsOneWidget,
-    );
-    expect(find.text('Создать · Персонаж «Утопленник»'), findsOneWidget);
-    expect(find.text('Атака: 14'), findsOneWidget);
-    expect(find.text('Шанс: 35% → удалено'), findsOneWidget);
-    expect(
-      find.text('Шаг 2: Убить: Слизень × 4 → Убить: Утопленник × 3'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Проверка на копии мира — ошибок: 0 · предупреждений: 1'),
-      findsOneWidget,
-    );
+    expectOp('Изменить · Локация «Штольня №3»', 'Штольня №3');
+    expectChange('Описание', 'обвалившаяся выработка', 'затоплена по пояс');
+    expectOp('Создать · Персонаж «Утопленник»', 'Утопленник');
+    expectChange('Атака', null, '14');
+    expectChange('Шанс', '35%', null);
+    expectChange('Шаг 2', 'Убить: Слизень × 4', 'Убить: Утопленник × 3');
+    expect(find.text('1 предупреждение'), findsOneWidget);
+    expect(find.text('Нельзя применить'), findsNothing);
+    await openVerdict(t);
     expect(
       find.text('«Утопленник»: атака 14 выше потолка 10 (ур. 3)'),
       findsOneWidget,
@@ -244,14 +237,10 @@ void main() {
       FakeAssistant(List.generate(3, (_) => proposal(bad))),
     );
     await ask(t);
-    expect(
-      find.text('Проверка на копии мира — ошибок: 1 · предупреждений: 0'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Не выполнить: этот предмет уже в добыче'),
-      findsOneWidget,
-    );
+    expect(find.text('Нельзя применить'), findsOneWidget);
+    expect(find.text('1 ошибка'), findsOneWidget);
+    expect(find.text('Не выполнить'), findsOneWidget);
+    expect(find.text('этот предмет уже в добыче'), findsOneWidget);
   });
 }
 

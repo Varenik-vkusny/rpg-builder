@@ -76,7 +76,8 @@ void main() {
       ]),
     );
     await ask(t);
-    expect(find.text('Вне области: location:rynok'), findsOneWidget);
+    expect(find.text('Вне области'), findsOneWidget);
+    expect(find.text('location:rynok'), findsOneWidget);
     final apply = find.byKey(const Key('plan-apply'));
     await t.ensureVisible(apply);
     expect(t.widget<FilledButton>(apply).onPressed, isNull);

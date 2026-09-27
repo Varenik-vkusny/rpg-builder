@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
+import '../ui/parts.dart';
+import '../ui/theme.dart';
 import 'plan.dart';
-import 'plan_apply.dart';
+import 'plan_cards.dart';
 import 'plan_preview.dart';
+import 'plan_review.dart';
 
-/// План глазами автора: итог проверки на копии и «было → стало» по каждой операции.
+/// План глазами автора: итог проверки на копии (только если есть проблемы) и карточка
+/// на каждую операцию с «было → стало».
 class PlanView extends StatelessWidget {
   const PlanView({super.key, required this.plan, required this.preview});
 
@@ -14,86 +19,159 @@ class PlanView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final errors = preview.of(Severity.error).length;
-    final warnings = preview.of(Severity.warning).length;
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
       children: [
         Text(
           plan.summary,
           key: const Key('plan-summary'),
-          style: theme.textTheme.titleMedium,
+          style: Theme.of(context).textTheme.titleLarge,
         ),
-        const SizedBox(height: 8),
-        Text(
-          errors + warnings == 0
-              ? 'Проверка на копии мира: проблем нет'
-              : 'Проверка на копии мира — ошибок: $errors · '
-                    'предупреждений: $warnings',
-          key: const Key('plan-check-summary'),
-          style: TextStyle(color: errors > 0 ? theme.colorScheme.error : null),
+        if (preview.problems.isNotEmpty) PlanVerdict(preview: preview),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Что изменится · ${preview.ops.length}',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            TextButton.icon(
+              key: const Key('plan-review'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => PlanReviewScreen(preview: preview),
+                ),
+              ),
+              icon: const Icon(Symbols.view_carousel_rounded),
+              label: const Text('По одному'),
+            ),
+          ],
         ),
-        if (preview.outside.isNotEmpty)
-          Text(
-            'Операций вне области: ${preview.outside.length} — '
-            'такой план применить нельзя',
-            key: const Key('plan-out-of-scope'),
-            style: TextStyle(color: theme.colorScheme.error),
+        for (final (i, r) in preview.ops.indexed)
+          OpCard(
+            key: Key('plan-op-$i'),
+            result: r,
+            outside: preview.outside[i],
           ),
-        for (final p in preview.problems) _problem(p, theme),
-        const SizedBox(height: 8),
-        for (final (i, r) in preview.ops.indexed) _op(i, r, theme),
       ],
     );
   }
+}
 
-  Widget _problem(Problem p, ThemeData theme) => ListTile(
-    dense: true,
-    leading: p.severity == Severity.error
-        ? Icon(Icons.error, color: theme.colorScheme.error)
-        : const Icon(Icons.warning_amber, color: Colors.orange),
-    title: Text(p.message),
-  );
+String _count(int n, String one, String few, String many) {
+  final m = n % 10, h = n % 100;
+  final w = m == 1 && h != 11
+      ? one
+      : m >= 2 && m <= 4 && (h < 12 || h > 14)
+      ? few
+      : many;
+  return '$n $w';
+}
 
-  Widget _op(int i, OpResult r, ThemeData theme) => Card(
-    key: Key('plan-op-$i'),
-    child: Padding(
-      padding: const EdgeInsets.all(12),
+/// Плашка проверки: красная при ошибке, тонкая жёлтая при одних предупреждениях.
+/// Нажатие — шторка со всеми проблемами.
+class PlanVerdict extends StatelessWidget {
+  const PlanVerdict({super.key, required this.preview});
+  final PlanPreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final e = preview.of(Severity.error).length;
+    final w = preview.of(Severity.warning).length;
+    final s = Theme.of(context).colorScheme;
+    final c = AppColors.of(context);
+    final (bg, fg) = e > 0
+        ? (s.errorContainer, s.onErrorContainer)
+        : (c.warnContainer, c.onWarnContainer);
+    final counts = [
+      if (e > 0) _count(e, 'ошибка', 'ошибки', 'ошибок'),
+      if (w > 0)
+        _count(w, 'предупреждение', 'предупреждения', 'предупреждений'),
+    ].join(' · ');
+    return Material(
+      key: const Key('plan-verdict'),
+      color: bg,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => showProblems(context, preview.problems),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: e > 0 ? 14 : 10,
+          ),
+          child: Row(
+            spacing: 12,
+            children: [
+              Icon(
+                e > 0 ? Symbols.block_rounded : Symbols.warning_rounded,
+                color: fg,
+                fill: 1,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (e > 0)
+                      Text(
+                        'Нельзя применить',
+                        style: TextStyle(
+                          color: fg,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    Text(
+                      counts,
+                      key: const Key('plan-check-summary'),
+                      style: TextStyle(color: fg),
+                    ),
+                    if (preview.outside.isNotEmpty)
+                      Text(
+                        'Операций вне области: ${preview.outside.length} — '
+                        'такой план применить нельзя',
+                        key: const Key('plan-out-of-scope'),
+                        style: TextStyle(color: fg),
+                      ),
+                  ],
+                ),
+              ),
+              Icon(Symbols.chevron_right_rounded, color: fg),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Шторка со списком проблем: значок + слово «Ошибка» / «Предупреждение» + текст.
+Future<void> showProblems(
+  BuildContext context,
+  List<Problem> problems, {
+  String title = 'Проверка на копии мира',
+  List<String> notes = const [],
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  builder: (context) => SafeArea(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 4,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 8,
         children: [
-          Text(r.title, style: theme.textTheme.titleSmall),
-          for (final fix in r.op.repairs)
-            Text(
-              'Поправлено сервером: $fix',
-              style: TextStyle(color: theme.colorScheme.tertiary),
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          for (final n in notes) Text(n),
+          for (final p in problems)
+            NoticeBanner(
+              p.severity == Severity.error ? Notice.error : Notice.warning,
+              p.message,
             ),
-          if (preview.outside[i] case final keys?)
-            Text(
-              'Вне области: ${keys.join(', ')}',
-              style: TextStyle(color: theme.colorScheme.error),
-            ),
-          if (r.error != null)
-            Text(
-              'Не выполнить: ${r.error}',
-              style: TextStyle(color: theme.colorScheme.error),
-            )
-          else if (r.op.action == OpAction.delete && r.changes.isEmpty)
-            const Text('удаляется')
-          else
-            for (final c in r.changes) Text(_change(c)),
         ],
       ),
     ),
-  );
-
-  /// «Атака: 14 → 8», «Атака: 14» (новое), «Шанс: 35% → удалено».
-  static String _change(FieldChange c) => switch ((c.before, c.after)) {
-    (null, final a) => '${c.label}: $a',
-    (final b, null) => '${c.label}: $b → удалено',
-    (final String b, final String a) =>
-      '${c.label}: ${b.isEmpty ? 'пусто' : b} → ${a.isEmpty ? 'пусто' : a}',
-  };
-}
+  ),
+);

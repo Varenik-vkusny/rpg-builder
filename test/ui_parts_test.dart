@@ -72,7 +72,7 @@ void main() {
       'СТАЛО',
       '35%',
       'убрано',
-      'НОВОЕ',
+      'Роль',
       'Враг',
     ]) {
       expect(find.text(text), findsWidgets, reason: text);

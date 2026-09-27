@@ -57,17 +57,21 @@ void main() {
     expect(assistant.requests, isEmpty);
   });
 
-  testWidgets('план: починку сервера автор видит пометкой у операции', (t) async {
+  testWidgets('план: починку сервера автор видит пометкой у операции', (
+    t,
+  ) async {
     // Сервер поправил опечатку в slug (repair.ts) — пометка приходит в операции плана.
     final j = floodPlanJson();
-    (j['ops'] as List)[0]['repairs'] = ['опечатка в slug: shtolnya3 → shtolnya_3'];
+    (j['ops'] as List)[0]['repairs'] = [
+      'опечатка в slug: shtolnya3 → shtolnya_3',
+    ];
     await openAssistant(
       t,
       FakeAssistant(List.generate(3, (_) => proposal(Plan.fromJson(j)))),
     );
     await ask(t);
     expect(
-      find.text('Поправлено сервером: опечатка в slug: shtolnya3 → shtolnya_3'),
+      find.text('опечатка в slug: shtolnya3 → shtolnya_3'),
       findsOneWidget,
     );
     expect(find.textContaining('Поправлено сервером'), findsOneWidget);

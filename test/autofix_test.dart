@@ -146,10 +146,9 @@ void main() {
       ]),
     );
     await ask(t);
-    expect(
-      find.text('Ассистент исправил план сам: 1 из 2 раз'),
-      findsOneWidget,
-    );
+    expect(find.text('Ассистент исправил сам: 1 из 2'), findsOneWidget);
+    await t.tap(find.byKey(const Key('plan-fixes')));
+    await t.pumpAndSettle();
     expect(
       find.text(
         'Поймано перед исправлением 1: '
@@ -157,8 +156,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Атака: 8'), findsOneWidget);
-    expect(find.text('Проверка на копии мира: проблем нет'), findsOneWidget);
+    expectChange('Атака', null, '8');
+    // Плашка проверки появляется только при проблемах.
+    expect(find.byKey(const Key('plan-verdict')), findsNothing);
     expect(find.byKey(const Key('plan-blocked')), findsNothing);
   });
 
@@ -167,10 +167,7 @@ void main() {
     await openAssistant(t, a);
     await ask(t);
     expect(a.requests.length, 3);
-    expect(
-      find.text('Ассистент исправил план сам: 2 из 2 раз'),
-      findsOneWidget,
-    );
+    expect(find.text('Ассистент исправил сам: 2 из 2'), findsOneWidget);
     expect(
       find.text(
         'Ошибки остались и после 2 исправлений — «Применить» недоступно',

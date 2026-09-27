@@ -95,17 +95,18 @@ class NoticeBanner extends StatelessWidget {
         children: [
           Icon(notice.icon, size: 20, color: fg, fill: 1),
           Expanded(
-            child: Text.rich(
-              TextSpan(
+            child: DefaultTextStyle.merge(
+              style: TextStyle(color: fg, fontSize: 14, height: 1.4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextSpan(
-                    text: '${title ?? notice.word}\n',
+                  Text(
+                    title ?? notice.word,
                     style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
-                  TextSpan(text: text),
+                  Text(text),
                 ],
               ),
-              style: TextStyle(color: fg, fontSize: 14, height: 1.4),
             ),
           ),
         ],
@@ -114,7 +115,8 @@ class NoticeBanner extends StatelessWidget {
   }
 }
 
-/// Поле плана: подпись, «БЫЛО», стрелка, «СТАЛО». Нет старого — «НОВОЕ»; нет нового — «убрано».
+/// Поле плана: подпись, «БЫЛО», стрелка, «СТАЛО». Нет старого — одна строка «поле · значение»;
+/// нет нового — «СТАЛО: убрано».
 class BeforeAfter extends StatelessWidget {
   const BeforeAfter({
     super.key,
@@ -132,26 +134,38 @@ class BeforeAfter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = Theme.of(context).colorScheme;
+    final head = Row(
+      spacing: 8,
+      children: [
+        Icon(
+          icon ?? Symbols.notes_rounded,
+          size: 18,
+          color: s.onSurfaceVariant,
+        ),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(color: s.onSurfaceVariant, fontSize: 14),
+          ),
+        ),
+        // Новое значение без старого — одной строкой: сравнивать не с чем.
+        if (before == null && after != null)
+          Flexible(
+            flex: 2,
+            child: Text(
+              after!.isEmpty ? 'пусто' : after!,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            ),
+          ),
+      ],
+    );
+    if (before == null && after != null) return head;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 6,
       children: [
-        Row(
-          spacing: 8,
-          children: [
-            Icon(
-              icon ?? Symbols.notes_rounded,
-              size: 18,
-              color: s.onSurfaceVariant,
-            ),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(color: s.onSurfaceVariant, fontSize: 14),
-              ),
-            ),
-          ],
-        ),
+        head,
         if (before case final b?) ...[
           _Side(
             'БЫЛО',
@@ -173,7 +187,7 @@ class BeforeAfter extends StatelessWidget {
             s.onErrorContainer,
           ),
           final a => _Side(
-            before == null ? 'НОВОЕ' : 'СТАЛО',
+            'СТАЛО',
             a.isEmpty ? 'пусто' : a,
             s.primaryContainer,
             s.onPrimaryContainer,

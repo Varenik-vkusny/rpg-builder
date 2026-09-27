@@ -134,7 +134,8 @@ void main() {
       find.text('Операций вне области: 1 — такой план применить нельзя'),
       findsOneWidget,
     );
-    expect(find.text('Вне области: location:rynok'), findsOneWidget);
+    expect(find.text('Вне области'), findsOneWidget);
+    expect(find.text('location:rynok'), findsOneWidget);
   });
 
   testWidgets('вне области: план в границах — отказа нет', (t) async {

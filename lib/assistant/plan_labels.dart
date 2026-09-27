@@ -51,6 +51,19 @@ String journalOpTitle(String action, String type, String what) {
   return '${_actions[OpAction.values.byName(action)]} · ${t == null ? type : _types[t]} $what';
 }
 
+/// Заголовок операции по частям для карточки: «Изменить · Шаг квеста «Обвал», шаг 2»
+/// → (Изменить, Шаг квеста, «Обвал», шаг 2). Одиночное название — без кавычек.
+(String action, String type, String name) splitOpTitle(String title) {
+  final dot = title.indexOf(' · ');
+  final action = dot < 0 ? '' : title.substring(0, dot);
+  final rest = dot < 0 ? title : title.substring(dot + 3);
+  final q = rest.indexOf(' «');
+  if (q < 0) return (action, rest, '');
+  final what = rest.substring(q + 1);
+  final single = RegExp(r'^«([^»]*)»$').firstMatch(what);
+  return (action, rest.substring(0, q), single?.group(1) ?? what);
+}
+
 /// Подписи по текущему состоянию копии мира: названия берутся из [world].
 class PlanLabels {
   PlanLabels(this.world);

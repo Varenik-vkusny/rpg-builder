@@ -134,9 +134,7 @@ void main() {
     await open(t, 'slizen');
     expect(find.text('Изменить персонажа'), findsOneWidget);
     expect(
-      find.byWidgetPredicate(
-        (w) => w is ChoiceChip && w.onSelected == null,
-      ),
+      find.byWidgetPredicate((w) => w is ChoiceChip && w.onSelected == null),
       findsWidgets,
     );
   });
