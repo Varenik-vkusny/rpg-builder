@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/app.dart';
+import 'package:rpg_builder/ui/object_page.dart';
 import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/assistant/change_set.dart';
 import 'package:rpg_builder/assistant/history.dart';
@@ -427,3 +428,33 @@ Future<void> openWorld(WidgetTester t, String title) async {
   await t.tap(find.text(title));
   await t.pumpAndSettle();
 }
+
+/// Открывает страницу объекта мира по его названию в списке.
+Future<void> openObject(WidgetTester t, String title) async {
+  final row = find.text(title).first;
+  await t.ensureVisible(row);
+  await t.pumpAndSettle();
+  await t.tap(row);
+  await t.pumpAndSettle();
+}
+
+/// На странице объекта есть плитка «[label]: [value]».
+void expectTile(String label, String value) => expect(
+  find.byWidgetPredicate(
+    (w) => w is StatTile && w.label == label && w.value == value,
+  ),
+  findsOneWidget,
+  reason: '$label: $value',
+);
+
+/// На странице персонажа в добыче есть предмет с шансом.
+void expectLoot(String item, String chance) => expect(
+  find.byWidgetPredicate(
+    (w) =>
+        w is PortraitCard &&
+        w.title == item &&
+        w.stats.any((s) => s.$2 == chance),
+  ),
+  findsOneWidget,
+  reason: '$item $chance',
+);

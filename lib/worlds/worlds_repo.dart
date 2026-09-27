@@ -24,8 +24,11 @@ class SupabaseWorldsRepo implements WorldsRepo {
 
   @override
   Future<World> create(NewWorld world) async {
-    final row =
-        await _client.from('projects').insert(world.toRow()).select().single();
+    final row = await _client
+        .from('projects')
+        .insert(world.toRow())
+        .select()
+        .single();
     return World.fromRow(row);
   }
 }

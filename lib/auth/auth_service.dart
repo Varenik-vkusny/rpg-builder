@@ -30,7 +30,8 @@ class SupabaseAuthService implements AuthService {
     final res = await _auth.signUp(email: email, password: password);
     if (res.session == null) {
       throw const AuthException(
-          'Регистрация прошла, но вход не выполнен: база требует подтверждения почты.');
+        'Регистрация прошла, но вход не выполнен: база требует подтверждения почты.',
+      );
     }
   }
 

@@ -18,6 +18,7 @@ void main() {
 
     // Удалили рынок вручную — счётчик и последние изменения обновились.
     await tapButton(t, 'open-rynok');
+    await tapButton(t, 'object-edit');
     await tapButton(t, 'object-delete');
     expect(
       find.text('Локаций 1 · Предметов 2 · Персонажей 2 · Квестов 1'),

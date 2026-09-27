@@ -140,10 +140,12 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(
-        find.text('Оружие · Обычный · ур. 1 · урон 5 · 5 зол. · из Open5e'),
-        findsOneWidget,
-      );
+      await openObject(t, 'War Pick');
+      expect(find.text('Оружие · Обычный'), findsOneWidget);
+      expectTile('Уровень', '1');
+      expectTile('Урон', '5');
+      expectTile('Цена', '5');
+      expect(find.text('Образец: Open5e'), findsOneWidget);
       final item = (await content.items(minesId))
           .firstWhere((i) => i.slug == 'war_pick');
       expect(

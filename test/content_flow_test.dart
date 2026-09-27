@@ -24,7 +24,7 @@ void main() {
     await t.pumpAndSettle();
 
     expect(find.text('Штольня №3'), findsOneWidget);
-    expect(find.text('Уровни 1–10'), findsOneWidget);
+    expect(find.text('ур. 1–10'), findsOneWidget);
     expect(find.text('Локаций пока нет'), findsNothing);
   });
 
@@ -61,7 +61,10 @@ void main() {
     await t.pumpAndSettle();
 
     expect(find.text('Ключ от лебёдки'), findsOneWidget);
-    expect(find.text('Квестовый · Обычный · ур. 2 · 0 зол.'), findsOneWidget);
+    await openObject(t, 'Ключ от лебёдки');
+    expect(find.text('Квестовый · Обычный'), findsOneWidget);
+    expectTile('Уровень', '2');
+    expectTile('Цена', '0');
   });
 
   testWidgets('предмет-оружие получает урон, редкость и цену', (t) async {
@@ -80,10 +83,11 @@ void main() {
     await t.tap(find.byKey(const Key('item-save')));
     await t.pumpAndSettle();
 
-    expect(
-      find.text('Оружие · Редкий · ур. 3 · урон 6 · 40 зол.'),
-      findsOneWidget,
-    );
+    await openObject(t, 'Кирка');
+    expect(find.text('Оружие · Редкий'), findsOneWidget);
+    expectTile('Уровень', '3');
+    expectTile('Урон', '6');
+    expectTile('Цена', '40');
   });
 
   testWidgets('предмет-оружие без урона не создаётся', (t) async {
@@ -154,12 +158,13 @@ void main() {
     await t.pumpAndSettle();
 
     expect(find.text('Пепельный слизень'), findsOneWidget);
-    expect(
-      find.text(
-        'Враг · ур. 1 · здоровье 10 · атака 0 · Штольня №3 · роняет: Ключ от лебёдки 35%',
-      ),
-      findsOneWidget,
-    );
+    await openObject(t, 'Пепельный слизень');
+    expect(find.text('Враг'), findsOneWidget);
+    expect(find.text('Штольня №3'), findsOneWidget);
+    expectTile('Уровень', '1');
+    expectTile('Здоровье', '10');
+    expectTile('Атака', '0');
+    expectLoot('Ключ от лебёдки', '35%');
   });
 
   for (final bad in ['0', '100.5', '-3', 'много']) {
@@ -193,12 +198,11 @@ void main() {
     await t.tap(find.byKey(const Key('character-save')));
     await t.pumpAndSettle();
 
-    expect(
-      find.text(
-        'Враг · ур. 1 · здоровье 10 · атака 0 · роняет: Ключ от лебёдки 100%',
-      ),
-      findsOneWidget,
-    );
+    await openObject(t, 'Бригадир-призрак');
+    expect(find.text('Враг'), findsOneWidget);
+    expectTile('Уровень', '1');
+    expectLoot('Ключ от лебёдки', '100%');
+    expect(find.byKey(const Key('object-edit')), findsOneWidget);
   });
 
   testWidgets('персонаж-житель не имеет добычи', (t) async {
@@ -212,10 +216,13 @@ void main() {
     await t.tap(find.byKey(const Key('character-save')));
     await t.pumpAndSettle();
 
-    expect(
-      find.text('Житель · ур. 1 · здоровье 10 · атака 0 · Штольня №3'),
-      findsOneWidget,
-    );
+    await openObject(t, 'Бригадир');
+    expect(find.text('Житель'), findsOneWidget);
+    expect(find.text('Штольня №3'), findsOneWidget);
+    expectTile('Уровень', '1');
+    expectTile('Здоровье', '10');
+    expectTile('Атака', '0');
+    expect(find.text('Добыча'), findsNothing);
   });
 
   testWidgets('персонаж-враг: уровень 3, здоровье 30, атака 14', (t) async {
@@ -228,7 +235,11 @@ void main() {
     await t.tap(find.byKey(const Key('character-save')));
     await t.pumpAndSettle();
 
-    expect(find.text('Враг · ур. 3 · здоровье 30 · атака 14'), findsOneWidget);
+    await openObject(t, 'Утопленник');
+    expect(find.text('Враг'), findsOneWidget);
+    expectTile('Уровень', '3');
+    expectTile('Здоровье', '30');
+    expectTile('Атака', '14');
   });
 
   for (final (field, bad, message) in [

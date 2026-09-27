@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../assistant/assistant_screen.dart';
 import '../assistant/assistant_service.dart';
@@ -20,7 +21,8 @@ import 'new_character_screen.dart';
 import 'new_item_screen.dart';
 import 'new_location_screen.dart';
 import 'new_quest_screen.dart';
-import 'quest.dart';
+import 'world_pages.dart';
+import '../ui/cover_card.dart';
 
 /// Мир изнутри: локации, предметы, персонажи и квесты, у каждого раздела своя кнопка «+».
 class WorldScreen extends StatefulWidget {
@@ -128,59 +130,56 @@ class _WorldScreenState extends State<WorldScreen> {
         ),
       );
 
-  /// Квест в списке: выдающий, шаги по порядку, награды — строками.
-  /// Тап открывает форму квеста в режиме правки.
-  Widget _questTile(Quest q, WorldSnapshot c) => ListTile(
-    key: Key('open-${q.slug}'),
-    leading: const Icon(Icons.flag),
-    title: Text(q.title),
-    subtitle: Text(q.lines(c.titles).join('\n')),
-    isThreeLine: true,
-    onTap: () => _open(
-      NewQuestScreen(
-        world: widget.world,
-        repo: widget.repo,
-        locations: c.locations,
-        items: c.items,
-        characters: c.characters,
-        editing: q,
-        snapshot: c,
-      ),
+  /// Строка объекта в списке: значок и имя, подробности — на его странице.
+  Widget _row(String slug, IconData icon, String title, Widget page) =>
+      ListTile(
+        key: Key('open-$slug'),
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest,
+          child: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        title: Text(title),
+        trailing: const Icon(Symbols.chevron_right_rounded),
+        onTap: () => _open(page),
+      );
+
+  /// История, проверка и экспорт — значками в шапке мира.
+  List<Widget> _actions() => [
+    IconButton(
+      key: const Key('history-open'),
+      tooltip: 'История изменений',
+      icon: const Icon(Symbols.history_rounded),
+      onPressed: _openHistory,
     ),
-  );
+    IconButton(
+      key: const Key('check-world'),
+      tooltip: 'Проверка мира',
+      icon: const Icon(Symbols.fact_check_rounded),
+      onPressed: _openCheck,
+    ),
+    IconButton(
+      key: const Key('world-export'),
+      tooltip: 'Экспорт в JSON',
+      icon: const Icon(Symbols.ios_share_rounded),
+      onPressed: _export,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final world = widget.world;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(world.title),
-        actions: [
-          IconButton(
-            key: const Key('assistant-open'),
-            tooltip: 'Ассистент',
-            icon: const Icon(Icons.auto_awesome),
-            onPressed: _openAssistant,
-          ),
-          IconButton(
-            key: const Key('history-open'),
-            tooltip: 'История изменений',
-            icon: const Icon(Icons.history),
-            onPressed: _openHistory,
-          ),
-          IconButton(
-            key: const Key('check-world'),
-            tooltip: 'Проверка мира',
-            icon: const Icon(Icons.fact_check),
-            onPressed: _openCheck,
-          ),
-          IconButton(
-            key: const Key('world-export'),
-            tooltip: 'Экспорт в JSON',
-            icon: const Icon(Icons.ios_share),
-            onPressed: _export,
-          ),
-        ],
+      appBar: AppBar(title: Text(world.title), actions: _actions()),
+      floatingActionButton: FloatingActionButton.extended(
+        key: const Key('assistant-open'),
+        onPressed: _openAssistant,
+        icon: const Icon(Symbols.auto_awesome_rounded),
+        label: const Text('Изменить фразой'),
       ),
       body: FutureBuilder(
         future: (_content, _history).wait,
@@ -195,6 +194,7 @@ class _WorldScreenState extends State<WorldScreen> {
           }
           final (c, history) = snap.data!;
           return ListView(
+            padding: const EdgeInsets.only(bottom: 96),
             children: [
               WorldOverview(
                 world: c,
@@ -225,18 +225,22 @@ class _WorldScreenState extends State<WorldScreen> {
     ),
     if (c.locations.isEmpty) const ListTile(subtitle: Text('Локаций пока нет')),
     for (final l in c.locations)
-      ListTile(
-        key: Key('open-${l.slug}'),
-        leading: const Icon(Icons.place),
-        title: Text(l.title),
-        subtitle: Text('Уровни ${l.levelMin}–${l.levelMax}'),
-        onTap: () => _open(
-          NewLocationScreen(
-            world: widget.world,
-            repo: widget.repo,
-            editing: l,
-            snapshot: c,
-          ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: CoverCard(
+          key: Key('open-${l.slug}'),
+          title: l.title,
+          icon: Symbols.landscape_rounded,
+          hue: CoverCard.hueOf(l.title),
+          caption: 'ур. ${l.levelMin}–${l.levelMax}',
+          counters: [
+            (
+              Symbols.groups_rounded,
+              c.characters.where((ch) => ch.locationId == l.id).length,
+            ),
+          ],
+          onTap: () =>
+              _open(WorldPages(widget.world, widget.repo, c).location(l)),
         ),
       ),
   ];
@@ -269,31 +273,8 @@ class _WorldScreenState extends State<WorldScreen> {
       ),
       if (c.items.isNotEmpty)
         _filterToggle('items', _filter.rarities.length + _filter.kinds.length),
-      if (c.items.isNotEmpty && _filtersOpen.contains('items')) ...[
-        FilterBar(
-          prefix: 'rarity',
-          values: Rarity.values,
-          label: (r) => r.label,
-          selected: _filter.rarities,
-          onToggle: (r) => setState(() {
-            _filter = _filter.copyWith(
-              rarities: ContentFilter.toggle(_filter.rarities, r),
-            );
-          }),
-        ),
-        const SizedBox(height: 4),
-        FilterBar(
-          prefix: 'kind',
-          values: ItemKind.values,
-          label: (k) => k.label,
-          selected: _filter.kinds,
-          onToggle: (k) => setState(() {
-            _filter = _filter.copyWith(
-              kinds: ContentFilter.toggle(_filter.kinds, k),
-            );
-          }),
-        ),
-      ],
+      if (c.items.isNotEmpty && _filtersOpen.contains('items'))
+        ..._itemFilters(),
       if (c.items.isEmpty)
         const ListTile(subtitle: Text('Предметов пока нет'))
       else if (shown.isEmpty)
@@ -302,22 +283,41 @@ class _WorldScreenState extends State<WorldScreen> {
           subtitle: Text('Под фильтр ничего не подходит'),
         ),
       for (final i in shown)
-        ListTile(
-          key: Key('open-${i.slug}'),
-          leading: const Icon(Icons.inventory_2),
-          title: Text(i.title),
-          subtitle: Text(i.summary),
-          onTap: () => _open(
-            NewItemScreen(
-              world: widget.world,
-              repo: widget.repo,
-              editing: i,
-              snapshot: c,
-            ),
-          ),
+        _row(
+          i.slug,
+          itemIcon(i),
+          i.title,
+          WorldPages(widget.world, widget.repo, c).item(i),
         ),
     ];
   }
+
+  /// Чипы фильтра предметов: редкость и вид.
+  List<Widget> _itemFilters() => [
+    FilterBar(
+      prefix: 'rarity',
+      values: Rarity.values,
+      label: (r) => r.label,
+      selected: _filter.rarities,
+      onToggle: (r) => setState(() {
+        _filter = _filter.copyWith(
+          rarities: ContentFilter.toggle(_filter.rarities, r),
+        );
+      }),
+    ),
+    const SizedBox(height: 4),
+    FilterBar(
+      prefix: 'kind',
+      values: ItemKind.values,
+      label: (k) => k.label,
+      selected: _filter.kinds,
+      onToggle: (k) => setState(() {
+        _filter = _filter.copyWith(
+          kinds: ContentFilter.toggle(_filter.kinds, k),
+        );
+      }),
+    ),
+  ];
 
   /// Персонажи с фильтром по роли (4.3).
   List<Widget> _characters(WorldSnapshot c) {
@@ -356,26 +356,11 @@ class _WorldScreenState extends State<WorldScreen> {
           subtitle: Text('Под фильтр ничего не подходит'),
         ),
       for (final ch in shown)
-        ListTile(
-          key: Key('open-${ch.slug}'),
-          leading: const Icon(Icons.person),
-          title: Text(ch.title),
-          subtitle: Text(
-            ch.summary(
-              {for (final l in c.locations) l.id: l.title},
-              {for (final i in c.items) i.id: i.title},
-            ),
-          ),
-          onTap: () => _open(
-            NewCharacterScreen(
-              world: widget.world,
-              repo: widget.repo,
-              locations: c.locations,
-              items: c.items,
-              editing: ch,
-              snapshot: c,
-            ),
-          ),
+        _row(
+          ch.slug,
+          characterIcon(ch),
+          ch.title,
+          WorldPages(widget.world, widget.repo, c).character(ch),
         ),
     ];
   }
@@ -394,6 +379,12 @@ class _WorldScreenState extends State<WorldScreen> {
       ),
     ),
     if (c.quests.isEmpty) const ListTile(subtitle: Text('Квестов пока нет')),
-    for (final q in c.quests) _questTile(q, c),
+    for (final q in c.quests)
+      _row(
+        q.slug,
+        Symbols.flag_rounded,
+        q.title,
+        WorldPages(widget.world, widget.repo, c).quest(q),
+      ),
   ];
 }

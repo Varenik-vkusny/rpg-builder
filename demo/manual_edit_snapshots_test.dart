@@ -30,6 +30,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tapShown(t, find.byKey(const Key('open-slizen')));
+    await tapShown(t, find.byKey(const Key('object-edit')));
     await shot(t, '4.1-edit-slime');
     await t.enterText(
       find.byKey(const Key('character-description')),
@@ -43,9 +44,12 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tapShown(t, find.byKey(const Key('open-klyuch')));
+    await tapShown(t, find.byKey(const Key('object-edit')));
     await tapShown(t, find.byKey(const Key('object-delete')));
     await shot(t, '4.1-delete-refused');
     await t.pageBack();
+    await t.pumpAndSettle();
+    await t.pageBack(); // со страницы предмета — в мир
     await t.pumpAndSettle();
 
     await tapShown(t, find.byKey(const Key('history-open')));

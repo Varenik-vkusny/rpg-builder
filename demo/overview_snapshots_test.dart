@@ -38,6 +38,11 @@ void main() {
 
     // 4.3: фильтр предметов — только редкие; персонажи — только враги.
     await tapShown(t, find.byKey(const Key('filter-items')));
+    await t.scrollUntilVisible(
+      find.byKey(const Key('filter-rarity-rare')),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tapShown(t, find.byKey(const Key('filter-rarity-rare')));
     await t.scrollUntilVisible(
       find.byKey(const Key('filter-characters')),

@@ -41,13 +41,15 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
       _error = null;
     });
     try {
-      await widget.repo.create(NewWorld(
-        title: title,
-        setting: _setting.text.trim(),
-        tone: _tone.text.trim(),
-        levelMin: _levels.start.round(),
-        levelMax: _levels.end.round(),
-      ));
+      await widget.repo.create(
+        NewWorld(
+          title: title,
+          setting: _setting.text.trim(),
+          tone: _tone.text.trim(),
+          levelMin: _levels.start.round(),
+          levelMax: _levels.end.round(),
+        ),
+      );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
@@ -92,8 +94,10 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
             onChanged: (v) => setState(() => _levels = v),
           ),
           if (_error != null)
-            Text(_error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           const SizedBox(height: 8),
           FilledButton(
             key: const Key('world-save'),

@@ -24,7 +24,11 @@ Future<FakeContent> openMines(WidgetTester t) async {
   return content;
 }
 
-Future<void> open(WidgetTester t, String slug) => tapButton(t, 'open-$slug');
+/// Открыть объект и нажать ✏ — форма правки.
+Future<void> open(WidgetTester t, String slug) async {
+  await tapButton(t, 'open-$slug');
+  await tapButton(t, 'object-edit');
+}
 
 void main() {
   testWidgets('правка вручную: локация — форма заполнена, сохранить → мир и '
@@ -129,6 +133,9 @@ void main() {
       (w) => w is ChoiceChip && w.onSelected == null,
     );
     expect(kinds, findsWidgets);
+    // Назад из формы — на страницу предмета, ещё раз — в мир.
+    await t.pageBack();
+    await t.pumpAndSettle();
     await t.pageBack();
     await t.pumpAndSettle();
     await open(t, 'slizen');
