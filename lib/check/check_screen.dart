@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../assistant/assistant_screen.dart';
 import '../assistant/assistant_service.dart';
 import '../assistant/scope.dart';
 import '../content/content_repo.dart';
 import '../worlds/world.dart';
+import '../ui/theme.dart';
 import 'world_check.dart';
 
 /// «Проверка мира»: все ошибки и предупреждения мира одним списком.
@@ -57,7 +59,6 @@ class _CheckScreenState extends State<CheckScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -77,37 +78,92 @@ class _CheckScreenState extends State<CheckScreen> {
               );
             }
             final problems = checkWorld(snap.data!);
-            int count(Severity s) =>
-                problems.where((p) => p.severity == s).length;
             return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               children: [
-                ListTile(
-                  key: const Key('check-summary'),
-                  title: Text(widget.world.title),
-                  subtitle: Text(
-                    problems.isEmpty
-                        ? 'Проблем не найдено'
-                        : 'Ошибок: ${count(Severity.error)} · '
-                              'Предупреждений: ${count(Severity.warning)}',
-                  ),
-                ),
-                const Divider(),
+                _summary(problems),
+                const SizedBox(height: 16),
                 for (final (i, p) in problems.indexed)
-                  ListTile(
-                    leading: p.severity == Severity.error
-                        ? Icon(Icons.error, color: colors.error)
-                        : const Icon(Icons.warning_amber, color: Colors.orange),
-                    title: Text(p.message),
-                    subtitle: Text(p.severity.label),
-                    trailing: TextButton(
-                      key: Key('fix-$i'),
-                      onPressed: () => _fix(snap.data!, p),
-                      child: const Text('Исправить'),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ProblemRow(
+                      p,
+                      fixKey: Key('fix-$i'),
+                      onFix: () => _fix(snap.data!, p),
                     ),
                   ),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  /// Итог сверху: «Проблем не найдено» или число ошибок и предупреждений.
+  Widget _summary(List<Problem> problems) {
+    final s = Theme.of(context).colorScheme;
+    final c = AppColors.of(context);
+    int count(Severity v) => problems.where((p) => p.severity == v).length;
+    final errors = count(Severity.error);
+    final (bg, fg, icon) = problems.isEmpty
+        ? (c.okContainer, c.onOkContainer, Symbols.task_alt_rounded)
+        : errors > 0
+        ? (s.errorContainer, s.onErrorContainer, Symbols.error_rounded)
+        : (c.warnContainer, c.onWarnContainer, Symbols.warning_rounded);
+    return Card(
+      color: bg,
+      child: ListTile(
+        key: const Key('check-summary'),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        leading: Icon(icon, color: fg, fill: 1, size: 32),
+        title: Text(widget.world.title, style: TextStyle(color: fg)),
+        subtitle: Text(
+          problems.isEmpty
+              ? 'Проблем не найдено'
+              : 'Ошибок: $errors · '
+                    'Предупреждений: ${count(Severity.warning)}',
+          style: TextStyle(
+            color: fg,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Проблема мира: значок и слово «Ошибка» / «Предупреждение», текст, «Исправить».
+class ProblemRow extends StatelessWidget {
+  const ProblemRow(this.problem, {super.key, required this.onFix, this.fixKey});
+  final Problem problem;
+  final VoidCallback onFix;
+  final Key? fixKey;
+
+  static IconData iconOf(Severity s) =>
+      s == Severity.error ? Symbols.error_rounded : Symbols.warning_rounded;
+
+  @override
+  Widget build(BuildContext context) {
+    final error = problem.severity == Severity.error;
+    final tint = error
+        ? Theme.of(context).colorScheme.error
+        : AppColors.of(context).warn;
+    return Card(
+      child: ListTile(
+        contentPadding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+        leading: Icon(iconOf(problem.severity), color: tint, fill: 1),
+        title: Text(problem.message),
+        subtitle: Text(
+          problem.severity.label,
+          style: TextStyle(color: tint, fontWeight: FontWeight.w500),
+        ),
+        trailing: FilledButton.tonal(
+          key: fixKey,
+          style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+          onPressed: onFix,
+          child: const Text('Исправить'),
         ),
       ),
     );

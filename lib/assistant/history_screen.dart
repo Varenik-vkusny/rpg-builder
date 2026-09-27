@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../content/quest.dart';
 import '../worlds/world.dart';
 import 'history.dart';
+import '../ui/parts.dart';
+import 'plan_cards.dart';
 import 'plan_labels.dart';
 
 /// История наборов изменений мира (3.7): что меняли, «было → стало», откат любого
@@ -87,14 +90,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: Text('Изменений пока не было'),
             );
           }
-          return ListView(children: [for (final s in sets) _set(s, world)]);
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            children: [
+              for (final s in sets)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Card(child: _set(s, world)),
+                ),
+            ],
+          );
         },
       ),
     ),
   );
 
   Widget _set(ChangeSetEntry s, WorldSnapshot world) {
-    final error = TextStyle(color: Theme.of(context).colorScheme.error);
     final labels = PlanLabels(() => world);
     final titles = world.titles;
     String? show(JournalOp op, String key, String? raw) {
@@ -115,48 +126,120 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return ExpansionTile(
       key: Key('history-${s.id}'),
       maintainState: true,
+      shape: const RoundedRectangleBorder(),
+      leading: _statusIcon(s.status),
       title: Text(s.summary.isEmpty ? s.request : s.summary),
       subtitle: Text(
-        '${s.status.label} · $when · «${s.request}»'
+        '${s.status.label} · $when'
         '${s.revertsId == null ? '' : ' · откат набора'}',
       ),
-      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final op in s.ops) ...[
-          Text(
+        Row(
+          spacing: 8,
+          children: [
+            Icon(
+              Symbols.chat_bubble_rounded,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            Expanded(child: Text('«${s.request}»')),
+          ],
+        ),
+        const SizedBox(height: 12),
+        for (final op in s.ops) ..._op(op, show),
+        ..._revertArea(s),
+      ],
+    );
+  }
+
+  /// Операция набора: метка, заголовок, «было → стало» по каждому полю.
+  List<Widget> _op(
+    JournalOp op,
+    String? Function(JournalOp, String, String?) show,
+  ) => [
+    Row(
+      spacing: 8,
+      children: [
+        ChangeTag(_change(op.action)),
+        Expanded(
+          child: Text(
             journalOpTitle(op.action, op.type, '«${op.title}»'),
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          for (final (k, was, now) in op.changes)
-            Text(
-              '${fieldLabel(k.replaceAll(RegExp(r'_id$'), ''))}: '
-              '${show(op, k, was) ?? 'пусто'} → ${show(op, k, now) ?? 'удалено'}',
-            ),
-          const SizedBox(height: 6),
-        ],
-        if (_conflicts[s.id] case final conflicts?) ...[
-          Text(
-            'Откат невозможен — объекты меняли после набора:',
-            key: Key('revert-conflicts-${s.id}'),
-            style: error,
-          ),
-          for (final c in conflicts) Text(c.message, style: error),
-        ],
-        if (_errors[s.id] case final e?)
-          Text(
-            'Не удалось откатить — в мире ничего не изменилось: $e',
-            key: Key('revert-error-${s.id}'),
-            style: error,
-          ),
-        if (s.canRevert)
-          OutlinedButton.icon(
-            key: Key('revert-${s.id}'),
-            icon: const Icon(Icons.undo),
-            label: const Text('Откатить'),
-            onPressed: _busy == null ? () => _revert(s) : null,
-          ),
+        ),
       ],
+    ),
+    const SizedBox(height: 8),
+    for (final (k, was, now) in op.changes)
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: BeforeAfter(
+          icon: fieldIcons[fieldLabel(k.replaceAll(RegExp(r'_id$'), ''))],
+          label: fieldLabel(k.replaceAll(RegExp(r'_id$'), '')),
+          before: show(op, k, was),
+          after: show(op, k, now),
+        ),
+      ),
+    const SizedBox(height: 8),
+  ];
+
+  /// Конфликты и ошибка отката, кнопка «Откатить».
+  List<Widget> _revertArea(ChangeSetEntry s) => [
+    if (_conflicts[s.id] case final conflicts?)
+      NoticeBanner(
+        Notice.error,
+        [for (final c in conflicts) c.message].join('\n'),
+        key: Key('revert-conflicts-${s.id}'),
+        title: 'Откат невозможен — объекты меняли после набора',
+      ),
+    if (_errors[s.id] case final e?)
+      NoticeBanner(
+        Notice.error,
+        e.toString(),
+        key: Key('revert-error-${s.id}'),
+        title: 'Не удалось откатить — в мире ничего не изменилось',
+      ),
+    if (s.canRevert) ...[
+      const SizedBox(height: 8),
+      FilledButton.tonalIcon(
+        key: Key('revert-${s.id}'),
+        icon: const Icon(Symbols.undo_rounded),
+        label: const Text('Откатить'),
+        onPressed: _busy == null ? () => _revert(s) : null,
+      ),
+    ],
+  ];
+
+  static Change _change(String action) => switch (action) {
+    'create' => Change.create,
+    'delete' => Change.delete,
+    _ => Change.update,
+  };
+
+  Widget _statusIcon(SetStatus status) {
+    final s = Theme.of(context).colorScheme;
+    final (icon, bg, fg) = switch (status) {
+      SetStatus.applied => (
+        Symbols.check_rounded,
+        s.primaryContainer,
+        s.onPrimaryContainer,
+      ),
+      SetStatus.rejected => (
+        Symbols.close_rounded,
+        s.surfaceContainerHighest,
+        s.onSurfaceVariant,
+      ),
+      SetStatus.reverted => (
+        Symbols.undo_rounded,
+        s.tertiaryContainer,
+        s.onTertiaryContainer,
+      ),
+    };
+    return CircleAvatar(
+      backgroundColor: bg,
+      child: Icon(icon, color: fg),
     );
   }
 }
