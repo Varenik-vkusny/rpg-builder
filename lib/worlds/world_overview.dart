@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../assistant/history.dart';
 import '../check/world_check.dart';
@@ -37,18 +38,43 @@ class WorldOverview extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(
+          Padding(
             key: const Key('overview-counts'),
-            leading: const Icon(Icons.inventory_2_outlined),
-            title: Text(
-              'Локаций ${w.locations.length} · Предметов ${w.items.length} · '
-              'Персонажей ${w.characters.length} · Квестов ${w.quests.length}',
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: Row(
+              spacing: 8,
+              children: [
+                _Count(
+                  'locations',
+                  Symbols.landscape_rounded,
+                  'Места',
+                  w.locations.length,
+                ),
+                _Count(
+                  'items',
+                  Symbols.deployed_code_rounded,
+                  'Предметы',
+                  w.items.length,
+                ),
+                _Count(
+                  'characters',
+                  Symbols.groups_rounded,
+                  'Персонажи',
+                  w.characters.length,
+                ),
+                _Count(
+                  'quests',
+                  Symbols.flag_rounded,
+                  'Квесты',
+                  w.quests.length,
+                ),
+              ],
             ),
           ),
           ListTile(
             key: const Key('overview-check'),
             leading: Icon(
-              errors > 0 ? Icons.error : Icons.fact_check,
+              errors > 0 ? Symbols.error_rounded : Symbols.fact_check_rounded,
               color: errors > 0 ? colors.error : null,
             ),
             title: Text(
@@ -56,12 +82,12 @@ class WorldOverview extends StatelessWidget {
                   ? 'Проблем не найдено'
                   : 'Ошибок: $errors · Предупреждений: $warnings',
             ),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(Symbols.chevron_right_rounded),
             onTap: onCheck,
           ),
           ListTile(
             key: const Key('overview-history'),
-            leading: const Icon(Icons.history),
+            leading: const Icon(Symbols.history_rounded),
             title: Text(
               history.isEmpty
                   ? 'Изменений пока не было'
@@ -76,10 +102,47 @@ class WorldOverview extends StatelessWidget {
                             '${s.summary.isEmpty ? s.request : s.summary}',
                     ].join('\n'),
                   ),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(Symbols.chevron_right_rounded),
             onTap: onHistory,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Счётчик объектов одного вида: значок, число, короткая подпись.
+class _Count extends StatelessWidget {
+  const _Count(this.kind, this.icon, this.label, this.n);
+  final String kind;
+  final IconData icon;
+  final String label;
+  final int n;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Container(
+        key: Key('count-$kind'),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: s.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          spacing: 2,
+          children: [
+            Icon(icon, size: 20, color: s.onSurfaceVariant),
+            Text('$n', style: const TextStyle(fontSize: 20)),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: s.onSurfaceVariant),
+            ),
+          ],
+        ),
       ),
     );
   }

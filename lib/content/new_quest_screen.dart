@@ -220,60 +220,69 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
     final s = _steps[i];
     final targets = _targets(s.kind);
     // Ключ строки — сам шаг: после удаления соседа поля не путаются.
-    return Row(
+    // Две строки: «номер · вид · убрать», под ней «цель · сколько» — на телефоне ничего не режется.
+    return Column(
       key: ObjectKey(s),
       children: [
-        Text('${i + 1}.'),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 2,
-          child: DropdownButtonFormField<StepKind>(
-            key: Key('step-kind-$i'),
-            isExpanded: true,
-            initialValue: s.kind,
-            items: [
-              for (final k in StepKind.values)
-                DropdownMenuItem(value: k, child: Text(k.label)),
-            ],
-            onChanged: (k) => setState(() {
-              s.kind = k!;
-              s.targetId = null;
-            }),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 3,
-          // Новый ключ на смену вида: список целей другой, выбор сброшен.
-          child: DropdownButtonFormField<String>(
-            key: Key('step-target-$i-${s.kind.name}'),
-            isExpanded: true,
-            initialValue: s.targetId,
-            hint: const Text('Цель'),
-            items: [
-              for (final t in targets.entries)
-                DropdownMenuItem(value: t.key, child: Text(t.value)),
-            ],
-            onChanged: (v) => setState(() => s.targetId = v),
-          ),
-        ),
-        if (s.kind.counted) ...[
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 56,
-            child: TextField(
-              key: Key('step-amount-$i'),
-              controller: s.amount,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Сколько'),
+        Row(
+          children: [
+            Text('${i + 1}.'),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<StepKind>(
+                key: Key('step-kind-$i'),
+                isExpanded: true,
+                initialValue: s.kind,
+                items: [
+                  for (final k in StepKind.values)
+                    DropdownMenuItem(value: k, child: Text(k.label)),
+                ],
+                onChanged: (k) => setState(() {
+                  s.kind = k!;
+                  s.targetId = null;
+                }),
+              ),
             ),
-          ),
-        ],
-        IconButton(
-          tooltip: 'Убрать шаг',
-          icon: const Icon(Icons.close),
-          onPressed: () => setState(() => _steps.removeAt(i).amount.dispose()),
+            IconButton(
+              tooltip: 'Убрать шаг',
+              icon: const Icon(Icons.close),
+              onPressed: () =>
+                  setState(() => _steps.removeAt(i).amount.dispose()),
+            ),
+          ],
         ),
+        Row(
+          children: [
+            const SizedBox(width: 24),
+            Expanded(
+              // Новый ключ на смену вида: список целей другой, выбор сброшен.
+              child: DropdownButtonFormField<String>(
+                key: Key('step-target-$i-${s.kind.name}'),
+                isExpanded: true,
+                initialValue: s.targetId,
+                hint: const Text('Цель'),
+                items: [
+                  for (final t in targets.entries)
+                    DropdownMenuItem(value: t.key, child: Text(t.value)),
+                ],
+                onChanged: (v) => setState(() => s.targetId = v),
+              ),
+            ),
+            if (s.kind.counted) ...[
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 56,
+                child: TextField(
+                  key: Key('step-amount-$i'),
+                  controller: s.amount,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Сколько'),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
       ],
     );
   }

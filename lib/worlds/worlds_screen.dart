@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../assistant/assistant_service.dart';
 import '../content/content_repo.dart';
 import '../content/world_screen.dart';
 import '../open5e/open5e_api.dart';
 import 'new_world_screen.dart';
+import '../ui/cover_card.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
 
@@ -53,7 +55,7 @@ class _WorldsScreenState extends State<WorldsScreen> {
           IconButton(
             key: const Key('sign-out'),
             tooltip: 'Выйти',
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Symbols.logout_rounded),
             onPressed: widget.onSignOut,
           ),
         ],
@@ -61,7 +63,7 @@ class _WorldsScreenState extends State<WorldsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('new-world'),
         onPressed: _openNew,
-        icon: const Icon(Icons.add),
+        icon: const Icon(Symbols.add_rounded),
         label: const Text('Новый мир'),
       ),
       body: FutureBuilder<List<World>>(
@@ -77,21 +79,27 @@ class _WorldsScreenState extends State<WorldsScreen> {
           }
           final worlds = snap.data!;
           if (worlds.isEmpty) {
-            return const Center(child: Text('Миров пока нет'));
+            return const _Empty();
           }
           return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
             children: [
               for (final w in worlds)
-                ListTile(
-                  title: Text(w.title),
-                  subtitle: Text(_subtitle(w)),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => WorldScreen(
-                        world: w,
-                        repo: widget.content,
-                        assistant: widget.assistant,
-                        open5e: widget.open5e,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: CoverCard(
+                    title: w.title,
+                    icon: Symbols.public_rounded,
+                    hue: CoverCard.hueOf(w.title),
+                    caption: _subtitle(w),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => WorldScreen(
+                          world: w,
+                          repo: widget.content,
+                          assistant: widget.assistant,
+                          open5e: widget.open5e,
+                        ),
                       ),
                     ),
                   ),
@@ -106,5 +114,36 @@ class _WorldsScreenState extends State<WorldsScreen> {
   String _subtitle(World w) {
     final levels = 'Уровни ${w.levelMin}–${w.levelMax}';
     return w.tone.isEmpty ? levels : '$levels · ${w.tone}';
+  }
+}
+
+/// Пустой список: что это за место и что нажать.
+class _Empty extends StatelessWidget {
+  const _Empty();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 12,
+          children: [
+            Icon(Symbols.public_rounded, size: 56, color: s.onSurfaceVariant),
+            Text(
+              'Миров пока нет',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            Text(
+              'Нажми «Новый мир» — и начни с названия и диапазона уровней',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: s.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

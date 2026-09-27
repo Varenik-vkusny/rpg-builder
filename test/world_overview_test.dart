@@ -1,4 +1,5 @@
 // Обзор мира (4.2): счётчики по видам, сводка проверки, последние изменения.
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'apply_flow_test.dart' show tapButton;
@@ -9,10 +10,7 @@ void main() {
     t,
   ) async {
     final content = await openMines(t);
-    expect(
-      find.text('Локаций 2 · Предметов 2 · Персонажей 2 · Квестов 1'),
-      findsOneWidget,
-    );
+    expectCounts({'locations': 2, 'items': 2, 'characters': 2, 'quests': 1});
     expect(find.text('Проблем не найдено'), findsOneWidget);
     expect(find.text('Изменений пока не было'), findsOneWidget);
 
@@ -20,10 +18,7 @@ void main() {
     await tapButton(t, 'open-rynok');
     await tapButton(t, 'object-edit');
     await tapButton(t, 'object-delete');
-    expect(
-      find.text('Локаций 1 · Предметов 2 · Персонажей 2 · Квестов 1'),
-      findsOneWidget,
-    );
+    expectCounts({'locations': 1, 'items': 2, 'characters': 2, 'quests': 1});
     expect(find.text('Применён: Удаление вручную: Рынок'), findsOneWidget);
     expect(content.journal, hasLength(1));
 
@@ -34,4 +29,18 @@ void main() {
     await tapButton(t, 'overview-check');
     expect(find.text('Проверка мира'), findsOneWidget);
   });
+}
+
+/// Счётчики обзора мира: у плитки вида [kind] видно число.
+void expectCounts(Map<String, int> counts) {
+  for (final MapEntry(key: kind, value: n) in counts.entries) {
+    expect(
+      find.descendant(
+        of: find.byKey(Key('count-$kind')),
+        matching: find.text('$n'),
+      ),
+      findsOneWidget,
+      reason: '$kind: $n',
+    );
+  }
 }
