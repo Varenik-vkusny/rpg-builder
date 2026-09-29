@@ -1,6 +1,8 @@
 // Тестовые авторы в НАСТОЯЩЕЙ базе Supabase для приборов изоляции (RLS).
-// Нужны переменные окружения RPGB_TEST_EMAIL_A, RPGB_TEST_EMAIL_B, RPGB_TEST_PASSWORD
+// Нужны переменные окружения RPGB_TEST_EMAIL_T, RPGB_TEST_EMAIL_B, RPGB_TEST_PASSWORD
 // (scripts/check.sh берёт их из .env.test). Нет переменных — тест КРАСНЫЙ, а не пропущен.
+// Автор А (RPGB_TEST_EMAIL_A) — для показа руками: тесты под ним не входят,
+// check.sh это стережёт (scripts/author_a_worlds.sh).
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -36,14 +38,24 @@ Future<SupabaseClient> author(String email, String password) async {
   return c;
 }
 
-/// Два тестовых автора: A и B.
-Future<(SupabaseClient, SupabaseClient)> twoAuthors() async {
-  final password = env('RPGB_TEST_PASSWORD');
-  return (
-    await author(env('RPGB_TEST_EMAIL_A'), password),
-    await author(env('RPGB_TEST_EMAIL_B'), password),
-  );
+/// Тестовый автор Т: под ним пишут тесты с базой, живые прогоны и видео.
+/// Мир, оставшийся от прерванного прогона (старше часа), убирается при входе —
+/// свежие не трогаем: соседний файл тестов может работать с ними прямо сейчас.
+Future<SupabaseClient> testAuthor() async {
+  final t = await author(env('RPGB_TEST_EMAIL_T'), env('RPGB_TEST_PASSWORD'));
+  final hourAgo = DateTime.now().toUtc().subtract(const Duration(hours: 1));
+  await t
+      .from('projects')
+      .delete()
+      .lt('created_at', hourAgo.toIso8601String());
+  return t;
 }
+
+/// Два тестовых автора: Т (пишет) и B (чужой, проверяет изоляцию).
+Future<(SupabaseClient, SupabaseClient)> twoAuthors() async => (
+  await testAuthor(),
+  await author(env('RPGB_TEST_EMAIL_B'), env('RPGB_TEST_PASSWORD')),
+);
 
 /// Клиент без входа.
 SupabaseClient anonymous() =>

@@ -44,7 +44,7 @@ class Recording implements AssistantService {
 
 void main() {
   test('сцена «штольня» вживую: ассистент спрашивает про атаку 14, применить, откатить', () async {
-    final a = await author(env('RPGB_TEST_EMAIL_A'), env('RPGB_TEST_PASSWORD'));
+    final a = await testAuthor();
     final repo = SupabaseContentRepo(a);
     final world = await SupabaseWorldsRepo(a).create(
       const NewWorld(

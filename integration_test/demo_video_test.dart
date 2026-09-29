@@ -12,7 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../test/assistant_fixtures.dart' show fillMines;
 import '../test/fakes.dart' show createWorld, openWorld;
 
-const email = String.fromEnvironment('RPGB_TEST_EMAIL_A');
+const email = String.fromEnvironment('RPGB_TEST_EMAIL_T');
 const password = String.fromEnvironment('RPGB_TEST_PASSWORD');
 const worldTitle = 'Пепельные копи';
 const request =

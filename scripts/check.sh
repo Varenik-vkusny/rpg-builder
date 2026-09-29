@@ -45,7 +45,11 @@ if [ -f pubspec.yaml ]; then
   # Тестовые авторы для проверки изоляции миров в настоящей базе.
   [ -f .env.test ] && { set -a; . ./.env.test; set +a; }
   run "анализатор Dart" "flutter analyze --no-pub"
+  # Автор А — для показа руками. Тесты с базой пишут под автором Т и убирают
+  # за собой: за прогон под А никто не входит, и миров у него не прибавляется.
+  run "автор А: запомнить" "bash scripts/author_a_worlds.sh start"
   run "тесты (экраны + изоляция миров в базе)" "flutter test --no-pub"
+  run "автор А не тронут тестами" "bash scripts/author_a_worlds.sh check"
 fi
 
 # ---------- серверная функция ассистента (TypeScript) ----------
