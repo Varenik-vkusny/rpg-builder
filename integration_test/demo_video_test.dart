@@ -91,13 +91,16 @@ void main() {
     await pause(t, 2);
     await tapAndWait(t, find.byKey(const Key('assistant-propose')));
 
-    // Ассистент спрашивает — выбираем его совет.
-    final first = await waitFor(t, [
-      find.byKey(const Key('question-dialog')),
-      find.byKey(const Key('plan-apply')),
-      find.byKey(const Key('assistant-error')),
-    ]);
-    if (first.evaluate().first.widget.key == const Key('question-dialog')) {
+    // Ассистент спрашивает (бывает, дважды) — каждый раз выбираем его совет.
+    while (true) {
+      final next = await waitFor(t, [
+        find.byKey(const Key('question-dialog')),
+        find.byKey(const Key('plan-apply')),
+        find.byKey(const Key('assistant-error')),
+      ]);
+      if (next.evaluate().first.widget.key != const Key('question-dialog')) {
+        break;
+      }
       await pause(t, 5);
       await tapAndWait(t, find.byKey(const Key('question-option-0')));
       await pause(t, 1);
@@ -105,10 +108,6 @@ void main() {
     }
 
     // План «было → стало» и проверка на копии.
-    await waitFor(t, [
-      find.byKey(const Key('plan-apply')),
-      find.byKey(const Key('assistant-error')),
-    ]);
     expect(find.byKey(const Key('assistant-error')), findsNothing);
     await pause(t, 3);
     final list = find.byType(Scrollable).first;
