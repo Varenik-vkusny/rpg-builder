@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
 import '../ui/object_page.dart';
+import '../ui/parts.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
@@ -121,52 +122,137 @@ class WorldPages {
     );
   }
 
-  Widget item(Item i) => ObjectPage(
-    icon: itemIcon(i),
-    title: i.title,
-    kind: '${i.kind.label} · ${i.rarity.label}',
-    tiles: [
-      StatTile(Symbols.military_tech_rounded, 'Уровень', '${i.level}'),
-      if (i.damage case final d?)
-        StatTile(Symbols.swords_rounded, 'Урон', '$d'),
-      if (i.defense case final d?)
-        StatTile(Symbols.shield_rounded, 'Защита', '$d'),
-      StatTile(Symbols.payments_rounded, 'Цена', '${i.price}'),
-    ],
-    description: i.source == null ? '' : 'Образец: ${i.source}',
-    edit: () =>
-        NewItemScreen(world: world, repo: repo, editing: i, snapshot: c),
-  );
+  /// Предмет: кто роняет (с шансом), какой квест требует, какой даёт наградой.
+  Widget item(Item i) {
+    final droppers = [
+      for (final ch in c.characters)
+        for (final d in ch.loot)
+          if (d.itemId == i.id) (ch, d),
+    ];
+    final needs = [
+      for (final q in c.quests)
+        if (q.steps.any(
+          (s) => s.kind == StepKind.collect && s.targetId == i.id,
+        ))
+          q,
+    ];
+    final gives = [
+      for (final q in c.quests)
+        if (q.rewardIds.contains(i.id)) q,
+    ];
+    return Builder(
+      builder: (context) => ObjectPage(
+        icon: itemIcon(i),
+        title: i.title,
+        kind: '${i.kind.label} · ${i.rarity.label}',
+        tiles: [
+          StatTile(Symbols.military_tech_rounded, 'Уровень', '${i.level}'),
+          if (i.damage case final d?)
+            StatTile(Symbols.swords_rounded, 'Урон', '$d'),
+          if (i.defense case final d?)
+            StatTile(Symbols.shield_rounded, 'Защита', '$d'),
+          StatTile(Symbols.payments_rounded, 'Цена', '${i.price}'),
+        ],
+        description: i.source == null ? '' : 'Образец: ${i.source}',
+        edit: () =>
+            NewItemScreen(world: world, repo: repo, editing: i, snapshot: c),
+        sections: [
+          (
+            icon: Symbols.link_rounded,
+            title: 'Связи',
+            // Нет связей — одна строка: это и подсказка к проверке «нельзя получить».
+            child: droppers.isEmpty && needs.isEmpty && gives.isEmpty
+                ? const Text(
+                    'Предмет ни с чем не связан',
+                    key: Key('item-no-links'),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final (ch, d) in droppers)
+                        LinkRow(
+                          key: Key('link-${ch.slug}'),
+                          icon: characterIcon(ch),
+                          text: 'Роняет: ${ch.title} · ${d.chanceLabel}',
+                          onTap: () => openDeeper(context, character(ch)),
+                        ),
+                      for (final q in needs)
+                        LinkRow(
+                          key: Key('link-need-${q.slug}'),
+                          icon: Symbols.flag_rounded,
+                          text: 'Нужен в квесте: ${q.title}',
+                          onTap: () => openDeeper(context, quest(q)),
+                        ),
+                      for (final q in gives)
+                        LinkRow(
+                          key: Key('link-reward-${q.slug}'),
+                          icon: Symbols.redeem_rounded,
+                          text: 'Награда за квест: ${q.title}',
+                          onTap: () => openDeeper(context, quest(q)),
+                        ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  /// Квест: выдающий, шаги, награды — каждая строка ведёт на свой объект.
   Widget quest(Quest q) {
     final lines = q.lines(c.titles);
-    return ObjectPage(
-      icon: Symbols.flag_rounded,
-      title: q.title,
-      kind: 'Квест',
-      description: q.description,
-      edit: () => NewQuestScreen(
-        world: world,
-        repo: repo,
-        locations: c.locations,
-        items: c.items,
-        characters: c.characters,
-        editing: q,
-        snapshot: c,
-      ),
-      sections: [
-        (
-          icon: Symbols.format_list_numbered_rounded,
-          title: 'Кто выдаёт, шаги, награда',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final line in lines)
-                ListTile(contentPadding: EdgeInsets.zero, title: Text(line)),
-            ],
-          ),
+    final byId = <String, Widget Function()>{
+      for (final ch in c.characters) ch.id: () => character(ch),
+      for (final i in c.items) i.id: () => item(i),
+      for (final l in c.locations) l.id: () => location(l),
+    };
+    // Строки lines: [выдающий, шаги…, награды одной строкой] — награды разбиваем по одной.
+    final rows = <(String, String?, IconData)>[
+      (lines.first, q.giverId, Symbols.person_rounded),
+      for (var k = 0; k < q.steps.length; k++)
+        (lines[k + 1], q.steps[k].targetId, Symbols.flag_rounded),
+      for (final r in q.rewardIds)
+        ('Награда: ${c.titles[r] ?? '?'}', r, Symbols.redeem_rounded),
+    ];
+    return Builder(
+      builder: (context) => ObjectPage(
+        icon: Symbols.flag_rounded,
+        title: q.title,
+        kind: 'Квест',
+        description: q.description,
+        edit: () => NewQuestScreen(
+          world: world,
+          repo: repo,
+          locations: c.locations,
+          items: c.items,
+          characters: c.characters,
+          editing: q,
+          snapshot: c,
         ),
-      ],
+        sections: [
+          (
+            icon: Symbols.format_list_numbered_rounded,
+            title: 'Кто выдаёт, шаги, награда',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (text, id, icon) in rows)
+                  if (byId[id] case final page?)
+                    LinkRow(
+                      icon: icon,
+                      text: text,
+                      onTap: () => openDeeper(context, page()),
+                    )
+                  else
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(text),
+                    ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

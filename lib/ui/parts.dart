@@ -280,3 +280,39 @@ class BottomAction extends StatelessWidget {
     );
   }
 }
+
+/// Строка-ссылка на связанный объект: значок, текст, стрелка; нажатие — страница объекта.
+class LinkRow extends StatelessWidget {
+  const LinkRow({
+    super.key,
+    required this.icon,
+    required this.text,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Row(
+          spacing: 12,
+          children: [
+            Icon(icon, size: 20, color: s.onSurfaceVariant),
+            Expanded(child: Text(text, style: const TextStyle(fontSize: 15))),
+            Icon(
+              Symbols.chevron_right_rounded,
+              size: 20,
+              color: s.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
