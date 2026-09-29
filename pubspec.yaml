@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.6.0
+  image_picker: ^1.2.3
   material_symbols_icons: ^4.2960.0
   share_plus: ^13.3.0
   supabase: ^2.16.1
@@ -23,6 +24,7 @@ dev_dependencies:
     sdk: flutter
   share_plus_platform_interface: ^7.2.0
   plugin_platform_interface: ^2.1.8
+  image_picker_platform_interface: ^2.11.1
 
 flutter:
   uses-material-design: true

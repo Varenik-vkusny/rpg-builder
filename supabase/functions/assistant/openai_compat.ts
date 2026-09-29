@@ -26,6 +26,14 @@ export function toOpenAI(call: ModelCall, model: string): Json {
       });
     } else if (typeof m.content === "string") {
       messages.push({ role: "user", content: m.content });
+    } else if ((m.content as Json[])[0]?.type === "text") {
+      // Просьба со скетчем: текст и картинка (data URL) одним сообщением автора.
+      messages.push({
+        role: "user",
+        content: (m.content as Json[]).map((b) =>
+          b.type === "image" ? { type: "image_url", image_url: { url: `data:${b.mime};base64,${b.data}` } } : b
+        ),
+      });
     } else {
       // Ответы инструментов — каждый своим сообщением, с id вызова.
       for (const r of m.content as Json[]) {

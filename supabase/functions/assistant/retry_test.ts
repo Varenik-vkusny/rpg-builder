@@ -58,6 +58,13 @@ test("повтор: суточный лимит (429, ждать 12 минут) 
   assert.deepEqual(p.waited, []);
 });
 
+test("повтор: лимит в минуту просит 41 с (qwen со скетчем, 29.09) — ждём и повторяем ту же", async () => {
+  const p = provider([{ status: 429, headers: { "retry-after": "41" } }, ok]);
+  assert.deepEqual(await p.run, { ok: true });
+  assert.deepEqual(p.seen, ["main", "main"]);
+  assert.deepEqual(p.waited, [41_000]);
+});
+
 test("повтор: не ответила ни одна — последняя ошибка с кодом и текстом провайдера", async () => {
   const p = provider([{ status: 400 }, { status: 400 }, "timeout", "timeout"]);
   await assert.rejects(p.run, (e) => e instanceof ModelError && e.status === 504 && /spare: нет ответа за 60 с/.test(e.message));

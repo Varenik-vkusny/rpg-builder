@@ -29,6 +29,16 @@ export const TOTAL_MS = 120_000;
 /// Ответов не по схеме подряд, после которых берём запасную модель провайдера.
 export const SCHEMA_FAILS_TO_FALLBACK = 2;
 
+/// Картинка к просьбе — base64 не длиннее: предел Groq на картинку в base64 — 4 МБ.
+export const MAX_IMAGE_CHARS = 4_000_000;
+const IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp"];
+
+/// Фото скетча к просьбе (4.4): уходит модели со зрением частью сообщения автора.
+export interface SketchImage {
+  mime: string;
+  data: string;
+}
+
 /// Ответ автора на вопрос ассистента.
 export interface Answer {
   question: string;
@@ -44,6 +54,8 @@ export interface AssistantRequest {
   problems: string[];
   /// Ответы автора на прошлые вопросы ассистента по этой просьбе.
   answers: Answer[];
+  /// Фото скетча; нет — null.
+  image: SketchImage | null;
 }
 
 // Ход модели блоками text / tool_use (формат петли; Gemini переводит gemini.ts).
@@ -115,6 +127,13 @@ export function parseRequest(b: unknown): AssistantRequest | string {
     return "answers — список {question, answer}";
   }
   if (answers.length > MAX_QUESTIONS) return `не больше ${MAX_QUESTIONS} вопросов автору`;
+  const image = (r.image ?? null) as SketchImage | null;
+  if (image !== null) {
+    if (!IMAGE_MIMES.includes(image?.mime) || typeof image.data !== "string" || !image.data) {
+      return "картинка — {mime: jpeg|png|webp, data: base64}";
+    }
+    if (image.data.length > MAX_IMAGE_CHARS) return `картинка больше ${MAX_IMAGE_CHARS} символов base64`;
+  }
   return {
     project_id: r.project_id,
     scope: { type: scope.type as ScopeType, slug: scope.slug },
@@ -123,6 +142,7 @@ export function parseRequest(b: unknown): AssistantRequest | string {
     previous_plan: (r.previous_plan as Plan | null) ?? null,
     problems: problems as string[],
     answers: answers as Answer[],
+    image: image && { mime: image.mime, data: image.data },
   };
 }
 
@@ -217,7 +237,13 @@ function firstCall(req: AssistantRequest, world: World, scope: Set<string>, mayA
   return {
     system: systemPrompt(world, scope),
     tools: mayAsk ? [tool("ask_author"), tool("propose_plan")] : [tool("propose_plan")],
-    messages: [{ role: "user", content: userPrompt(req) }],
+    // Скетч — частью сообщения автора: текст и картинка одним ходом.
+    messages: [{
+      role: "user",
+      content: req.image
+        ? [{ type: "text", text: userPrompt(req) }, { type: "image", ...req.image }]
+        : userPrompt(req),
+    }],
     deadline,
   };
 }

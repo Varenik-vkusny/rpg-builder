@@ -48,7 +48,10 @@ ${data}
 }
 
 export function userPrompt(req: AssistantRequest): string {
-  const ask = `Область: ${req.scope.type}:${req.scope.slug}.\nПросьба автора: ${req.request}`;
+  const sketch = req.image
+    ? "\nК просьбе приложен рисунок автора (скетч): облик, имя, роль и описание бери с него, числа — по правилам мира."
+    : "";
+  const ask = `Область: ${req.scope.type}:${req.scope.slug}.\nПросьба автора: ${req.request}${sketch}`;
   const answered = req.answers.length === 0 ? "" : `
 Ответы автора на твои вопросы — следуй им:
 ${req.answers.map((a) => `- Вопрос: ${a.question}\n  Ответ: ${a.answer}`).join("\n")}`;

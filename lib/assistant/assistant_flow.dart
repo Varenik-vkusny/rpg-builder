@@ -59,6 +59,8 @@ Future<PlanRun> runAssistant({
   while (preview.fresh.isNotEmpty && attempt < maxFixes) {
     attempt++;
     caught.add([for (final p in preview.fresh) p.message]);
+    // Исправление — без скетча: план уже есть, картинка не нужна, и модель со зрением
+    // (свой суточный лимит) на него не тратится.
     (proposal, preview) = await ask(
       ProposeRequest(
         worldId: request.worldId,

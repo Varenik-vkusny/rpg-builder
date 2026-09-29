@@ -38,6 +38,10 @@ export const PROVIDERS: Record<string, Provider> = {
   },
 };
 
+/// Модели, которые видят картинки (скетч, 4.4). У qwen на Groq свой суточный лимит, отдельный от
+/// gpt-oss. Запасных без зрения у просьбы с картинкой нет: они бы молча не увидели рисунок.
+export const VISION: Record<string, string[]> = { groq: ["qwen/qwen3.8-27b"] };
+
 /// Модель по умолчанию, когда запрос её не выбрал: первый провайдер, у которого есть ключ.
 /// Порядок — от сильного к слабому по сравнению 25.09.2026 (scripts/compare_models.sh).
 export const DEFAULT_ORDER = ["groq", "gemini"];
@@ -47,7 +51,12 @@ export type CallModel = (call: ModelCall) => Promise<ModelResponse>;
 /// «провайдер:модель» из запроса (или по умолчанию) → вызов модели; остальные модели провайдера —
 /// запасные (сбой или таймаут — model_http.ts; ответы не по схеме — call.tier в handler.ts).
 /// Строка — что не так: чужая модель или у провайдера нет ключа.
-export function pickModel(requested: unknown, env: (name: string) => string | undefined): CallModel | string {
+/// [vision] — к просьбе приложена картинка: только модели из VISION.
+export function pickModel(
+  requested: unknown,
+  env: (name: string) => string | undefined,
+  vision = false,
+): CallModel | string {
   const bind = (name: string, models: string[]): CallModel | string => {
     const p = PROVIDERS[name];
     const key = env(p.secret);
@@ -58,6 +67,15 @@ export function pickModel(requested: unknown, env: (name: string) => string | un
       ? (call) => callOpenAI(p.url!, key, from(call), call)
       : (call) => callGemini(key, from(call), call);
   };
+  if (vision) {
+    if (typeof requested === "string" && requested) {
+      const [name, ...rest] = requested.split(":");
+      if (!VISION[name]?.includes(rest.join(":"))) return `модель ${requested} не видит картинок`;
+    }
+    const name = Object.keys(VISION).find((n) => env(PROVIDERS[n].secret));
+    if (!name) return `нет ключа модели с картинками (${Object.keys(VISION).map((n) => PROVIDERS[n].secret).join(", ")})`;
+    return bind(name, VISION[name]);
+  }
   if (typeof requested === "string" && requested) {
     const [name, ...rest] = requested.split(":");
     const model = rest.join(":");

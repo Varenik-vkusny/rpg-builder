@@ -9,6 +9,7 @@ import 'change_set.dart';
 import 'assistant_flow.dart';
 import 'plan_view.dart';
 import 'question_dialog.dart';
+import 'sketch.dart';
 
 /// Ассистент: автор выбирает область и пишет просьбу — получает план.
 /// В базу отсюда не пишется ничего.
@@ -42,6 +43,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
   final _request = TextEditingController();
   ScopeType _type = ScopeType.location;
   String? _slug;
+
+  /// Фото скетча к просьбе (4.4).
+  SketchImage? _image;
   bool _busy = false;
   String? _error;
 
@@ -105,6 +109,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
           scope: Scope(_type, _slug!),
           request: text,
           answers: answers,
+          image: _image,
         );
         try {
           final run = await runAssistant(
@@ -325,6 +330,16 @@ class _AssistantScreenState extends State<AssistantScreen> {
               labelText: 'Просьба',
               hintText: 'Затопи штольню, слизни там жить не могут',
             ),
+          ),
+          const SizedBox(height: 8),
+          SketchField(
+            image: _image,
+            onChanged: (i) => setState(() {
+              _image = i;
+              if (i != null && _request.text.trim().isEmpty) {
+                _request.text = 'Создай персонажа по этому скетчу';
+              }
+            }),
           ),
           const SizedBox(height: 16),
           if (_error != null && _run == null) _errorText(),

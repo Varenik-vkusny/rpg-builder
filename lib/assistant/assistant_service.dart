@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:supabase/supabase.dart';
 
 import 'plan.dart';
@@ -51,6 +54,13 @@ class QuestionAsked implements Exception {
   String toString() => 'Ассистент спрашивает: ${question.question}';
 }
 
+/// Фото скетча к просьбе (4.4): байты и тип картинки. В журнал не пишется — только в запрос.
+class SketchImage {
+  const SketchImage(this.bytes, this.mime);
+  final Uint8List bytes;
+  final String mime;
+}
+
 /// Просьба к ассистенту. [attempt] 0 — первая; 1–2 — исправление [previous]
 /// по списку [problems] проверки на копии. [answers] — ответы автора на вопросы ассистента.
 class ProposeRequest {
@@ -62,6 +72,7 @@ class ProposeRequest {
     this.previous,
     this.problems = const [],
     this.answers = const [],
+    this.image,
   });
 
   final String worldId;
@@ -71,6 +82,9 @@ class ProposeRequest {
   final Plan? previous;
   final List<String> problems;
   final List<Answer> answers;
+
+  /// Скетч: сервер отдаст просьбу модели, которая видит картинки.
+  final SketchImage? image;
 
   Map<String, dynamic> toJson() => {
     'project_id': worldId,
@@ -82,6 +96,8 @@ class ProposeRequest {
     'answers': [
       for (final a in answers) {'question': a.question, 'answer': a.answer},
     ],
+    if (image case final i?)
+      'image': {'mime': i.mime, 'data': base64Encode(i.bytes)},
   };
 }
 

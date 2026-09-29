@@ -53,6 +53,7 @@ Future<(PlanRun, List<AuthorQuestion>)> runAnswering({
           scope: request.scope,
           request: request.request,
           answers: answers,
+          image: request.image,
         ),
         onAttempt: onAttempt,
       );

@@ -22,7 +22,8 @@ const json = (status: number, body: unknown) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const body = await req.json().catch(() => null);
-  const callModel = pickModel(body?.model, (name) => Deno.env.get(name));
+  // Просьба со скетчем — только модели, которые видят картинки.
+  const callModel = pickModel(body?.model, (name) => Deno.env.get(name), Boolean(body?.image));
   if (typeof callModel === "string") return json(500, { error: callModel });
 
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
