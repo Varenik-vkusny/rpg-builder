@@ -198,22 +198,22 @@ class WorldPages {
     );
   }
 
-  /// Квест: выдающий, шаги, награды — каждая строка ведёт на свой объект.
+  /// Квест: выдающий, шаги, награды — ячейками; каждая ведёт на свой объект.
   Widget quest(Quest q) {
-    final lines = q.lines(c.titles);
     final byId = <String, Widget Function()>{
       for (final ch in c.characters) ch.id: () => character(ch),
       for (final i in c.items) i.id: () => item(i),
       for (final l in c.locations) l.id: () => location(l),
     };
-    // Строки lines: [выдающий, шаги…, награды одной строкой] — награды разбиваем по одной.
-    final rows = <(String, String?, IconData)>[
-      (lines.first, q.giverId, Symbols.person_rounded),
-      for (var k = 0; k < q.steps.length; k++)
-        (lines[k + 1], q.steps[k].targetId, Symbols.flag_rounded),
-      for (final r in q.rewardIds)
-        ('Награда: ${c.titles[r] ?? '?'}', r, Symbols.redeem_rounded),
-    ];
+    IconData iconOf(StepKind? k, bool giver) => switch (k) {
+      StepKind.talk => Symbols.forum_rounded,
+      StepKind.kill => Symbols.skull_rounded,
+      StepKind.collect => Symbols.inventory_2_rounded,
+      StepKind.visit => Symbols.location_on_rounded,
+      null when giver => Symbols.person_rounded,
+      null => Symbols.redeem_rounded,
+    };
+    final rows = q.rows(c.titles);
     return Builder(
       builder: (context) => ObjectPage(
         icon: Symbols.flag_rounded,
@@ -235,19 +235,18 @@ class WorldPages {
             title: 'Кто выдаёт, шаги, награда',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 8,
               children: [
-                for (final (text, id, icon) in rows)
-                  if (byId[id] case final page?)
-                    LinkRow(
-                      icon: icon,
-                      text: text,
-                      onTap: () => openDeeper(context, page()),
-                    )
-                  else
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(text),
-                    ),
+                for (final (k, r) in rows.indexed)
+                  LinkRow(
+                    boxed: true,
+                    icon: iconOf(r.step, k == 0),
+                    text: r.text,
+                    onTap: switch (byId[r.targetId]) {
+                      final page? => () => openDeeper(context, page()),
+                      null => null,
+                    },
+                  ),
               ],
             ),
           ),

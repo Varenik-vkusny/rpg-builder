@@ -282,35 +282,48 @@ class BottomAction extends StatelessWidget {
 }
 
 /// Строка-ссылка на связанный объект: значок, текст, стрелка; нажатие — страница объекта.
+/// [boxed] — ячейкой с рамкой (шаги квеста); без [onTap] — просто строка, без стрелки.
 class LinkRow extends StatelessWidget {
   const LinkRow({
     super.key,
     required this.icon,
     required this.text,
     required this.onTap,
+    this.boxed = false,
   });
   final IconData icon;
   final String text;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool boxed;
 
   @override
   Widget build(BuildContext context) {
     final s = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 48),
-        child: Row(
-          spacing: 12,
-          children: [
-            Icon(icon, size: 20, color: s.onSurfaceVariant),
-            Expanded(child: Text(text, style: const TextStyle(fontSize: 15))),
+    final row = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
+      child: Row(
+        spacing: 12,
+        children: [
+          Icon(icon, size: 20, color: s.onSurfaceVariant),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 15))),
+          if (onTap != null)
             Icon(
               Symbols.chevron_right_rounded,
               size: 20,
               color: s.onSurfaceVariant,
             ),
-          ],
+        ],
+      ),
+    );
+    if (!boxed) return InkWell(onTap: onTap, child: row);
+    return Material(
+      color: s.surfaceContainerLow,
+      shape: RoundedRectangleBorder(side: BorderSide(color: s.outlineVariant)),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: row,
         ),
       ),
     );

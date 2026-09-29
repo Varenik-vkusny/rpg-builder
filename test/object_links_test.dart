@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/item.dart';
+import 'package:rpg_builder/ui/parts.dart';
 
 import 'assistant_fixtures.dart';
 import 'fakes.dart';
@@ -58,13 +59,17 @@ void main() {
     expect(find.widgetWithText(AppBar, 'Обвал'), findsOneWidget);
   });
 
-  testWidgets('предмет без связей: одна строка «ни с чем не связан»', (t) async {
+  testWidgets('предмет без связей: одна строка «ни с чем не связан»', (
+    t,
+  ) async {
     await openMines(t);
     await open(t, 'fonar');
     expect(find.text('Предмет ни с чем не связан'), findsOneWidget);
   });
 
-  testWidgets('квест: выдающий, шаг и награда ведут на свои объекты', (t) async {
+  testWidgets('квест: выдающий, шаг и награда ведут на свои объекты', (
+    t,
+  ) async {
     await openMines(t);
     await open(t, 'obval');
     for (final (line, page) in [
@@ -79,6 +84,26 @@ void main() {
       expect(find.widgetWithText(AppBar, page), findsOneWidget, reason: line);
       await t.pageBack();
       await t.pumpAndSettle();
+    }
+  });
+
+  testWidgets('квест: выдающий, каждый шаг и награда — отдельной ячейкой', (
+    t,
+  ) async {
+    await openMines(t);
+    await open(t, 'obval');
+    for (final line in [
+      'Выдаёт: Бригадир',
+      '1. Поговорить: Бригадир',
+      '2. Убить: Слизень × 4',
+      '3. Собрать: Ключ × 1',
+      'Награда: Кирка',
+    ]) {
+      final cell = find.ancestor(
+        of: find.text(line),
+        matching: find.byWidgetPredicate((w) => w is LinkRow && w.boxed),
+      );
+      expect(cell, findsOneWidget, reason: line);
     }
   });
 }

@@ -71,15 +71,27 @@ class Quest {
   final List<QuestStep> steps;
   final List<String> rewardIds;
 
-  /// Строки под названием в списке мира: выдающий, шаги по порядку, награды.
-  /// [titles] — названия всех персонажей, предметов и локаций мира по id.
-  List<String> lines(Map<String, String> titles) {
+  /// Строки страницы квеста: выдающий, шаги по порядку, награды по одной.
+  /// [titles] — названия всех персонажей, предметов и локаций мира по id;
+  /// у строки [targetId] — объект, на который она ведёт, [step] — вид шага (для значка).
+  List<({String text, String? targetId, StepKind? step})> rows(
+    Map<String, String> titles,
+  ) {
     String t(String id) => titles[id] ?? '?';
     return [
-      'Выдаёт: ${giverId == null ? '—' : t(giverId!)}',
+      (
+        text: 'Выдаёт: ${giverId == null ? '—' : t(giverId!)}',
+        targetId: giverId,
+        step: null,
+      ),
       for (var i = 0; i < steps.length; i++)
-        '${i + 1}. ${steps[i].label(t(steps[i].targetId))}',
-      if (rewardIds.isNotEmpty) 'Награда: ${rewardIds.map(t).join(', ')}',
+        (
+          text: '${i + 1}. ${steps[i].label(t(steps[i].targetId))}',
+          targetId: steps[i].targetId,
+          step: steps[i].kind,
+        ),
+      for (final r in rewardIds)
+        (text: 'Награда: ${t(r)}', targetId: r, step: null),
     ];
   }
 
