@@ -7,6 +7,7 @@ import '../content/quest.dart';
 import '../worlds/world.dart';
 import 'history.dart';
 import '../ui/parts.dart';
+import '../ui/theme.dart';
 import 'plan_cards.dart';
 import 'plan_labels.dart';
 
@@ -223,8 +224,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final (icon, bg, fg) = switch (status) {
       SetStatus.applied => (
         Symbols.check_rounded,
-        s.primaryContainer,
-        s.onPrimaryContainer,
+        AppColors.of(context).okContainer,
+        AppColors.of(context).onOkContainer,
       ),
       SetStatus.rejected => (
         Symbols.close_rounded,

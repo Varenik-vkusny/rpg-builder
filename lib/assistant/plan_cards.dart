@@ -68,15 +68,7 @@ class OpCard extends StatelessWidget {
             Row(
               spacing: 14,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: s.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(opIcon(r.op), color: s.onSurfaceVariant),
-                ),
+                Avatar(opIcon(r.op), size: 48),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

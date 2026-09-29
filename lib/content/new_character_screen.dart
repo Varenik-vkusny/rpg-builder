@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
 import '../worlds/world.dart';
@@ -216,6 +217,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
         ),
         const SizedBox(width: 8),
         Expanded(
+          flex: 2,
           child: TextField(
             key: Key('loot-chance-$i'),
             controller: row.chance,
@@ -225,7 +227,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
         ),
         IconButton(
           tooltip: 'Убрать',
-          icon: const Icon(Icons.close),
+          icon: const Icon(Symbols.close_rounded),
           onPressed: () => setState(() => _loot.removeAt(i).chance.dispose()),
         ),
       ],
@@ -252,7 +254,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
             IconButton(
               key: const Key('object-delete'),
               tooltip: 'Удалить',
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(Symbols.delete_rounded),
               onPressed: _busy ? null : _delete,
             ),
         ],
@@ -316,7 +318,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
               TextButton.icon(
                 key: const Key('loot-add'),
                 onPressed: () => setState(() => _loot.add(_LootRow())),
-                icon: const Icon(Icons.add),
+                icon: const Icon(Symbols.add_rounded),
                 label: const Text('Добавить добычу'),
               ),
           ],

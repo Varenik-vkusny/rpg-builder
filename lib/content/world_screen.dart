@@ -23,6 +23,7 @@ import 'new_location_screen.dart';
 import 'new_quest_screen.dart';
 import 'world_pages.dart';
 import '../ui/cover_card.dart';
+import '../ui/parts.dart';
 
 /// Мир изнутри: локации, предметы, персонажи и квесты, у каждого раздела своя кнопка «+».
 class WorldScreen extends StatefulWidget {
@@ -60,7 +61,7 @@ class _WorldScreenState extends State<WorldScreen> {
     alignment: Alignment.centerLeft,
     child: TextButton.icon(
       key: Key('filter-$section'),
-      icon: const Icon(Icons.filter_list),
+      icon: const Icon(Symbols.filter_list_rounded),
       label: Text(active == 0 ? 'Фильтр' : 'Фильтр: $active'),
       onPressed: () => setState(() {
         _filtersOpen.contains(section)
@@ -125,7 +126,7 @@ class _WorldScreenState extends State<WorldScreen> {
         trailing: IconButton(
           key: addKey,
           tooltip: tooltip,
-          icon: const Icon(Icons.add),
+          icon: const Icon(Symbols.add_rounded),
           onPressed: () => _open(form),
         ),
       );
@@ -176,14 +177,22 @@ class _WorldScreenState extends State<WorldScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: Text(world.title, style: const TextStyle(fontSize: 20)),
+        // Название мира — до двух строк, без многоточия.
+        title: Text(
+          world.title,
+          maxLines: 2,
+          style: const TextStyle(fontSize: 17, height: 1.15),
+        ),
         actions: _actions(),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      // Полоса внизу, а не плавающая кнопка: плавающая закрывала строки списка.
+      // Список уходит под полосу, как под край экрана; в конце — отступ под неё.
+      extendBody: true,
+      bottomNavigationBar: BottomAction(
         key: const Key('assistant-open'),
         onPressed: _openAssistant,
-        icon: const Icon(Symbols.auto_awesome_rounded),
-        label: const Text('Изменить фразой'),
+        icon: Symbols.auto_awesome_rounded,
+        label: 'Изменить фразой',
       ),
       body: FutureBuilder(
         future: (_content, _history).wait,
@@ -263,7 +272,7 @@ class _WorldScreenState extends State<WorldScreen> {
         alignment: Alignment.centerLeft,
         child: TextButton.icon(
           key: const Key('open5e-open'),
-          icon: const Icon(Icons.local_library),
+          icon: const Icon(Symbols.local_library_rounded),
           label: const Text('Образец из Open5e'),
           onPressed: () => _open(
             Open5eScreen(

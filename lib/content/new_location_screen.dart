@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
 import '../worlds/world.dart';
@@ -140,7 +141,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
             IconButton(
               key: const Key('object-delete'),
               tooltip: 'Удалить',
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(Symbols.delete_rounded),
               onPressed: _busy ? null : _delete,
             ),
         ],

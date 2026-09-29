@@ -7,6 +7,7 @@ import '../content/world_screen.dart';
 import '../open5e/open5e_api.dart';
 import 'new_world_screen.dart';
 import '../ui/cover_card.dart';
+import '../ui/parts.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
 
@@ -60,11 +61,14 @@ class _WorldsScreenState extends State<WorldsScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      // Полоса внизу, а не плавающая кнопка: плавающая закрывала строки списка.
+      // Список уходит под полосу, как под край экрана; в конце — отступ под неё.
+      extendBody: true,
+      bottomNavigationBar: BottomAction(
         key: const Key('new-world'),
         onPressed: _openNew,
-        icon: const Icon(Symbols.add_rounded),
-        label: const Text('Новый мир'),
+        icon: Symbols.add_rounded,
+        label: 'Новый мир',
       ),
       body: FutureBuilder<List<World>>(
         future: _worlds,

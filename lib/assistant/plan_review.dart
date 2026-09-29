@@ -62,7 +62,7 @@ class _PlanReviewScreenState extends State<PlanReviewScreen> {
                         color: _bad(i)
                             ? s.error
                             : i <= _at
-                            ? s.primary
+                            ? s.onSurface
                             : s.surfaceContainerHighest,
                       ),
                     ),

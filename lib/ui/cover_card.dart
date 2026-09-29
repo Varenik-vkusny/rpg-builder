@@ -1,5 +1,7 @@
-// Обложка объекта мира без картинок: цвет по оттенку, диагональный узор, большой значок.
+// Обложка объекта мира без картинок: ячейка с рамкой цвета объекта и большим значком.
 import 'package:flutter/material.dart';
+
+import 'theme.dart';
 
 /// Счётчик на обложке: значок и число («💀 2»).
 typedef Counter = (IconData, int);
@@ -33,30 +35,31 @@ class CoverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final top = HSLColor.fromAHSL(1, hue, .38, .42).toColor();
-    final bottom = HSLColor.fromAHSL(1, hue, .36, .22).toColor();
-    const fg = Colors.white;
+    final s = Theme.of(context).colorScheme;
+    final hues = AppColors.of(context).coverHues;
+    // Цвет — опознавательный знак объекта: рамка и приглушённый значок ячейки.
+    final hueColor = hues[hue.round() % hues.length];
     return Material(
+      color: s.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: hueColor, width: 1.5),
+      ),
       clipBehavior: Clip.antiAlias,
-      borderRadius: BorderRadius.circular(20),
-      child: Ink(
-        height: height,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [top, bottom],
-          ),
-        ),
-        child: InkWell(
-          onTap: onTap,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: height,
           child: Stack(
             children: [
-              const Positioned.fill(child: CustomPaint(painter: _Stripes())),
               Positioned(
                 right: 4,
                 top: 0,
-                child: Icon(icon, size: 88, color: fg.withValues(alpha: .22)),
+                // Значок приглушён: название может заходить под него.
+                child: Icon(
+                  icon,
+                  size: 88,
+                  color: hueColor.withValues(alpha: .35),
+                ),
               ),
               Positioned(
                 left: 16,
@@ -66,6 +69,7 @@ class CoverCard extends StatelessWidget {
                   title: title,
                   caption: caption,
                   counters: counters,
+                  fg: s.onSurface,
                 ),
               ),
             ],
@@ -78,14 +82,19 @@ class CoverCard extends StatelessWidget {
 
 /// Подпись обложки: строка над названием, название, счётчики.
 class _Caption extends StatelessWidget {
-  const _Caption({required this.title, this.caption, required this.counters});
+  const _Caption({
+    required this.title,
+    this.caption,
+    required this.counters,
+    required this.fg,
+  });
   final String title;
   final String? caption;
   final List<Counter> counters;
+  final Color fg;
 
   @override
   Widget build(BuildContext context) {
-    const fg = Colors.white;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 6,
@@ -99,7 +108,7 @@ class _Caption extends StatelessWidget {
           title,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             color: fg,
             fontSize: 20,
             fontWeight: FontWeight.w500,
@@ -117,7 +126,7 @@ class _Caption extends StatelessWidget {
                     Icon(i, size: 17, color: fg),
                     Text(
                       '$n',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: fg,
                         fontSize: 14,
                         fontFeatures: [FontFeature.tabularFigures()],
@@ -130,21 +139,4 @@ class _Caption extends StatelessWidget {
       ],
     );
   }
-}
-
-class _Stripes extends CustomPainter {
-  const _Stripes();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = const Color(0x10FFFFFF)
-      ..strokeWidth = 2;
-    for (var x = -size.height; x < size.width; x += 13) {
-      canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), p);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_Stripes old) => false;
 }

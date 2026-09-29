@@ -23,11 +23,7 @@ class PlanView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 12,
       children: [
-        Text(
-          plan.summary,
-          key: const Key('plan-summary'),
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
+        _PlanTitle(plan.summary),
         if (preview.problems.isNotEmpty) PlanVerdict(preview: preview),
         Row(
           children: [
@@ -93,9 +89,9 @@ class PlanVerdict extends StatelessWidget {
     return Material(
       key: const Key('plan-verdict'),
       color: bg,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppStyle.of(context).radiusM),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppStyle.of(context).radiusM),
         onTap: () => showProblems(context, preview.problems),
         child: Padding(
           padding: EdgeInsets.symmetric(
@@ -175,3 +171,32 @@ Future<void> showProblems(
     ),
   ),
 );
+
+/// Заголовок плана: не выше трёх строк, дальше многоточие; нажатие — полный текст.
+class _PlanTitle extends StatefulWidget {
+  const _PlanTitle(this.text);
+  final String text;
+
+  @override
+  State<_PlanTitle> createState() => _PlanTitleState();
+}
+
+class _PlanTitleState extends State<_PlanTitle> {
+  bool _full = false;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: () => setState(() => _full = !_full),
+    child: Text(
+      widget.text,
+      key: const Key('plan-summary'),
+      maxLines: _full ? null : 3,
+      overflow: _full ? null : TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        height: 1.25,
+      ),
+    ),
+  );
+}

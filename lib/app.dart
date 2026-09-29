@@ -34,6 +34,7 @@ class RpgBuilderApp extends StatelessWidget {
       darkTheme: appTheme(Brightness.dark),
       // Тёмная — основная, как в одобренном прототипе; от темы телефона не зависит.
       themeMode: ThemeMode.dark,
+      debugShowCheckedModeBanner: false,
       home: StreamBuilder<bool>(
         stream: auth.signedInChanges,
         initialData: auth.isSignedIn,

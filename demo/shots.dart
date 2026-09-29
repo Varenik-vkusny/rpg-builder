@@ -4,39 +4,11 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-final frame = GlobalKey();
+export '../test/real_fonts.dart' show loadFont;
 
-/// Шрифты как на Android: Roboto и оба шрифта значков — иначе на снимке квадраты.
-Future<void> loadFont() async {
-  var dir = File(Platform.resolvedExecutable).parent;
-  while (!Directory('${dir.path}/material_fonts').existsSync()) {
-    dir = dir.parent;
-  }
-  final material = '${dir.path}/material_fonts';
-  final pubCache =
-      Platform.environment['PUB_CACHE'] ??
-      '${Platform.environment['LOCALAPPDATA']}/Pub/Cache';
-  final symbols = Directory('$pubCache/hosted/pub.dev')
-      .listSync()
-      .firstWhere((d) => d.path.contains('material_symbols_icons-'))
-      .path;
-  Future<ByteData> read(String path) async =>
-      ByteData.sublistView(File(path).readAsBytesSync());
-  await (FontLoader('Roboto')
-        ..addFont(read('$material/roboto-regular.ttf'))
-        ..addFont(read('$material/roboto-medium.ttf'))
-        ..addFont(read('$material/roboto-bold.ttf')))
-      .load();
-  await (FontLoader(
-    'MaterialIcons',
-  )..addFont(read('$material/materialicons-regular.otf'))).load();
-  await (FontLoader(
-    'packages/material_symbols_icons/MaterialSymbolsRounded',
-  )..addFont(read('$symbols/lib/fonts/MaterialSymbolsRounded.ttf'))).load();
-}
+final frame = GlobalKey();
 
 Future<void> shot(WidgetTester t, String name) async {
   await t.pumpAndSettle();

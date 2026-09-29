@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'cover_card.dart';
+import 'parts.dart';
 
 /// Плитка характеристики: значок, подпись, значение.
 class StatTile extends StatelessWidget {
@@ -18,7 +19,7 @@ class StatTile extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: s.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: s.outlineVariant),
       ),
       // Значок и число сверху, подпись снизу во всю ширину: «Здоровье» не режется.
       child: Column(
@@ -34,7 +35,10 @@ class StatTile extends StatelessWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 22),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ],
@@ -72,20 +76,17 @@ class PortraitCard extends StatelessWidget {
       width: 104,
       child: Material(
         color: s.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: s.outlineVariant),
+        ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
             child: Column(
               spacing: 6,
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: s.surfaceContainerHighest,
-                  child: Icon(icon, size: 30, color: s.onSurfaceVariant),
-                ),
+                Avatar(icon, size: 56),
                 Text(
                   title,
                   textAlign: TextAlign.center,
@@ -225,11 +226,15 @@ class _PathLine extends StatelessWidget {
       child: Row(
         spacing: 4,
         children: [
-          Icon(Symbols.location_on_rounded, size: 16, color: s.primary),
+          Icon(
+            Symbols.location_on_rounded,
+            size: 16,
+            color: s.onSurfaceVariant,
+          ),
           Expanded(
             child: Text(
               path.join(' › '),
-              style: TextStyle(color: s.primary, fontSize: 14),
+              style: TextStyle(color: s.onSurfaceVariant, fontSize: 14),
             ),
           ),
         ],
@@ -242,15 +247,23 @@ class _TileGrid extends StatelessWidget {
   const _TileGrid(this.tiles);
   final List<StatTile> tiles;
 
+  // По три в ряд; высота ряда — по содержимому, чтобы крупный шрифт телефона не вылезал.
   @override
-  Widget build(BuildContext context) => GridView.count(
-    crossAxisCount: 3,
-    shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
-    mainAxisSpacing: 8,
-    crossAxisSpacing: 8,
-    childAspectRatio: 1.25,
-    children: tiles,
+  Widget build(BuildContext context) => Column(
+    spacing: 8,
+    children: [
+      for (var i = 0; i < tiles.length; i += 3)
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 8,
+            children: [
+              for (var k = i; k < i + 3; k++)
+                Expanded(child: k < tiles.length ? tiles[k] : const SizedBox()),
+            ],
+          ),
+        ),
+    ],
   );
 }
 
@@ -291,15 +304,10 @@ class _Hero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = Theme.of(context).colorScheme;
     return Row(
       spacing: 16,
       children: [
-        CircleAvatar(
-          radius: 36,
-          backgroundColor: s.surfaceContainerHighest,
-          child: Icon(icon, size: 38, color: s.onSurfaceVariant),
-        ),
+        Avatar(icon, size: 72),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

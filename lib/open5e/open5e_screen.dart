@@ -8,6 +8,7 @@ import '../assistant/plan_preview.dart';
 import '../assistant/plan_view.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
+import '../ui/parts.dart';
 import '../worlds/world.dart';
 import 'open5e_api.dart';
 import 'open5e_import.dart';
@@ -149,27 +150,26 @@ class _Open5eScreenState extends State<Open5eScreen> {
         'Предмет запомнит источник, он уйдёт и в экспорт.',
         key: const Key('open5e-attribution'),
       ),
+      // Ошибка — плашкой со значком и словом, не одним красным цветом (инвариант 27.09).
       if (preview.hasErrors)
-        Text(
+        const NoticeBanner(
+          Notice.error,
           'В плане ошибки — «Импортировать» недоступно',
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
         ),
-      Row(
+      // Друг под другом: в ряд «Импортировать» не влезало при крупном шрифте.
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 8,
         children: [
-          Expanded(
-            child: FilledButton(
-              key: const Key('open5e-import'),
-              onPressed: _busy || preview.hasErrors ? null : _import,
-              child: const Text('Импортировать'),
-            ),
+          FilledButton(
+            key: const Key('open5e-import'),
+            onPressed: _busy || preview.hasErrors ? null : _import,
+            child: const Text('Импортировать'),
           ),
-          Expanded(
-            child: OutlinedButton(
-              key: const Key('open5e-back'),
-              onPressed: _busy ? null : () => setState(() => _picked = null),
-              child: const Text('К поиску'),
-            ),
+          OutlinedButton(
+            key: const Key('open5e-back'),
+            onPressed: _busy ? null : () => setState(() => _picked = null),
+            child: const Text('К поиску'),
           ),
         ],
       ),

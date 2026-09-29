@@ -56,7 +56,7 @@ class _AuthScreenState extends State<AuthScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
           children: [
-            Icon(Symbols.auto_stories_rounded, size: 56, color: s.primary),
+            Icon(Symbols.auto_stories_rounded, size: 56, color: s.onSurface),
             const SizedBox(height: 16),
             Text(
               'RPG Builder',

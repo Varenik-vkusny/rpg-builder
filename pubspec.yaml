@@ -26,3 +26,18 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: GolosText
+      fonts:
+        - asset: assets/fonts/GolosText-400.ttf
+          weight: 400
+        - asset: assets/fonts/GolosText-500.ttf
+          weight: 500
+        - asset: assets/fonts/GolosText-600.ttf
+          weight: 600
+    - family: Unbounded
+      fonts:
+        - asset: assets/fonts/Unbounded-500.ttf
+          weight: 500
+        - asset: assets/fonts/Unbounded-600.ttf
+          weight: 600

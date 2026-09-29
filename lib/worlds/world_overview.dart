@@ -127,8 +127,8 @@ class _Count extends StatelessWidget {
         key: Key('count-$kind'),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: s.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
+          color: s.surfaceContainerLow,
+          border: Border.all(color: s.outlineVariant),
         ),
         child: Column(
           spacing: 2,

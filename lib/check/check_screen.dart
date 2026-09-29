@@ -106,8 +106,9 @@ class _CheckScreenState extends State<CheckScreen> {
     final c = AppColors.of(context);
     int count(Severity v) => problems.where((p) => p.severity == v).length;
     final errors = count(Severity.error);
+    // Чистый мир — спокойная строка обычным цветом, без зелёной плашки (владелец 28.09).
     final (bg, fg, icon) = problems.isEmpty
-        ? (c.okContainer, c.onOkContainer, Symbols.task_alt_rounded)
+        ? (s.surfaceContainerLow, s.onSurface, Symbols.task_alt_rounded)
         : errors > 0
         ? (s.errorContainer, s.onErrorContainer, Symbols.error_rounded)
         : (c.warnContainer, c.onWarnContainer, Symbols.warning_rounded);
@@ -155,15 +156,24 @@ class ProblemRow extends StatelessWidget {
         contentPadding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
         leading: Icon(iconOf(problem.severity), color: tint, fill: 1),
         title: Text(problem.message),
-        subtitle: Text(
-          problem.severity.label,
-          style: TextStyle(color: tint, fontWeight: FontWeight.w500),
-        ),
-        trailing: FilledButton.tonal(
-          key: fixKey,
-          style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
-          onPressed: onFix,
-          child: const Text('Исправить'),
+        // Кнопка — под текстом справа: рядом с текстом она зажимала его до разрыва слов.
+        // Не влезает рядом со словом (крупный шрифт) — переходит на строку ниже.
+        subtitle: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: 4,
+          children: [
+            Text(
+              problem.severity.label,
+              style: TextStyle(color: tint, fontWeight: FontWeight.w500),
+            ),
+            FilledButton.tonal(
+              key: fixKey,
+              // Высота из темы — 48 dp, минимум касания на Android (было 40).
+              onPressed: onFix,
+              child: const Text('Исправить'),
+            ),
+          ],
         ),
       ),
     );

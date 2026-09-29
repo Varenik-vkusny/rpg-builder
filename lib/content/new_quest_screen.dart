@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
 import '../worlds/world.dart';
@@ -245,7 +246,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
             ),
             IconButton(
               tooltip: 'Убрать шаг',
-              icon: const Icon(Icons.close),
+              icon: const Icon(Symbols.close_rounded),
               onPressed: () =>
                   setState(() => _steps.removeAt(i).amount.dispose()),
             ),
@@ -271,7 +272,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
             if (s.kind.counted) ...[
               const SizedBox(width: 8),
               SizedBox(
-                width: 56,
+                width: 96,
                 child: TextField(
                   key: Key('step-amount-$i'),
                   controller: s.amount,
@@ -305,7 +306,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
       ),
       IconButton(
         tooltip: 'Убрать награду',
-        icon: const Icon(Icons.close),
+        icon: const Icon(Symbols.close_rounded),
         onPressed: () => setState(() => _rewards.removeAt(i)),
       ),
     ],
@@ -321,7 +322,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
             IconButton(
               key: const Key('object-delete'),
               tooltip: 'Удалить',
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(Symbols.delete_rounded),
               onPressed: _busy ? null : _delete,
             ),
         ],
@@ -358,7 +359,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
           TextButton.icon(
             key: const Key('step-add'),
             onPressed: () => setState(() => _steps.add(_StepRow())),
-            icon: const Icon(Icons.add),
+            icon: const Icon(Symbols.add_rounded),
             label: const Text('Добавить шаг'),
           ),
           const SizedBox(height: 16),
@@ -368,7 +369,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
             TextButton.icon(
               key: const Key('reward-add'),
               onPressed: () => setState(() => _rewards.add(_RewardRow())),
-              icon: const Icon(Icons.add),
+              icon: const Icon(Symbols.add_rounded),
               label: const Text('Добавить награду'),
             ),
           const SizedBox(height: 16),

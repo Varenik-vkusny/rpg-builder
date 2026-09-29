@@ -1,5 +1,6 @@
-// Общие детали интерфейса: метка изменения, плашка, «Было / Стало».
+// Общие детали интерфейса: метка изменения, плашка, «Было / Стало», значок объекта.
 // Смысл никогда не передаётся одним цветом — всегда значок и слово.
+// Стиль телетекста: деталь — ячейка с цветной рамкой, цветное слово, текст светлый.
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -22,29 +23,25 @@ class ChangeTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = Theme.of(context).colorScheme;
     final c = AppColors.of(context);
-    final (bg, fg) = switch (change) {
-      Change.create => (c.okContainer, c.onOkContainer),
-      Change.update => (s.primaryContainer, s.onPrimaryContainer),
-      Change.delete => (s.errorContainer, s.onErrorContainer),
+    final line = switch (change) {
+      Change.create => c.ok,
+      Change.update => c.change,
+      Change.delete => Theme.of(context).colorScheme.error,
     };
     return Container(
       height: 24,
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(7),
-      ),
+      decoration: BoxDecoration(border: Border.all(color: line)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         spacing: 3,
         children: [
-          Icon(change.icon, size: 15, color: fg, weight: 600),
+          Icon(change.icon, size: 15, color: line, weight: 600),
           Text(
             change.word,
             style: TextStyle(
-              color: fg,
+              color: line,
               fontSize: 12.5,
               fontWeight: FontWeight.w500,
             ),
@@ -77,32 +74,28 @@ class NoticeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = Theme.of(context).colorScheme;
-    final c = AppColors.of(context);
-    final (bg, fg) = switch (notice) {
-      Notice.error => (s.errorContainer, s.onErrorContainer),
-      Notice.warning => (c.warnContainer, c.onWarnContainer),
-      Notice.fix => (s.surfaceContainerHighest, s.onSurface),
+    final line = switch (notice) {
+      Notice.error => s.error,
+      Notice.warning => AppColors.of(context).warn,
+      Notice.fix => s.outline,
     };
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(border: Border.all(color: line)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 10,
         children: [
-          Icon(notice.icon, size: 20, color: fg, fill: 1),
+          Icon(notice.icon, size: 20, color: line, fill: 1),
           Expanded(
             child: DefaultTextStyle.merge(
-              style: TextStyle(color: fg, fontSize: 14, height: 1.4),
+              style: TextStyle(color: s.onSurface, fontSize: 14, height: 1.4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title ?? notice.word,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    style: TextStyle(fontWeight: FontWeight.w500, color: line),
                   ),
                   Text(text),
                 ],
@@ -142,20 +135,25 @@ class BeforeAfter extends StatelessWidget {
           size: 18,
           color: s.onSurfaceVariant,
         ),
-        Expanded(
-          child: Text(
+        // Подпись поля — всегда целым словом; сжимается значение, а не подпись.
+        if (before == null && after != null) ...[
+          Text(
             label,
             style: TextStyle(color: s.onSurfaceVariant, fontSize: 14),
           ),
-        ),
-        // Новое значение без старого — одной строкой: сравнивать не с чем.
-        if (before == null && after != null)
-          Flexible(
-            flex: 2,
+          // Новое значение без старого — одной строкой: сравнивать не с чем.
+          Expanded(
             child: Text(
               after!.isEmpty ? 'пусто' : after!,
               textAlign: TextAlign.end,
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ] else
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: s.onSurfaceVariant, fontSize: 14),
             ),
           ),
       ],
@@ -167,12 +165,7 @@ class BeforeAfter extends StatelessWidget {
       children: [
         head,
         if (before case final b?) ...[
-          _Side(
-            'БЫЛО',
-            b.isEmpty ? 'пусто' : b,
-            s.surfaceContainerLow,
-            s.onSurfaceVariant,
-          ),
+          _Side('БЫЛО', b.isEmpty ? 'пусто' : b, s.outline),
           Icon(
             Symbols.arrow_downward_rounded,
             size: 16,
@@ -180,17 +173,11 @@ class BeforeAfter extends StatelessWidget {
           ),
         ],
         switch (after) {
-          null => _Side(
-            'СТАЛО',
-            'убрано',
-            s.errorContainer,
-            s.onErrorContainer,
-          ),
+          null => _Side('СТАЛО', 'убрано', s.error),
           final a => _Side(
             'СТАЛО',
             a.isEmpty ? 'пусто' : a,
-            s.primaryContainer,
-            s.onPrimaryContainer,
+            AppColors.of(context).change,
           ),
         },
       ],
@@ -199,19 +186,17 @@ class BeforeAfter extends StatelessWidget {
 }
 
 class _Side extends StatelessWidget {
-  const _Side(this.word, this.value, this.bg, this.fg);
+  const _Side(this.word, this.value, this.line);
   final String word;
   final String value;
-  final Color bg;
-  final Color fg;
+
+  /// Цвет рамки и слова: «БЫЛО» — серый, «СТАЛО» — пурпурный, «убрано» — красный.
+  final Color line;
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    decoration: BoxDecoration(
-      color: bg,
-      borderRadius: BorderRadius.circular(14),
-    ),
+    decoration: BoxDecoration(border: Border.all(color: line)),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -220,7 +205,7 @@ class _Side extends StatelessWidget {
           child: Text(
             word,
             style: TextStyle(
-              color: fg,
+              color: line,
               fontSize: 11.5,
               fontWeight: FontWeight.w500,
               letterSpacing: .4,
@@ -229,9 +214,69 @@ class _Side extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Text(value, style: TextStyle(color: fg, fontSize: 15)),
+          child: Text(
+            value,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 15,
+            ),
+          ),
         ),
       ],
     ),
   );
+}
+
+/// Значок объекта в квадратной ячейке.
+class Avatar extends StatelessWidget {
+  const Avatar(this.icon, {super.key, required this.size});
+  final IconData icon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(border: Border.all(color: s.outlineVariant)),
+      child: Icon(icon, size: size * .54, color: s.onSurfaceVariant),
+    );
+  }
+}
+
+/// Главное действие экрана — полоса внизу во всю ширину. В отличие от плавающей
+/// кнопки, она ничего не закрывает: список кончается над ней.
+class BottomAction extends StatelessWidget {
+  const BottomAction({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: s.surface,
+        border: Border(top: BorderSide(color: s.outlineVariant)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: FilledButton.icon(
+            onPressed: onPressed,
+            icon: Icon(icon),
+            label: Text(label),
+          ),
+        ),
+      ),
+    );
+  }
 }
