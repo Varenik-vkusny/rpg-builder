@@ -12,11 +12,9 @@ import '../export/export_action.dart';
 import '../open5e/open5e_api.dart';
 import '../open5e/open5e_screen.dart';
 import '../worlds/world.dart';
-import 'character.dart';
 import 'content_repo.dart';
 import 'filter_bar.dart';
 import 'filters.dart';
-import 'item.dart';
 import 'new_character_screen.dart';
 import 'new_item_screen.dart';
 import 'new_location_screen.dart';
@@ -56,20 +54,17 @@ class _WorldScreenState extends State<WorldScreen> {
   /// Раскрыты ли чипы фильтра у раздела: «items» / «characters».
   final _filtersOpen = <String>{};
 
-  /// Кнопка «Фильтр» раздела: сколько выбрано, по нажатию — чипы.
-  Widget _filterToggle(String section, int active) => Align(
-    alignment: Alignment.centerLeft,
-    child: TextButton.icon(
-      key: Key('filter-$section'),
-      icon: const Icon(Symbols.filter_list_rounded),
-      label: Text(active == 0 ? 'Фильтр' : 'Фильтр: $active'),
-      onPressed: () => setState(() {
-        _filtersOpen.contains(section)
-            ? _filtersOpen.remove(section)
-            : _filtersOpen.add(section);
-      }),
-    ),
+  Widget _filterToggle(String section, int active) => FilterToggle(
+    section: section,
+    active: active,
+    onPressed: () => setState(() {
+      _filtersOpen.contains(section)
+          ? _filtersOpen.remove(section)
+          : _filtersOpen.add(section);
+    }),
   );
+
+  void _setFilter(ContentFilter f) => setState(() => _filter = f);
 
   Future<WorldSnapshot> _load() => widget.repo.snapshot(widget.world.id);
   Future<List<ChangeSetEntry>> _loadHistory() =>
@@ -287,7 +282,7 @@ class _WorldScreenState extends State<WorldScreen> {
       if (c.items.isNotEmpty)
         _filterToggle('items', _filter.rarities.length + _filter.kinds.length),
       if (c.items.isNotEmpty && _filtersOpen.contains('items'))
-        ..._itemFilters(),
+        ...itemFilters(_filter, _setFilter),
       if (c.items.isEmpty)
         const ListTile(subtitle: Text('Предметов пока нет'))
       else if (shown.isEmpty)
@@ -304,33 +299,6 @@ class _WorldScreenState extends State<WorldScreen> {
         ),
     ];
   }
-
-  /// Чипы фильтра предметов: редкость и вид.
-  List<Widget> _itemFilters() => [
-    FilterBar(
-      prefix: 'rarity',
-      values: Rarity.values,
-      label: (r) => r.label,
-      selected: _filter.rarities,
-      onToggle: (r) => setState(() {
-        _filter = _filter.copyWith(
-          rarities: ContentFilter.toggle(_filter.rarities, r),
-        );
-      }),
-    ),
-    const SizedBox(height: 4),
-    FilterBar(
-      prefix: 'kind',
-      values: ItemKind.values,
-      label: (k) => k.label,
-      selected: _filter.kinds,
-      onToggle: (k) => setState(() {
-        _filter = _filter.copyWith(
-          kinds: ContentFilter.toggle(_filter.kinds, k),
-        );
-      }),
-    ),
-  ];
 
   /// Персонажи с фильтром по роли (4.3).
   List<Widget> _characters(WorldSnapshot c) {
@@ -350,17 +318,7 @@ class _WorldScreenState extends State<WorldScreen> {
       if (c.characters.isNotEmpty)
         _filterToggle('characters', _filter.roles.length),
       if (c.characters.isNotEmpty && _filtersOpen.contains('characters'))
-        FilterBar(
-          prefix: 'role',
-          values: Role.values,
-          label: (r) => r.label,
-          selected: _filter.roles,
-          onToggle: (r) => setState(() {
-            _filter = _filter.copyWith(
-              roles: ContentFilter.toggle(_filter.roles, r),
-            );
-          }),
-        ),
+        roleFilter(_filter, _setFilter),
       if (c.characters.isEmpty)
         const ListTile(subtitle: Text('Персонажей пока нет'))
       else if (shown.isEmpty)
