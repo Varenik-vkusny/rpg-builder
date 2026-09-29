@@ -106,4 +106,24 @@ void main() {
       expect(cell, findsOneWidget, reason: line);
     }
   });
+
+  testWidgets('место: имя на обложке; в шапке — когда обложка ушла', (t) async {
+    await openMines(t);
+    await open(t, 'shtolnya_3');
+    // Низкое окно — чтобы страницу места можно было прокрутить за обложку.
+    t.view.physicalSize = const Size(360, 300);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await t.pumpAndSettle();
+    final inBar = find.descendant(
+      of: find.byType(AppBar),
+      matching: find.text('Штольня №3'),
+    );
+    expect(inBar, findsNothing, reason: 'наверху имя только на обложке');
+    expect(find.text('Штольня №3'), findsOneWidget);
+
+    await t.drag(find.byType(ListView).last, const Offset(0, -220));
+    await t.pumpAndSettle();
+    expect(inBar, findsOneWidget, reason: 'обложка ушла — имя в шапке');
+  });
 }

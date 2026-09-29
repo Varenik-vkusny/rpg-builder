@@ -136,7 +136,7 @@ Future<void> openDeeper(BuildContext context, Widget page) async {
   if (changed == true && context.mounted) Navigator.of(context).pop(true);
 }
 
-class ObjectPage extends StatelessWidget {
+class ObjectPage extends StatefulWidget {
   const ObjectPage({
     super.key,
     required this.icon,
@@ -169,45 +169,73 @@ class ObjectPage extends StatelessWidget {
   final Widget Function() edit;
 
   @override
+  State<ObjectPage> createState() => _ObjectPageState();
+}
+
+class _ObjectPageState extends State<ObjectPage> {
+  /// Место: имя только на обложке; в шапке — когда обложка ушла вверх при прокрутке.
+  late bool _titleInBar = !widget.cover;
+
+  bool _onScroll(ScrollNotification n) {
+    if (widget.cover && n.metrics.axis == Axis.vertical && n.depth == 0) {
+      final gone = n.metrics.pixels > _coverHeight;
+      if (gone != _titleInBar) setState(() => _titleInBar = gone);
+    }
+    return false;
+  }
+
+  static const _coverHeight = 150.0;
+
+  @override
   Widget build(BuildContext context) {
+    final w = widget;
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: AnimatedOpacity(
+          opacity: _titleInBar ? 1 : 0,
+          duration: const Duration(milliseconds: 150),
+          child: _titleInBar ? Text(w.title) : const SizedBox.shrink(),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         key: const Key('object-edit'),
         tooltip: 'Править',
-        onPressed: () => openDeeper(context, edit()),
+        onPressed: () => openDeeper(context, w.edit()),
         child: const Icon(Symbols.edit_rounded),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-        children: [
-          if (path.isNotEmpty) _PathLine(path),
-          if (cover)
-            CoverCard(
-              title: title,
-              icon: icon,
-              hue: CoverCard.hueOf(title),
-              caption: kind,
-              height: 150,
-            )
-          else
-            _Hero(icon: icon, title: title, kind: kind),
-          if (tiles.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _TileGrid(tiles),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _onScroll,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+          children: [
+            if (w.path.isNotEmpty) _PathLine(w.path),
+            if (w.cover)
+              CoverCard(
+                title: w.title,
+                icon: w.icon,
+                hue: CoverCard.hueOf(w.title),
+                caption: w.kind,
+                height: _coverHeight,
+              )
+            else
+              _Hero(icon: w.icon, title: w.title, kind: w.kind),
+            if (w.tiles.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _TileGrid(w.tiles),
+            ],
+            if (w.description.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                w.description,
+                style: const TextStyle(fontSize: 15, height: 1.45),
+              ),
+            ],
+            for (final sec in w.sections) ...[
+              _SectionHead(sec.icon, sec.title),
+              sec.child,
+            ],
           ],
-          if (description.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              description,
-              style: const TextStyle(fontSize: 15, height: 1.45),
-            ),
-          ],
-          for (final sec in sections) ...[
-            _SectionHead(sec.icon, sec.title),
-            sec.child,
-          ],
-        ],
+        ),
       ),
     );
   }
