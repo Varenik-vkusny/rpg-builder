@@ -51,6 +51,15 @@ void main() {
     expect(find.widgetWithText(AppBar, 'Слизень'), findsOneWidget);
   });
 
+  testWidgets('враг: карточка добычи ведёт на предмет', (t) async {
+    await openMines(t);
+    await open(t, 'slizen');
+    await t.ensureVisible(find.byKey(const Key('loot-klyuch')));
+    await t.tap(find.byKey(const Key('loot-klyuch')));
+    await t.pumpAndSettle();
+    expect(find.widgetWithText(AppBar, 'Ключ'), findsOneWidget);
+  });
+
   testWidgets('предмет-награда ведёт на свой квест', (t) async {
     await openMines(t);
     await open(t, 'kirka');

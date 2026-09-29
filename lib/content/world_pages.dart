@@ -84,42 +84,51 @@ class WorldPages {
   Widget character(Character ch) {
     final home = c.locations.where((l) => l.id == ch.locationId).firstOrNull;
     final items = {for (final i in c.items) i.id: i};
-    return ObjectPage(
-      icon: characterIcon(ch),
-      title: ch.title,
-      kind: ch.role.label,
-      path: [?home?.title],
-      description: ch.description,
-      tiles: [
-        StatTile(Symbols.military_tech_rounded, 'Уровень', '${ch.level}'),
-        StatTile(Symbols.favorite_rounded, 'Здоровье', '${ch.hp}'),
-        StatTile(Symbols.swords_rounded, 'Атака', '${ch.attack}'),
-      ],
-      edit: () => NewCharacterScreen(
-        world: world,
-        repo: repo,
-        locations: c.locations,
-        items: c.items,
-        editing: ch,
-        snapshot: c,
+    return Builder(
+      builder: (context) => ObjectPage(
+        icon: characterIcon(ch),
+        title: ch.title,
+        kind: ch.role.label,
+        path: [?home?.title],
+        description: ch.description,
+        tiles: [
+          StatTile(Symbols.military_tech_rounded, 'Уровень', '${ch.level}'),
+          StatTile(Symbols.favorite_rounded, 'Здоровье', '${ch.hp}'),
+          StatTile(Symbols.swords_rounded, 'Атака', '${ch.attack}'),
+        ],
+        edit: () => NewCharacterScreen(
+          world: world,
+          repo: repo,
+          locations: c.locations,
+          items: c.items,
+          editing: ch,
+          snapshot: c,
+        ),
+        sections: [
+          if (ch.loot.isNotEmpty)
+            (
+              icon: Symbols.inventory_2_rounded,
+              title: 'Добыча',
+              child: Rail([
+                for (final d in ch.loot)
+                  switch (items[d.itemId]) {
+                    final i? => PortraitCard(
+                      key: Key('loot-${i.slug}'),
+                      icon: itemIcon(i),
+                      title: i.title,
+                      stats: [(Symbols.casino_rounded, d.chanceLabel)],
+                      onTap: () => openDeeper(context, item(i)),
+                    ),
+                    null => PortraitCard(
+                      icon: Symbols.deployed_code_rounded,
+                      title: '?',
+                      stats: [(Symbols.casino_rounded, d.chanceLabel)],
+                    ),
+                  },
+              ]),
+            ),
+        ],
       ),
-      sections: [
-        if (ch.loot.isNotEmpty)
-          (
-            icon: Symbols.inventory_2_rounded,
-            title: 'Добыча',
-            child: Rail([
-              for (final d in ch.loot)
-                PortraitCard(
-                  icon: items[d.itemId] == null
-                      ? Symbols.deployed_code_rounded
-                      : itemIcon(items[d.itemId]!),
-                  title: items[d.itemId]?.title ?? '?',
-                  stats: [(Symbols.casino_rounded, d.chanceLabel)],
-                ),
-            ]),
-          ),
-      ],
     );
   }
 
