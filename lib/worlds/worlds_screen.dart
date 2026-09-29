@@ -94,7 +94,7 @@ class _WorldsScreenState extends State<WorldsScreen> {
                   child: CoverCard(
                     title: w.title,
                     icon: Symbols.public_rounded,
-                    hue: CoverCard.hueOf(w.title),
+                    seed: w.id,
                     caption: _subtitle(w),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(

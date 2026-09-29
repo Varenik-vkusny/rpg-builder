@@ -145,6 +145,7 @@ class ObjectPage extends StatefulWidget {
     required this.edit,
     this.path = const [],
     this.cover = false,
+    this.coverSeed,
     this.tiles = const [],
     this.description = '',
     this.sections = const [],
@@ -161,6 +162,9 @@ class ObjectPage extends StatefulWidget {
 
   /// Локация — большой обложкой, остальные — значком.
   final bool cover;
+
+  /// Ключ цвета обложки (slug места); нет — название.
+  final String? coverSeed;
   final List<StatTile> tiles;
   final String description;
   final List<ObjectSection> sections;
@@ -213,7 +217,7 @@ class _ObjectPageState extends State<ObjectPage> {
               CoverCard(
                 title: w.title,
                 icon: w.icon,
-                hue: CoverCard.hueOf(w.title),
+                seed: w.coverSeed ?? w.title,
                 caption: w.kind,
                 height: _coverHeight,
               )

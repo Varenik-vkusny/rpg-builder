@@ -244,7 +244,7 @@ class _WorldScreenState extends State<WorldScreen> {
           key: Key('open-${l.slug}'),
           title: l.title,
           icon: Symbols.landscape_rounded,
-          hue: CoverCard.hueOf(l.title),
+          seed: l.slug,
           caption: 'ур. ${l.levelMin}–${l.levelMax}',
           counters: [
             (

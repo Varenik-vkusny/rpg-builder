@@ -49,6 +49,7 @@ class WorldPages {
         title: l.title,
         kind: 'Локация · ур. ${l.levelMin}–${l.levelMax}',
         cover: true,
+        coverSeed: l.slug,
         description: l.description,
         edit: () => NewLocationScreen(
           world: world,

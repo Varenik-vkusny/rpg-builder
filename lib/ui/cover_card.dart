@@ -11,7 +11,7 @@ class CoverCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.icon,
-    required this.hue,
+    required this.seed,
     this.counters = const [],
     this.caption,
     this.onTap,
@@ -21,24 +21,23 @@ class CoverCard extends StatelessWidget {
   final String title;
   final IconData icon;
 
-  /// Оттенок 0–360: у каждого объекта свой, одинаковый между запусками.
-  final double hue;
+  /// Постоянный ключ объекта (slug места, id мира): по нему выбирается его цвет.
+  final String seed;
   final List<Counter> counters;
   final String? caption;
   final VoidCallback? onTap;
   final double height;
 
-  /// Оттенок из названия: одно и то же название — один и тот же цвет.
-  static double hueOf(String seed) =>
-      (seed.codeUnits.fold<int>(7, (h, c) => (h * 31 + c) & 0xffff) % 360)
-          .toDouble();
+  /// Номер цвета по ключу: один и тот же ключ — один и тот же цвет между запусками.
+  static int colorIndex(String seed, int count) =>
+      seed.codeUnits.fold<int>(7, (h, c) => (h * 31 + c) & 0xffff) % count;
 
   @override
   Widget build(BuildContext context) {
     final s = Theme.of(context).colorScheme;
     final hues = AppColors.of(context).coverHues;
-    // Цвет — опознавательный знак объекта: рамка и приглушённый значок ячейки.
-    final hueColor = hues[hue.round() % hues.length];
+    // Свой приглушённый цвет места — рамка и значок; из набора без смысловых цветов.
+    final hueColor = hues[colorIndex(seed, hues.length)];
     return Material(
       color: s.surfaceContainerLow,
       shape: RoundedRectangleBorder(

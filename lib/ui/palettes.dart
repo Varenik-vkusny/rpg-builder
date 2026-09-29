@@ -44,7 +44,8 @@ class Palette {
   final Color warn, warnContainer, onWarnContainer;
   final Color ok, okContainer, onOkContainer;
 
-  /// Цвет рамки и значка обложки — нейтральный серый: цвет занят смыслами (владелец 28.09).
+  /// Свой цвет места (рамка и значок обложки): приглушённые оттенки вдали от смысловых —
+  /// голубого, пурпурного, красного, жёлтого, зелёного (владелец 29.09). Прибор place_colors_test.
   final List<Color> coverHues;
 
   ColorScheme scheme(Brightness b) => ColorScheme(
@@ -137,7 +138,14 @@ const darkPalette = Palette(
   ok: Color(0xFF4CEB86),
   okContainer: Color(0xFF0E3B1E),
   onOkContainer: Color(0xFFBDFFD2),
-  coverHues: [Color(0xFF8A8D96)],
+  // Тёплых оттенков нет: все они между красной ошибкой и жёлтым предупреждением.
+  coverHues: [
+    Color(0xFF7084B4), // сланцево-синий
+    Color(0xFF8680BC), // индиго
+    Color(0xFF9E86BA), // фиалковый
+    Color(0xFF7A8FB0), // стальной
+    Color(0xFF93949A), // серый
+  ],
 );
 
 /// Светлая — запасная (основная тема тёмная): те же смыслы, тёмные оттенки.
@@ -167,5 +175,11 @@ const lightPalette = Palette(
   ok: Color(0xFF0B7A33),
   okContainer: Color(0xFFC6FFD6),
   onOkContainer: Color(0xFF002910),
-  coverHues: [Color(0xFF70737B)],
+  coverHues: [
+    Color(0xFF4A5670),
+    Color(0xFF55537A),
+    Color(0xFF66577A),
+    Color(0xFF4A5A74),
+    Color(0xFF5E5F64),
+  ],
 );
