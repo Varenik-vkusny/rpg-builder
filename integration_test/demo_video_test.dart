@@ -2,6 +2,7 @@
 // Кнопки нажимает тест, окно записывает scripts/record_demo.sh (ffmpeg). В check.sh не входит.
 // Сцена: вход → мир «Пепельные копи» → Ассистент → «Штольня №3» → просьба с атакой 14 →
 // ассистент спрашивает → ответ → план → «Применить» → История → «Откатить» → мир как был.
+// Показ ПАДАЕТ, если ассистент не спросил про атаку (тот же прибор по смыслу, что в live/).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -9,6 +10,7 @@ import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/main.dart' as app;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../live/attack_question.dart' show askedAboutAttackText;
 import '../test/assistant_fixtures.dart' show fillMines;
 import '../test/fakes.dart' show createWorld, openWorld;
 
@@ -92,6 +94,7 @@ void main() {
     await tapAndWait(t, find.byKey(const Key('assistant-propose')));
 
     // Ассистент спрашивает (бывает, дважды) — каждый раз выбираем его совет.
+    final asked = <String>[];
     while (true) {
       final next = await waitFor(t, [
         find.byKey(const Key('question-dialog')),
@@ -101,6 +104,16 @@ void main() {
       if (next.evaluate().first.widget.key != const Key('question-dialog')) {
         break;
       }
+      asked.add(
+        find
+            .descendant(
+              of: find.byKey(const Key('question-dialog')),
+              matching: find.byType(Text),
+            )
+            .evaluate()
+            .map((e) => (e.widget as Text).data ?? '')
+            .join(' '),
+      );
       await pause(t, 5);
       await tapAndWait(t, find.byKey(const Key('question-option-0')));
       await pause(t, 1);
@@ -109,6 +122,11 @@ void main() {
 
     // План «было → стало» и проверка на копии.
     expect(find.byKey(const Key('assistant-error')), findsNothing);
+    expect(
+      asked.any(askedAboutAttackText),
+      isTrue,
+      reason: 'ассистент не спросил про атаку; вопросы: $asked',
+    );
     await pause(t, 3);
     final list = find.byType(Scrollable).first;
     await t.drag(list, const Offset(0, -500));

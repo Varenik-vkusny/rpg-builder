@@ -3,11 +3,13 @@
 // вместе с вариантами ответа — модель часто кладёт числа в варианты.
 import 'package:rpg_builder/assistant/assistant_service.dart';
 
-bool askedAboutAttack(AuthorQuestion q) {
-  final text = [
-    q.question,
-    for (final o in q.options) '${o.label} ${o.description}',
-  ].join(' ').toLowerCase();
+bool askedAboutAttack(AuthorQuestion q) => askedAboutAttackText(
+  [q.question, for (final o in q.options) '${o.label} ${o.description}'].join(' '),
+);
+
+/// То же по сырому тексту — для показа, где вопрос читается с экрана.
+bool askedAboutAttackText(String raw) {
+  final text = raw.toLowerCase();
   final aboutAttack = RegExp(r'атак|урон').hasMatch(text);
   final aboutCeiling =
       RegExp(r'(^|\D)1[04](\D|$)').hasMatch(text) ||
