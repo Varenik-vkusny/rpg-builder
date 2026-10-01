@@ -168,6 +168,8 @@ class _Copy {
       min: 1,
     );
     if (min > max) throw const _OpError('уровни «от» больше «до»');
+    // parent: slug места, «» — на верхний уровень, не задан — как было.
+    final parent = op.str('parent');
     final l = Location(
       id: old?.id ?? 'new-location-${op.slug}',
       slug: op.slug!,
@@ -175,6 +177,11 @@ class _Copy {
       description: op.str('description') ?? old?.description ?? '',
       levelMin: min,
       levelMax: max,
+      parentId: switch (parent) {
+        null => old?.parentId,
+        '' => null,
+        _ => _idOf('location', parent),
+      },
     );
     i < 0 ? locations.add(l) : locations[i] = l;
     return _diff({
@@ -182,6 +189,7 @@ class _Copy {
       'description': (old?.description, l.description),
       'level_min': (old?.levelMin, l.levelMin),
       'level_max': (old?.levelMax, l.levelMax),
+      'parent': (old?.parentId, l.parentId),
     });
   }
 

@@ -22,7 +22,8 @@ List<String> full(WorldSnapshot w) {
   final t = w.titles;
   return [
     for (final l in w.locations)
-      'L ${l.slug}:${l.title}:${l.description}:${l.levelMin}-${l.levelMax}',
+      'L ${l.slug}:${l.title}:${l.description}:${l.levelMin}-${l.levelMax}'
+          ':${t[l.parentId]}',
     for (final i in w.items) 'I ${i.slug}:${i.title}:${i.damage}:${i.price}',
     for (final c in w.characters)
       'C ${c.slug}:${c.role.name}:${t[c.locationId]}:${c.level}:${c.hp}:${c.attack}:'

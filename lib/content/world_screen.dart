@@ -229,7 +229,11 @@ class _WorldScreenState extends State<WorldScreen> {
       'Локации',
       const Key('new-location'),
       'Новая локация',
-      NewLocationScreen(world: widget.world, repo: widget.repo),
+      NewLocationScreen(
+        world: widget.world,
+        repo: widget.repo,
+        locations: c.locations,
+      ),
     ),
     if (c.locations.isEmpty) const ListTile(subtitle: Text('Локаций пока нет')),
     for (final l in c.locations)

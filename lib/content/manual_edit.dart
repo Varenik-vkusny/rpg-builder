@@ -82,12 +82,14 @@ ManualEdit editLocation(String worldId, Location old, NewLocation now) {
       'description': old.description,
       'level_min': old.levelMin,
       'level_max': old.levelMax,
+      'parent_id': old.parentId,
     },
     {
       'title': now.title,
       'description': now.description,
       'level_min': now.levelMin,
       'level_max': now.levelMax,
+      'parent_id': now.parentId,
     },
   );
   return ManualEdit(
@@ -104,6 +106,7 @@ ManualEdit editLocation(String worldId, Location old, NewLocation now) {
         description: now.description,
         levelMin: now.levelMin,
         levelMax: now.levelMax,
+        parentId: now.parentId,
       ),
     ),
   );
@@ -305,6 +308,8 @@ ManualEdit editQuest(String worldId, Quest old, NewQuest now) {
 /// Кто ссылается на объект [id] — словами. Непусто — удалять нельзя.
 /// Своя добыча врага и свои шаги квеста — не ссылки: уходят вместе с ним.
 List<String> referencesTo(WorldSnapshot w, String id) => [
+  for (final l in w.locations)
+    if (l.parentId == id) 'вложено сюда: «${l.title}»',
   for (final c in w.characters) ...[
     if (c.locationId == id) 'живёт здесь: «${c.title}»',
     if (c.loot.any((l) => l.itemId == id)) 'роняет: «${c.title}»',

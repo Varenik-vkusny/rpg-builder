@@ -91,6 +91,7 @@ class FakeContent implements ContentRepo {
       description: l.description,
       levelMin: l.levelMin,
       levelMax: l.levelMax,
+      parentId: l.parentId,
     );
     list.add(loc);
     return loc;

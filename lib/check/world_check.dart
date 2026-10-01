@@ -4,6 +4,7 @@ import '../content/character.dart';
 import '../content/item.dart';
 import '../content/location.dart';
 import '../content/quest.dart';
+import 'nesting_rules.dart';
 import 'warning_rules.dart';
 
 /// Мир целиком в памяти: всё, что видят правила.
@@ -59,10 +60,15 @@ List<Problem> checkWorld(WorldSnapshot w) => [
   ...warningRules(w),
 ];
 
-/// Ошибки: ссылка на несуществующий объект, квест без шагов или выдающего.
+/// Ошибки: ссылка на несуществующий объект, квест без шагов или выдающего,
+/// вложенность мест (место в самом себе, глубже трёх уровней).
 List<Problem> errorRules(WorldSnapshot w) {
   final ids = _Ids(w);
   return [
+    for (final l in w.locations)
+      if (l.parentId != null)
+        ?ids.link(l.id, l.title, 'родитель', l.parentId!, ids.locations),
+    ...nestingErrors(w),
     for (final c in w.characters) ...[
       if (c.locationId != null)
         ?ids.link(c.id, c.title, 'локация', c.locationId!, ids.locations),

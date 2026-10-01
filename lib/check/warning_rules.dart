@@ -1,11 +1,12 @@
 // Предупреждения проверки мира — чистый Dart, как и ошибки (world_check.dart).
 import '../content/character.dart';
 import '../content/item.dart';
+import 'nesting_rules.dart';
 import 'world_check.dart';
 
 /// Предупреждения: предмет нельзя получить, урон выше потолка, атака врага
 /// выше потолка, враг выше уровней локации, эпический дешевле медианы редких,
-/// повтор названий.
+/// повтор названий, уровни места вне уровней родителя.
 List<Problem> warningRules(WorldSnapshot w) => [
   ..._unobtainable(w),
   ..._damageOverCeiling(w),
@@ -13,6 +14,7 @@ List<Problem> warningRules(WorldSnapshot w) => [
   ..._enemyOverLocation(w),
   ..._epicCheaperThanRare(w),
   ..._duplicateTitles(w),
+  ...nestingWarnings(w),
 ];
 
 /// Множитель редкости в потолке урона.

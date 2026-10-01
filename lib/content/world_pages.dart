@@ -56,6 +56,7 @@ class WorldPages {
           repo: repo,
           editing: l,
           snapshot: c,
+          locations: c.locations,
         ),
         sections: [
           if (here.isNotEmpty)

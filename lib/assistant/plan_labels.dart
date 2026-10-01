@@ -10,6 +10,7 @@ const _fieldLabels = {
   'description': 'Описание',
   'level_min': 'Уровни от',
   'level_max': 'Уровни до',
+  'parent': 'Внутри места',
   'kind': 'Вид',
   'rarity': 'Редкость',
   'level': 'Уровень',
@@ -104,7 +105,7 @@ class PlanLabels {
     String byId(Iterable<(String, String)> pairs) =>
         pairs.where((p) => p.$1 == raw).map((p) => p.$2).firstOrNull ?? '?';
     return switch (field) {
-      'location' => byId(w.locations.map((l) => (l.id, l.title))),
+      'location' || 'parent' => byId(w.locations.map((l) => (l.id, l.title))),
       'giver' => byId(w.characters.map((c) => (c.id, c.title))),
       'kind' => ItemKind.values.byName(raw as String).label,
       'rarity' => Rarity.values.byName(raw as String).label,

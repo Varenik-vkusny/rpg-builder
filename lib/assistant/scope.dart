@@ -68,6 +68,8 @@ Set<String> scopeOf(WorldSnapshot w, Scope scope) {
 ) {
   final refs = <String>[
     if (op.str('location') case final l?) scopeKey('location', l),
+    if (op.str('parent') case final p? when p.isNotEmpty)
+      scopeKey('location', p),
     if (op.str('giver') case final g?) scopeKey('character', g),
     // Цель без вида шага не проверить по области — такая ссылка не пропускается никогда.
     if (op.str('target') case final t?)

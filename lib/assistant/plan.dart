@@ -83,8 +83,7 @@ class PlanOp {
     'position': position,
     'fields': {
       for (final f in planFieldNames) f: fields[f],
-      // Источник образца — только у импорта (4.6); модель его не пишет и не видит.
-      for (final f in importFieldNames)
+      for (final f in optionalFieldNames)
         if (fields[f] != null) f: fields[f],
     },
   };
@@ -116,8 +115,10 @@ const planFieldNames = [
   'chance',
 ];
 
-/// Поля импорта образца (Open5e): в JSON плана — только если заданы.
-const importFieldNames = ['source', 'source_ref'];
+/// Поля, которых нет в общем формате функции: в JSON плана — только если заданы.
+/// Источник образца — импорт Open5e (4.6); parent — родитель места (5а.1),
+/// модель его пока не пишет — уйдёт в общий формат вместе с областью (5а.6).
+const optionalFieldNames = ['source', 'source_ref', 'parent'];
 
 class Plan {
   const Plan({required this.summary, required this.ops});

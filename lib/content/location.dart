@@ -7,6 +7,7 @@ class Location {
     required this.description,
     required this.levelMin,
     required this.levelMax,
+    this.parentId,
   });
 
   final String id;
@@ -16,6 +17,9 @@ class Location {
   final int levelMin;
   final int levelMax;
 
+  /// Место, внутри которого лежит это (5а); null — верхний уровень.
+  final String? parentId;
+
   factory Location.fromRow(Map<String, dynamic> row) => Location(
     id: row['id'] as String,
     slug: row['slug'] as String,
@@ -23,6 +27,7 @@ class Location {
     description: row['description'] as String,
     levelMin: row['level_min'] as int,
     levelMax: row['level_max'] as int,
+    parentId: row['parent_id'] as String?,
   );
 }
 
@@ -33,12 +38,14 @@ class NewLocation {
     required this.description,
     required this.levelMin,
     required this.levelMax,
+    this.parentId,
   });
 
   final String title;
   final String description;
   final int levelMin;
   final int levelMax;
+  final String? parentId;
 
   Map<String, dynamic> toRow(String worldId, String slug) => {
     'project_id': worldId,
@@ -47,5 +54,6 @@ class NewLocation {
     'description': description,
     'level_min': levelMin,
     'level_max': levelMax,
+    'parent_id': parentId,
   };
 }

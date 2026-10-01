@@ -7,6 +7,7 @@ import 'content_repo.dart';
 import 'location.dart';
 import 'manual_edit.dart';
 import 'manual_save.dart';
+import 'nesting.dart';
 
 class NewLocationScreen extends StatefulWidget {
   const NewLocationScreen({
@@ -15,6 +16,7 @@ class NewLocationScreen extends StatefulWidget {
     required this.repo,
     this.editing,
     this.snapshot,
+    this.locations = const [],
   });
 
   final World world;
@@ -26,6 +28,9 @@ class NewLocationScreen extends StatefulWidget {
   /// Мир на момент открытия формы — нужен для сохранения правки.
   final WorldSnapshot? snapshot;
 
+  /// Места мира — из них выбирается, внутри какого лежит это (5а.1).
+  final List<Location> locations;
+
   @override
   State<NewLocationScreen> createState() => _NewLocationScreenState();
 }
@@ -34,6 +39,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
   final _title = TextEditingController();
   final _description = TextEditingController();
   late RangeValues _levels;
+  String? _parentId;
   bool _busy = false;
   String? _error;
 
@@ -48,6 +54,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
       (e?.levelMax ?? widget.world.levelMax).toDouble(),
     );
     if (e != null) {
+      _parentId = e.parentId;
       _title.text = e.title;
       _description.text = e.description;
     }
@@ -75,6 +82,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
       description: _description.text.trim(),
       levelMin: _levels.start.round(),
       levelMax: _levels.end.round(),
+      parentId: _parentId,
     );
     if (_editing) {
       final error = await saveManualEdit(
@@ -160,6 +168,12 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
             maxLines: 3,
             decoration: const InputDecoration(labelText: 'Описание'),
           ),
+          _ParentPicker(
+            locations: widget.locations,
+            self: widget.editing,
+            value: _parentId,
+            onChanged: (v) => setState(() => _parentId = v),
+          ),
           const SizedBox(height: 16),
           Text('Уровни: ${_levels.start.round()}–${_levels.end.round()}'),
           if (w.levelMin < w.levelMax)
@@ -184,6 +198,43 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// «Внутри места»: только места, куда можно положить, не уйдя глубже трёх уровней.
+/// Класть некуда — поля нет.
+class _ParentPicker extends StatelessWidget {
+  const _ParentPicker({
+    required this.locations,
+    required this.self,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final List<Location> locations;
+  final Location? self;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final parents = allowedParents(locations, self);
+    if (parents.isEmpty) return const SizedBox.shrink();
+    return DropdownButtonFormField<String?>(
+      key: const Key('location-parent'),
+      initialValue: value,
+      isExpanded: true,
+      decoration: const InputDecoration(labelText: 'Внутри места'),
+      items: [
+        const DropdownMenuItem(value: null, child: Text('Верхний уровень')),
+        for (final l in parents)
+          DropdownMenuItem(
+            value: l.id,
+            child: Text(pathOf(locations, l), overflow: TextOverflow.ellipsis),
+          ),
+      ],
+      onChanged: onChanged,
     );
   }
 }
