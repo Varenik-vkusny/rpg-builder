@@ -40,6 +40,9 @@ Map<String, Object> exportWorld(World world, WorldSnapshot w) {
           'description': l.description,
           'levelMin': l.levelMin,
           'levelMax': l.levelMax,
+          // Родитель места (5а): «» — верхний уровень. Положение на карте — раскладка
+          // автора, в игру не идёт (VISION.md, §10).
+          'parent': ref(l.parentId),
         },
     ],
     'items': [

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/content_repo.dart';
+import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/export/json_utility.dart';
 import 'package:rpg_builder/export/world_export.dart';
 import 'package:rpg_builder/worlds/world.dart';
@@ -90,6 +91,48 @@ void main() {
       expect(exportFileName(mines), 'pepelnye_kopi.json');
     },
   );
+
+  test('экспорт: у места родитель по slug; место верхнего уровня — «»', () async {
+    final c = await minesContent();
+    final kopi = await c.createLocation(
+      minesId,
+      const NewLocation(
+        title: 'Копи',
+        description: '',
+        levelMin: 1,
+        levelMax: 6,
+      ),
+    );
+    await c.createLocation(
+      minesId,
+      NewLocation(
+        title: 'Колодец',
+        description: '',
+        levelMin: 2,
+        levelMax: 3,
+        parentId: kopi.id,
+      ),
+    );
+    final json = exportWorld(mines, await c.snapshot(minesId));
+    final parents = {
+      for (final l in (json['locations'] as List).cast<Map>())
+        l['slug']: l['parent'],
+    };
+    expect(parents['kolodets'], 'kopi');
+    expect(parents['kopi'], '');
+    // Только эти поля: положение блока на карте — раскладка автора, в игру не идёт.
+    for (final l in (json['locations'] as List).cast<Map>()) {
+      expect(l.keys.toSet(), {
+        'slug',
+        'name',
+        'description',
+        'levelMin',
+        'levelMax',
+        'parent',
+      });
+    }
+    expect(jsonUtilityProblems(jsonDecode(jsonEncode(json))), isEmpty);
+  });
 
   test('экспорт: прибор C#-совместимости краснеет на словаре, null и без schemaVersion', () {
     // Словарь «slug → предмет» — JsonUtility его не читает.
