@@ -11,6 +11,7 @@ import 'character.dart';
 import 'content_repo.dart';
 import 'item.dart';
 import 'location.dart';
+import 'nesting.dart';
 import 'new_character_screen.dart';
 import 'new_item_screen.dart';
 import 'new_location_screen.dart';
@@ -38,16 +39,16 @@ class WorldPages {
   final ContentRepo repo;
   final WorldSnapshot c;
 
+  /// Место: путь сверху, вложенные места (1 уровень), кто здесь — по всей глубине.
   Widget location(Location l) {
-    final here = [
-      for (final ch in c.characters)
-        if (ch.locationId == l.id) ch,
-    ];
+    final up = ancestorsOf(c.locations, l);
     return Builder(
       builder: (context) => ObjectPage(
         icon: Symbols.landscape_rounded,
         title: l.title,
         kind: 'Локация · ур. ${l.levelMin}–${l.levelMax}',
+        path: [if (up.isNotEmpty) pathOf(c.locations, l)],
+        pathKey: const Key('place-path'),
         cover: true,
         coverSeed: l.slug,
         description: l.description,
@@ -58,39 +59,73 @@ class WorldPages {
           snapshot: c,
           locations: c.locations,
         ),
-        sections: [
-          if (here.isNotEmpty)
-            (
-              icon: Symbols.groups_rounded,
-              title: 'Кто здесь · ${here.length}',
-              child: Rail([
-                for (final ch in here)
-                  PortraitCard(
-                    key: Key('who-${ch.slug}'),
-                    icon: characterIcon(ch),
-                    title: ch.title,
-                    stats: [
-                      (Symbols.favorite_rounded, '${ch.hp}'),
-                      (Symbols.swords_rounded, '${ch.attack}'),
-                    ],
-                    onTap: () => openDeeper(context, character(ch)),
-                  ),
-              ]),
-            ),
-        ],
+        sections: [?_inner(context, l), ?_here(context, l)],
       ),
+    );
+  }
+
+  /// «Внутри»: прямые вложенные места; нажатие открывает место.
+  ObjectSection? _inner(BuildContext context, Location l) {
+    final inner = childrenOf(c.locations, l.id);
+    if (inner.isEmpty) return null;
+    return (
+      icon: Symbols.account_tree_rounded,
+      title: 'Внутри · ${inner.length}',
+      child: Rail([
+        for (final p in inner)
+          PortraitCard(
+            key: Key('inner-${p.slug}'),
+            icon: Symbols.landscape_rounded,
+            title: p.title,
+            stats: [
+              (Symbols.military_tech_rounded, '${p.levelMin}–${p.levelMax}'),
+            ],
+            onTap: () => openDeeper(context, location(p)),
+          ),
+      ]),
+    );
+  }
+
+  /// «Кто здесь»: жители места и всех вложенных в него на любой глубине.
+  ObjectSection? _here(BuildContext context, Location l) {
+    final places = {
+      l.id,
+      for (final d in descendantsOf(c.locations, l.id)) d.id,
+    };
+    final here = [
+      for (final ch in c.characters)
+        if (places.contains(ch.locationId)) ch,
+    ];
+    if (here.isEmpty) return null;
+    return (
+      icon: Symbols.groups_rounded,
+      title: 'Кто здесь · ${here.length}',
+      child: Rail([
+        for (final ch in here)
+          PortraitCard(
+            key: Key('who-${ch.slug}'),
+            icon: characterIcon(ch),
+            title: ch.title,
+            stats: [
+              (Symbols.favorite_rounded, '${ch.hp}'),
+              (Symbols.swords_rounded, '${ch.attack}'),
+            ],
+            onTap: () => openDeeper(context, character(ch)),
+          ),
+      ]),
     );
   }
 
   Widget character(Character ch) {
     final home = c.locations.where((l) => l.id == ch.locationId).firstOrNull;
+    // Путь до места целиком: «Копи › Штольня №3 › Забой».
     final items = {for (final i in c.items) i.id: i};
     return Builder(
       builder: (context) => ObjectPage(
         icon: characterIcon(ch),
         title: ch.title,
         kind: ch.role.label,
-        path: [?home?.title],
+        path: [if (home != null) pathOf(c.locations, home)],
         description: ch.description,
         tiles: [
           StatTile(Symbols.military_tech_rounded, 'Уровень', '${ch.level}'),

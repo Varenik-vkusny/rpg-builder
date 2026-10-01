@@ -144,6 +144,7 @@ class ObjectPage extends StatefulWidget {
     required this.kind,
     required this.edit,
     this.path = const [],
+    this.pathKey,
     this.cover = false,
     this.coverSeed,
     this.tiles = const [],
@@ -159,6 +160,9 @@ class ObjectPage extends StatefulWidget {
 
   /// Где объект в мире: «Штольня №3».
   final List<String> path;
+
+  /// Ключ строки пути — для тестов.
+  final Key? pathKey;
 
   /// Локация — большой обложкой, остальные — значком.
   final bool cover;
@@ -212,7 +216,7 @@ class _ObjectPageState extends State<ObjectPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
           children: [
-            if (w.path.isNotEmpty) _PathLine(w.path),
+            if (w.path.isNotEmpty) _PathLine(w.path, key: w.pathKey),
             if (w.cover)
               CoverCard(
                 title: w.title,
@@ -247,7 +251,7 @@ class _ObjectPageState extends State<ObjectPage> {
 
 /// Где объект в мире: «📍 Штольня №3».
 class _PathLine extends StatelessWidget {
-  const _PathLine(this.path);
+  const _PathLine(this.path, {super.key});
   final List<String> path;
 
   @override
