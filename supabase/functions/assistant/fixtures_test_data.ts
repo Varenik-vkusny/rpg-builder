@@ -11,8 +11,8 @@ export const mines: World = {
   level_min: 1,
   level_max: 10,
   locations: [
-    { slug: "shtolnya_3", title: "Штольня №3", description: "обвалившаяся выработка", level_min: 2, level_max: 4 },
-    { slug: "rynok", title: "Рынок", description: "", level_min: 1, level_max: 3 },
+    { slug: "shtolnya_3", title: "Штольня №3", description: "обвалившаяся выработка", level_min: 2, level_max: 4, parent: null },
+    { slug: "rynok", title: "Рынок", description: "", level_min: 1, level_max: 3, parent: null },
   ],
   items: [
     { slug: "klyuch", title: "Ключ от лебёдки", kind: "quest", rarity: "common", level: 2, damage: null, defense: null, price: 0 },
@@ -41,7 +41,7 @@ export const mines: World = {
 };
 
 const NO_FIELDS: PlanFields = {
-  title: null, description: null, level_min: null, level_max: null, kind: null,
+  title: null, description: null, level_min: null, level_max: null, parent: null, kind: null,
   rarity: null, level: null, damage: null, defense: null, price: null, role: null,
   hp: null, attack: null, location: null, giver: null, step_kind: null, target: null,
   amount: null, chance: null,

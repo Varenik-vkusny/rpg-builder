@@ -3,7 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/assistant/plan.dart';
+import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/assistant/plan_apply.dart';
+import 'package:rpg_builder/assistant/scope.dart';
+import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/check/world_check.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/content/nesting.dart';
@@ -136,6 +139,56 @@ void main() {
         slug: 'shtolnya',
       );
       expect(run(op).error, contains('вложено сюда: «zaboy»'));
+    });
+  });
+
+  group('область ассистента (5а.6) — как на сервере', () {
+    Character who(String id, String loc) => Character(
+      id: id,
+      slug: id,
+      title: id,
+      description: '',
+      role: Role.npc,
+      locationId: loc,
+      loot: const [],
+    );
+    final w = WorldSnapshot(
+      locations: mines,
+      characters: [
+        who('lampshchitsa', 'shtolnya'),
+        who('zaboyshchik', 'zaboy'),
+      ],
+    );
+
+    test('Копи тянут штольню внутри и её жителей, но не забой', () {
+      final s = scopeOf(w, const Scope(ScopeType.location, 'kopi'));
+      expect(s, containsAll(['location:shtolnya', 'character:lampshchitsa']));
+      expect(s, isNot(contains('location:zaboy')));
+      expect(s, isNot(contains('character:zaboyshchik')));
+    });
+
+    test('штольня не тянет родителя вверх', () {
+      final s = scopeOf(w, const Scope(ScopeType.location, 'shtolnya'));
+      expect(s, contains('location:zaboy'));
+      expect(s, isNot(contains('location:kopi')));
+    });
+
+    test('положить место в родителя вне области — вне области', () {
+      final plan = Plan(
+        summary: '',
+        ops: [
+          PlanOp(
+            action: OpAction.update,
+            type: OpType.location,
+            slug: 'shtolnya',
+            fields: const {'parent': 'rynok'},
+          ),
+        ],
+      );
+      final s = scopeOf(w, const Scope(ScopeType.location, 'shtolnya'));
+      expect(outOfScope(plan, s), {
+        0: ['location:rynok'],
+      });
     });
   });
 

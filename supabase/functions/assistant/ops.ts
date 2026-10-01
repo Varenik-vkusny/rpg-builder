@@ -5,7 +5,7 @@ import type { Plan, PlanFields, PlanOp } from "./plan.ts";
 import { checkSchema } from "./schema_check.ts";
 
 export const FIELD_NAMES = [
-  "title", "description", "level_min", "level_max", "kind", "rarity", "level",
+  "title", "description", "level_min", "level_max", "parent", "kind", "rarity", "level",
   "damage", "defense", "price", "role", "hp", "attack", "location", "giver",
   "step_kind", "target", "amount", "chance",
 ] as const;
@@ -37,7 +37,11 @@ type IdName = "slug" | "character" | "item" | "quest" | "position";
 
 /// Вид операции: чем она указывает на объект и какие поля у неё есть.
 const KINDS: Record<OpType, { about: string; ids: IdName[]; fields: (keyof PlanFields)[] }> = {
-  location: { about: "Локация по slug", ids: ["slug"], fields: ["title", "description", "level_min", "level_max"] },
+  location: {
+    about: "Локация по slug; parent — slug места, внутри которого она лежит («» — верхний уровень)",
+    ids: ["slug"],
+    fields: ["title", "description", "level_min", "level_max", "parent"],
+  },
   item: { about: "Предмет по slug", ids: ["slug"], fields: ["title", "kind", "rarity", "level", "damage", "defense", "price"] },
   character: {
     about: "Персонаж по slug; location — slug локации",

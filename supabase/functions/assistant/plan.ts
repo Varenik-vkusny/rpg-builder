@@ -8,6 +8,7 @@ export interface PlanFields {
   description: string | null;
   level_min: number | null;
   level_max: number | null;
+  parent: string | null;
   kind: string | null;
   rarity: string | null;
   level: number | null;
@@ -130,6 +131,8 @@ export function refSlots(op: PlanOp): RefSlot[] {
   if (op.type === "loot" || op.type === "quest_reward") out.push({ type: "item", get: () => op.item, set: (v) => (op.item = v) });
   if (op.type === "quest_step" || op.type === "quest_reward") out.push({ type: "quest", get: () => op.quest, set: (v) => (op.quest = v) });
   if (f.location) out.push({ type: "location", get: () => f.location, set: (v) => (f.location = v) });
+  // parent «» — на верхний уровень, ни на что не ссылается.
+  if (f.parent) out.push({ type: "location", get: () => f.parent, set: (v) => (f.parent = v) });
   if (f.giver) out.push({ type: "character", get: () => f.giver, set: (v) => (f.giver = v) });
   // Цель без вида шага не проверить по области — такая ссылка не пропускается никогда.
   if (f.target) {

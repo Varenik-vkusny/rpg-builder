@@ -32,6 +32,7 @@ export async function loadWorld(db: Db, projectId: string): Promise<World | null
     locations: locations.map((l) => ({
       slug: l.slug as string, title: l.title as string, description: l.description as string,
       level_min: l.level_min as number, level_max: l.level_max as number,
+      parent: s(l.parent_id),
     })),
     items: items.map((i) => ({
       slug: i.slug as string, title: i.title as string, kind: i.kind as string, rarity: i.rarity as string,

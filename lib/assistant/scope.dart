@@ -1,6 +1,7 @@
 // Область правки в приложении — второй замок после серверной функции
 // (supabase/functions/assistant/world.ts, plan.ts). Правило то же:
-// объект и всё, что связано с ним не дальше двух связей.
+// объект и всё, что связано с ним не дальше двух связей; место — вместе
+// с вложенными на 1 уровень.
 import '../check/world_check.dart';
 import '../content/quest.dart';
 import 'assistant_service.dart';
@@ -50,8 +51,15 @@ Set<String> scopeOf(WorldSnapshot w, Scope scope) {
   }
   final root = scopeKey(scope.type.name, scope.slug);
   if (!keyById.containsValue(root)) return {};
-  final seen = {root};
-  var frontier = [root];
+  // Место тянет вложенные на 1 уровень вниз — они считаются как само место (5а.6).
+  final inner = [
+    if (scope.type == ScopeType.location)
+      for (final l in w.locations)
+        if (l.parentId != null && keyById[l.parentId] == root)
+          scopeKey('location', l.slug),
+  ];
+  final seen = {root, ...inner};
+  var frontier = [root, ...inner];
   for (var d = 0; d < scopeDepth; d++) {
     frontier = [
       for (final k in frontier)

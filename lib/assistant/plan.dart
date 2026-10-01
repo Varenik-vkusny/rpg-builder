@@ -98,6 +98,7 @@ const planFieldNames = [
   'description',
   'level_min',
   'level_max',
+  'parent',
   'kind',
   'rarity',
   'level',
@@ -115,10 +116,9 @@ const planFieldNames = [
   'chance',
 ];
 
-/// Поля, которых нет в общем формате функции: в JSON плана — только если заданы.
-/// Источник образца — импорт Open5e (4.6); parent — родитель места (5а.1),
-/// модель его пока не пишет — уйдёт в общий формат вместе с областью (5а.6).
-const optionalFieldNames = ['source', 'source_ref', 'parent'];
+/// Поля импорта образца (Open5e, 4.6): модель их не пишет и не видит —
+/// в JSON плана только если заданы.
+const optionalFieldNames = ['source', 'source_ref'];
 
 class Plan {
   const Plan({required this.summary, required this.ops});

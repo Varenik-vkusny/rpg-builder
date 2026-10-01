@@ -10,6 +10,8 @@ export interface WorldLocation {
   description: string;
   level_min: number;
   level_max: number;
+  /// Место, внутри которого лежит это (slug); null — верхний уровень.
+  parent: string | null;
 }
 
 export interface WorldItem {
@@ -99,17 +101,22 @@ export function objectsByKey(w: World): Map<string, { type: ObjectType; title: s
 export const SCOPE_DEPTH = 2;
 
 /// Область: выбранный объект и всё, что связано с ним не дальше двух связей.
+/// Место тянет за собой вложенные места на 1 уровень вниз — они считаются как само место:
+/// их жители и всё, что связано с жителями (VISION.md, §6). Родитель вверх не тянется.
 /// Корня нет в мире — область пустая.
 export function scopeOf(w: World, type: ScopeType, slug: string): Set<string> {
   const root = key(type, slug);
   if (!objectsByKey(w).has(root)) return new Set();
+  const inner = type === "location"
+    ? w.locations.filter((l) => l.parent === slug).map((l) => key("location", l.slug))
+    : [];
   const near = new Map<string, string[]>();
   for (const [a, b] of edges(w)) {
     near.set(a, [...(near.get(a) ?? []), b]);
     near.set(b, [...(near.get(b) ?? []), a]);
   }
-  const seen = new Set([root]);
-  let frontier = [root];
+  const seen = new Set([root, ...inner]);
+  let frontier = [root, ...inner];
   for (let d = 0; d < SCOPE_DEPTH; d++) {
     const next: string[] = [];
     for (const k of frontier) {
