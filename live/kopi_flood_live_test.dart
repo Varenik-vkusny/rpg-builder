@@ -2,7 +2,8 @@
 // выложенную функцию «assistant». В check.sh НЕ входит. Запуск:
 //   bash -c 'set -a; . ./.env.test; flutter test --no-pub live/kopi_flood_live_test.dart'
 // Мир: Копи › Штольня №3 (со слизнем) и Рынок рядом. Область — Копи.
-// Прибор: план меняет Штольню №3 или её жителя, Рынок не трогает, применяется и откатывается.
+// Прибор: судья live/kopi_flood_judge.dart (описание Штольни №3 изменено; житель удалён — только
+// после вопроса автору), Рынок не тронут, план применяется и откатывается.
 @Tags(['live'])
 @Timeout(Duration(minutes: 10))
 library;
@@ -13,7 +14,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/assistant/change_set.dart';
-import 'package:rpg_builder/assistant/plan.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/worlds/world.dart';
@@ -22,6 +22,7 @@ import 'package:rpg_builder/worlds/worlds_repo.dart';
 import '../test/assistant_fixtures.dart';
 import '../test/db_helpers.dart';
 import 'assistant_live_test.dart' show runAnswering, show;
+import 'kopi_flood_judge.dart';
 
 void main() {
   test('«затопи копи» вживую: меняются штольни внутри копей', () async {
@@ -61,7 +62,7 @@ void main() {
     );
     final before = await repo.snapshot(world.id);
     debugPrint('МИР ДО:\n${show(before)}');
-    final (run, _) = await runAnswering(
+    final (run, asked) = await runAnswering(
       assistant: SupabaseAssistantService(a, model: model),
       world: before,
       request: ask,
@@ -76,15 +77,11 @@ void main() {
       for (final op in run.proposal.plan.ops) ?op.str('location'),
     };
     expect(
-      touched.intersection({'shtolnya_3', 'slizen'}),
-      isNotEmpty,
-      reason: 'план меняет штольню внутри копей или её жителя: $touched',
+      judgeKopiFlood(run.proposal.plan, questionsAsked: asked.length),
+      isEmpty,
+      reason: 'план: $touched',
     );
     expect(touched, isNot(contains('rynok')), reason: 'Рынок вне копей');
-    expect(
-      run.proposal.plan.ops.where((o) => o.type == OpType.location),
-      isNotEmpty,
-    );
     expect(run.canApply, isTrue, reason: 'после исправлений ошибок нет');
 
     await repo.applyChangeSet(world.id, ChangeSetDraft.fromRun(run, ask));
