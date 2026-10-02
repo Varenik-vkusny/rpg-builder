@@ -39,10 +39,11 @@ class PlaceBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final hues = AppColors.of(context).coverHues;
     final hue = hues[CoverCard.colorIndex(place.slug, hues.length)];
+    // Блок — одна кнопка со сводкой; кнопка входа внутри — своя, со своей подписью (TalkBack).
     return Semantics(
+      container: true,
       button: true,
       label: label,
-      excludeSemantics: true,
       child: SizedBox.fromSize(
         size: blockSize,
         child: _Pressable(
@@ -217,6 +218,7 @@ class _Frame extends StatelessWidget {
                   bottom: 0,
                   child: _EnterCell(
                     key: Key('enter-${place.slug}'),
+                    title: place.title,
                     hue: hue,
                     full: stats.inner > 0,
                     onTap: onEnter,
@@ -227,48 +229,54 @@ class _Frame extends StatelessWidget {
                   top: 0,
                   child: Container(width: 14, height: 3, color: hue),
                 ),
-                Padding(
-                  // Справа место под ячейку проблемы — название под неё не заходит.
-                  padding: EdgeInsets.fromLTRB(
-                    12,
-                    12,
-                    stats.worst == null ? 10 : 48,
-                    10,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        place.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: s.onSurface,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      _Levels(place),
-                      const Spacer(),
-                      Row(
-                        spacing: 12,
-                        children: [
-                          _Count(
-                            Symbols.groups_rounded,
-                            stats.residents,
-                            s.onSurface,
+                ExcludeSemantics(
+                  child: Padding(
+                    // Справа место под ячейку проблемы — название под неё не заходит.
+                    padding: EdgeInsets.fromLTRB(
+                      12,
+                      12,
+                      stats.worst == null ? 10 : 48,
+                      10,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          place.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: s.onSurface,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            height: 1.15,
                           ),
-                          if (stats.inner > 0)
-                            _Count(Symbols.stacks_rounded, stats.inner, hue),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 2),
+                        _Levels(place),
+                        const Spacer(),
+                        Row(
+                          spacing: 12,
+                          children: [
+                            _Count(
+                              Symbols.groups_rounded,
+                              stats.residents,
+                              s.onSurface,
+                            ),
+                            if (stats.inner > 0)
+                              _Count(Symbols.stacks_rounded, stats.inner, hue),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 if (stats.worst != null)
-                  Positioned(top: 0, right: 0, child: _ProblemCell(stats)),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: ExcludeSemantics(child: _ProblemCell(stats)),
+                  ),
               ],
             ),
           ),
@@ -283,10 +291,12 @@ class _Frame extends StatelessWidget {
 class _EnterCell extends StatelessWidget {
   const _EnterCell({
     super.key,
+    required this.title,
     required this.hue,
     required this.full,
     required this.onTap,
   });
+  final String title;
   final Color hue;
   final bool full;
   final VoidCallback onTap;
@@ -294,8 +304,11 @@ class _EnterCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: 'Войти',
+    return Semantics(
+      button: true,
+      label: 'Войти в «$title»',
+      onTap: onTap,
+      excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {

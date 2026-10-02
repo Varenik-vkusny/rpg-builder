@@ -150,4 +150,14 @@ void main() {
       expect(moved.dy, greaterThan(100), reason: 'блок действительно уехал');
     },
   );
+
+  testWidgets('озвучка: у кнопки входа своя подпись, у блока — своя', (t) async {
+    final semantics = t.ensureSemantics();
+    await openWorldOf(t, await nestedMines());
+    await openMap(t);
+    expect(find.bySemanticsLabel('Войти в «Копи»'), findsOneWidget);
+    // Подпись блока ровно сводка — тексты блока озвучка не читает второй раз.
+    expect(find.bySemanticsLabel('Копи, жителей 3, внутри 1'), findsOneWidget);
+    semantics.dispose();
+  });
 }
