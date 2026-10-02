@@ -110,13 +110,13 @@ class _MapScreenState extends State<MapScreen>
     _spots = {..._spots, id: Offset(o.dx < 0 ? 0 : o.dx, o.dy < 0 ? 0 : o.dy)};
   });
 
-  /// Отпустил блок — к сетке 8 dp и в раскладку; не сохранилось — блок на прежнее место.
+  /// Отпустил блок — в ближайшую свободную клетку и в раскладку; не сохранилось — на прежнее место.
   Future<void> _drop(String id) async {
-    final o = _spots[id]!;
-    final snapped = Offset(
-      (o.dx / 8).roundToDouble() * 8,
-      (o.dy / 8).roundToDouble() * 8,
-    );
+    // В ближайшую свободную клетку сетки — блоки не ложатся друг на друга (решение владельца 02.10).
+    final snapped = nearestFreeCell(_spots[id]!, [
+      for (final e in _spots.entries)
+        if (e.key != id) e.value,
+    ]);
     final back = _origin;
     setState(() {
       _spots = {..._spots, id: snapped};

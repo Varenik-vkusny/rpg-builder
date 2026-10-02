@@ -141,7 +141,7 @@ void main() {
     final g = await t.startGesture(t.getCenter(block));
     await t.pump(kLongPressTimeout + const Duration(milliseconds: 100));
     for (var i = 0; i < 6; i++) {
-      await g.moveBy(const Offset(15, 20));
+      await g.moveBy(const Offset(30, 40));
       await t.pump();
     }
     await g.up();
@@ -160,6 +160,28 @@ void main() {
     await t.pumpAndSettle();
     await openMap(t);
     expect(spotOf(t, 'rynok'), spot);
+  });
+
+  testWidgets('блок, брошенный на соседа, встаёт рядом, а не поверх', (
+    t,
+  ) async {
+    final c = await nestedMines();
+    await openWorldOf(t, c);
+    await openMap(t);
+    final from = t.getCenter(find.byKey(const Key('place-rynok')));
+    final to = t.getCenter(find.byKey(const Key('place-kopi')));
+    final g = await t.startGesture(from);
+    await t.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    for (var i = 1; i <= 6; i++) {
+      await g.moveTo(Offset.lerp(from, to, i / 6)!);
+      await t.pump();
+    }
+    await g.up();
+    await t.pumpAndSettle();
+    final rynok = spotOf(t, 'rynok') & blockSize,
+        kopi = spotOf(t, 'kopi') & blockSize;
+    expect(rynok.overlaps(kopi), isFalse);
+    expect(c.moves, 1, reason: 'жест сработал и положение сохранено');
   });
 
   testWidgets('мир без мест — подсказка, а не пустой холст', (t) async {
@@ -237,6 +259,30 @@ void main() {
       for (final l in four) {
         expect(after[l.id], before[l.id], reason: l.id);
       }
+    });
+
+    test('отпустил блок — встаёт в ближайшую свободную клетку сетки', () {
+      final cell = Offset(
+        blockSize.width + blockGap,
+        blockSize.height + blockGap,
+      );
+      // Рядом с клеткой (1, 0) — туда и встал.
+      expect(
+        nearestFreeCell(Offset(cell.dx + 30, 10), const []),
+        Offset(cell.dx, 0),
+      );
+      // Клетка (1, 0) занята — ближайшая свободная, на соседа не налезает.
+      final other = Offset(cell.dx, 0);
+      final spot = nearestFreeCell(Offset(cell.dx + 5, 5), [other]);
+      expect((spot & blockSize).overlaps(other & blockSize), isFalse);
+      expect(
+        spot,
+        anyOf(Offset.zero, Offset(cell.dx * 2, 0), Offset(cell.dx, cell.dy)),
+      );
+      // Сосед стоит не по сетке (старая раскладка) — всё равно не налезаем.
+      final odd = Offset(cell.dx - 40, 20);
+      final s2 = nearestFreeCell(Offset(cell.dx, 0), [odd]);
+      expect((s2 & blockSize).overlaps(odd & blockSize), isFalse);
     });
 
     test('автораскладка: блоки не налезают друг на друга', () {

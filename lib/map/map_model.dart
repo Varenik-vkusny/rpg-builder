@@ -54,6 +54,12 @@ List<Location> levelOf(List<Location> locations, String? parentId) => [
     if (l.parentId == parentId) l,
 ];
 
+/// Блок в точке [o] не задевает стоящие с половиной зазора вокруг — одно правило для
+/// автораскладки и для отпущенного блока.
+bool cellFree(Offset o, Iterable<Offset> others) => others.every(
+  (p) => !(o & blockSize).inflate(blockGap / 2 - 1).overlaps(p & blockSize),
+);
+
 /// Где стоит каждый блок уровня: перетащенный автором — где положили; остальные — в первые
 /// свободные клетки сетки по порядку. Новое место встаёт в свободную клетку и не двигает
 /// старые (5а.4). Положение без записи в базу — пока автор сам не перетащит блок.
@@ -62,10 +68,7 @@ Map<String, Offset> placeLevel(List<Location> level, Map<String, Spot> saved) {
     for (final l in level)
       if (saved[l.id] case final s?) l.id: Offset(s.x, s.y),
   };
-  // Клетка занята, если её блок с половиной зазора вокруг задевает уже стоящий.
-  bool free(Offset o) => out.values.every(
-    (p) => !(o & blockSize).inflate(blockGap / 2 - 1).overlaps(p & blockSize),
-  );
+  bool free(Offset o) => cellFree(o, out.values);
   var cell = 0;
   for (final l in level) {
     if (out.containsKey(l.id)) continue;
@@ -80,4 +83,36 @@ Map<String, Offset> placeLevel(List<Location> level, Map<String, Spot> saved) {
     out[l.id] = o;
   }
   return out;
+}
+
+/// Отпущенный блок встаёт в ближайшую к точке [drop] свободную клетку сетки (шаг — блок с зазором)
+/// и не налезает на [others] — даже если те стоят не по сетке (решение владельца 02.10).
+Offset nearestFreeCell(Offset drop, Iterable<Offset> others) {
+  final stepX = blockSize.width + blockGap, stepY = blockSize.height + blockGap;
+  bool free(Offset o) => cellFree(o, others);
+  final c0 = (drop.dx / stepX).round(), r0 = (drop.dy / stepY).round();
+  Offset? best;
+  var bestD = double.infinity;
+  // Кольца клеток вокруг точки. Нашлась свободная — смотрим ещё одно кольцо: шаг по ширине
+  // больше, чем по высоте, и клетка следующего кольца бывает ближе.
+  int? foundAt;
+  for (
+    var ring = 0;
+    ring < 12 && (foundAt == null || ring <= foundAt + 1);
+    ring++
+  ) {
+    for (var c = c0 - ring; c <= c0 + ring; c++) {
+      for (var r = r0 - ring; r <= r0 + ring; r++) {
+        if (c < 0 || r < 0) continue;
+        final o = Offset(c * stepX, r * stepY);
+        final d = (o - drop).distanceSquared;
+        if (d < bestD && free(o)) {
+          bestD = d;
+          best = o;
+          foundAt ??= ring;
+        }
+      }
+    }
+  }
+  return best ?? drop;
 }
