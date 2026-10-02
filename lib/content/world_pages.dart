@@ -88,14 +88,7 @@ class WorldPages {
 
   /// «Кто здесь»: жители места и всех вложенных в него на любой глубине.
   ObjectSection? _here(BuildContext context, Location l) {
-    final places = {
-      l.id,
-      for (final d in descendantsOf(c.locations, l.id)) d.id,
-    };
-    final here = [
-      for (final ch in c.characters)
-        if (places.contains(ch.locationId)) ch,
-    ];
+    final here = residentsOf(c.locations, c.characters, l.id);
     if (here.isEmpty) return null;
     return (
       icon: Symbols.groups_rounded,

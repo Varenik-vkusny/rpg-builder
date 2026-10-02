@@ -9,6 +9,7 @@ import '../worlds/world_overview.dart';
 import '../check/check_screen.dart';
 import '../check/world_check.dart';
 import '../export/export_action.dart';
+import '../map/map_screen.dart';
 import '../open5e/open5e_api.dart';
 import '../open5e/open5e_screen.dart';
 import '../worlds/world.dart';
@@ -115,16 +116,28 @@ class _WorldScreenState extends State<WorldScreen> {
     await exportAndShare(context, widget.world, snapshot);
   }
 
-  Widget _header(String title, Key addKey, String tooltip, Widget form) =>
-      ListTile(
-        title: Text(title, style: Theme.of(context).textTheme.titleMedium),
-        trailing: IconButton(
+  /// Заголовок раздела с «+»; [lead] — ещё одна кнопка перед «+» (карта у локаций).
+  Widget _header(
+    String title,
+    Key addKey,
+    String tooltip,
+    Widget form, {
+    Widget? lead,
+  }) => ListTile(
+    title: Text(title, style: Theme.of(context).textTheme.titleMedium),
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ?lead,
+        IconButton(
           key: addKey,
           tooltip: tooltip,
           icon: const Icon(Symbols.add_rounded),
           onPressed: () => _open(form),
         ),
-      );
+      ],
+    ),
+  );
 
   /// Строка объекта в списке: значок и имя, подробности — на его странице.
   Widget _row(String slug, IconData icon, String title, Widget page) =>
@@ -233,6 +246,14 @@ class _WorldScreenState extends State<WorldScreen> {
         world: widget.world,
         repo: widget.repo,
         locations: c.locations,
+      ),
+      lead: IconButton(
+        key: const Key('map-open'),
+        tooltip: 'Карта',
+        icon: const Icon(Symbols.map_rounded),
+        onPressed: () => _open(
+          MapScreen(world: widget.world, repo: widget.repo, snapshot: c),
+        ),
       ),
     ),
     if (c.locations.isEmpty) const ListTile(subtitle: Text('Локаций пока нет')),

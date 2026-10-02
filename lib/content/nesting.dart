@@ -1,5 +1,6 @@
 // Вложенность мест (5а): Копи › Штольня №3 › Забой — не глубже трёх уровней.
 // Чистый Dart над списком мест: им пользуются проверка, формы, страница места и область.
+import 'character.dart';
 import 'location.dart';
 
 /// Сколько уровней вложенности допустимо: место верхнего уровня — 1.
@@ -94,5 +95,25 @@ List<Location> allowedParents(List<Location> locations, Location? self) {
       if (!banned.contains(l.id) &&
           depthOf(locations, l) + height <= maxNestingDepth)
         l,
+  ];
+}
+
+/// Место и все вложенные в него на любой глубине — id.
+Set<String> placeAndInside(List<Location> locations, String id) => {
+  id,
+  for (final d in descendantsOf(locations, id)) d.id,
+};
+
+/// Жители места по всей глубине: «Кто здесь» на странице места и число на блоке карты —
+/// одно правило (ревью 5а.3).
+List<Character> residentsOf(
+  List<Location> locations,
+  List<Character> characters,
+  String id,
+) {
+  final places = placeAndInside(locations, id);
+  return [
+    for (final ch in characters)
+      if (places.contains(ch.locationId)) ch,
   ];
 }
