@@ -1,7 +1,7 @@
-// Карта-холст (5а.3): места мира — блоки на графитовом поле с точечной сеткой; поле
-// двигается и масштабируется пальцами, как холст Figma. Нажатие на блок — страница места.
+// Карта-холст (5а.3–5а.5): места мира — блоки на графитовом поле с точечной сеткой; поле
+// двигается и масштабируется пальцами, как холст Figma. Нажатие на блок — страница места,
+// долгое нажатие — перетащить, угловая кнопка — войти: холст уровнем ниже, путь сверху.
 import 'dart:math' as math;
-import 'dart:ui' show PointMode;
 
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -14,6 +14,7 @@ import '../ui/object_page.dart';
 import '../worlds/world.dart';
 import 'map_model.dart';
 import 'block_drag.dart';
+import 'map_parts.dart';
 import 'place_block.dart';
 
 /// Поле вокруг блоков, чтобы крайний блок не прилипал к краю экрана.
@@ -48,8 +49,14 @@ class _MapScreenState extends State<MapScreen>
   Animation<Matrix4>? _flight;
   Size? _viewport;
 
-  /// Где стоят блоки уровня (единицы холста); null — раскладка ещё грузится.
-  Map<String, Offset>? _spots;
+  /// Сохранённая раскладка всего мира; null — ещё грузится.
+  Map<String, Spot>? _saved;
+
+  /// Места, в которые вошли: пусто — верхний уровень (5а.5).
+  List<Location> _path = const [];
+
+  /// Где стоят блоки текущего уровня (единицы холста).
+  Map<String, Offset> _spots = const {};
 
   /// Блок, который тащат, и откуда его подняли.
   String? _dragging;
@@ -62,7 +69,11 @@ class _MapScreenState extends State<MapScreen>
       if (_flight case final f?) _view.value = f.value;
     });
     widget.repo.layout(widget.world.id).then((saved) {
-      if (mounted) setState(() => _spots = placeLevel(_level, saved));
+      if (!mounted) return;
+      setState(() {
+        _saved = saved;
+        _spots = placeLevel(_level, saved);
+      });
     });
   }
 
@@ -74,7 +85,16 @@ class _MapScreenState extends State<MapScreen>
   }
 
   WorldSnapshot get _w => widget.snapshot;
-  List<Location> get _level => levelOf(_w.locations, null);
+  List<Location> get _level =>
+      levelOf(_w.locations, _path.isEmpty ? null : _path.last.id);
+
+  /// Перейти на уровень: [path] — места от верхнего до того, в которое вошли.
+  void _go(List<Location> path) => setState(() {
+    _path = path;
+    _spots = placeLevel(_level, _saved ?? const {});
+    _dragging = null;
+    _viewport = null; // новый уровень — снова весь в кадре
+  });
 
   /// Сколько места занимают блоки уровня (с полем) — по нему кадр «показать всё».
   Size _content(Iterable<Offset> spots) {
@@ -87,19 +107,19 @@ class _MapScreenState extends State<MapScreen>
 
   void _move(String id, Offset delta) => setState(() {
     final o = _origin + delta;
-    _spots![id] = Offset(o.dx < 0 ? 0 : o.dx, o.dy < 0 ? 0 : o.dy);
+    _spots = {..._spots, id: Offset(o.dx < 0 ? 0 : o.dx, o.dy < 0 ? 0 : o.dy)};
   });
 
   /// Отпустил блок — к сетке 8 dp и в раскладку; не сохранилось — блок на прежнее место.
   Future<void> _drop(String id) async {
-    final o = _spots![id]!;
+    final o = _spots[id]!;
     final snapped = Offset(
       (o.dx / 8).roundToDouble() * 8,
       (o.dy / 8).roundToDouble() * 8,
     );
     final back = _origin;
     setState(() {
-      _spots![id] = snapped;
+      _spots = {..._spots, id: snapped};
       _dragging = null;
     });
     try {
@@ -107,9 +127,10 @@ class _MapScreenState extends State<MapScreen>
         x: snapped.dx,
         y: snapped.dy,
       ));
+      _saved = {...?_saved, id: (x: snapped.dx, y: snapped.dy)};
     } catch (_) {
       if (!mounted) return;
-      setState(() => _spots![id] = back);
+      setState(() => _spots = {..._spots, id: back});
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Не удалось запомнить, где лежит блок. Проверь связь'),
@@ -152,7 +173,7 @@ class _MapScreenState extends State<MapScreen>
   Widget build(BuildContext context) {
     final level = _level;
     final spots = _spots;
-    final content = _content(spots?.values ?? const []);
+    final content = _content(spots.values);
     final canvas = Size(content.width + _room, content.height + _room);
     final problems = checkWorld(_w);
     // Поднятый блок рисуется последним — поверх соседей.
@@ -160,150 +181,124 @@ class _MapScreenState extends State<MapScreen>
       ...level.where((l) => l.id != _dragging),
       ...level.where((l) => l.id == _dragging),
     ];
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Карта'),
-        actions: [
-          if (level.isNotEmpty)
-            IconButton(
-              key: const Key('map-fit'),
-              tooltip: 'Показать всё',
-              icon: const Icon(Symbols.fit_screen_rounded),
-              onPressed: () => _showAll(content),
-            ),
-        ],
-      ),
-      body: level.isEmpty
-          ? const _Empty()
-          : spots == null
-          ? const Center(child: CircularProgressIndicator())
-          : LayoutBuilder(
-              builder: (context, box) {
-                final vp = box.biggest;
-                if (_viewport == null) _view.value = _fit(content, vp);
-                _viewport = vp;
-                return Stack(
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _DotGrid(
-                          _view,
-                          Theme.of(context).colorScheme.outline
-                              .withValues(alpha: .3),
-                        ),
-                      ),
-                    ),
-                    InteractiveViewer(
-                      key: const Key('map-canvas'),
-                      transformationController: _view,
-                      constrained: false,
-                      boundaryMargin: EdgeInsets.symmetric(
-                        horizontal: vp.width * .75,
-                        vertical: vp.height * .75,
-                      ),
-                      minScale: .35,
-                      maxScale: 2.5,
-                      onInteractionStart: (_) => _fly.stop(),
-                      child: SizedBox.fromSize(
-                        size: canvas,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            for (final l in order)
-                              Positioned(
-                                key: ValueKey(l.id),
-                                left: _pad + spots[l.id]!.dx,
-                                top: _pad + spots[l.id]!.dy,
-                                child: BlockDrag(
-                                  onStart: () => setState(() {
-                                    _dragging = l.id;
-                                    _origin = spots[l.id]!;
-                                  }),
-                                  onMove: (d) => _move(l.id, d),
-                                  onDrop: () => _drop(l.id),
-                                  child: RepaintBoundary(
-                                    child: PlaceBlock(
-                                      key: Key('place-${l.slug}'),
-                                      place: l,
-                                      stats: placeStats(_w, l, problems),
-                                      onTap: () => _openPlace(context, l),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-    );
-  }
-}
-
-/// Точечная сетка поля: едет и масштабируется вместе с холстом, при мелком масштабе
-/// редеет, чтобы не превращаться в серый туман.
-class _DotGrid extends CustomPainter {
-  _DotGrid(this.view, this.color) : super(repaint: view);
-  final TransformationController view;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final m = view.value;
-    final k = m.getMaxScaleOnAxis();
-    var step = 24 * k;
-    while (step < 14) {
-      step *= 2;
-    }
-    final t = m.getTranslation();
-    final ox = t.x % step, oy = t.y % step;
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-    final points = <Offset>[
-      for (var x = ox; x < size.width; x += step)
-        for (var y = oy; y < size.height; y += step) Offset(x, y),
-    ];
-    canvas.drawPoints(PointMode.points, points, paint);
-  }
-
-  @override
-  bool shouldRepaint(_DotGrid old) => old.color != color;
-}
-
-/// Пустой уровень — подсказка, что делать, а не пустое поле.
-class _Empty extends StatelessWidget {
-  const _Empty();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = Theme.of(context).colorScheme;
-    return Center(
-      key: const Key('map-empty'),
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 12,
+    // «Назад» с уровня ниже — на уровень вверх; с верхнего — выход из карты.
+    return PopScope(
+      canPop: _path.isEmpty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _go(_path.sublist(0, _path.length - 1));
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Карта'),
+          actions: [
+            if (level.isNotEmpty)
+              IconButton(
+                key: const Key('map-fit'),
+                tooltip: 'Показать всё',
+                icon: const Icon(Symbols.fit_screen_rounded),
+                onPressed: () => _showAll(content),
+              ),
+          ],
+        ),
+        body: Column(
           children: [
-            Icon(Symbols.map_rounded, size: 56, color: s.outline),
-            Text(
-              'Мест пока нет',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            Text(
-              'Создай место в мире или попроси ассистента — '
-              'оно само встанет на карту.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: s.onSurfaceVariant),
+            if (_path.isNotEmpty)
+              MapPath(path: _path, onGo: (keep) => _go(_path.sublist(0, keep))),
+            Expanded(
+              // Новый уровень проявляется и чуть приближается — как шаг внутрь места.
+              // Один холст за раз: у уровней общий пульт масштаба (_view).
+              child: TweenAnimationBuilder<double>(
+                key: ValueKey(_path.map((l) => l.id).join('/')),
+                tween: Tween(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
+                builder: (context, v, child) => Opacity(
+                  opacity: v,
+                  child: Transform.scale(scale: .96 + .04 * v, child: child),
+                ),
+                child: _body(level, spots, content, canvas, problems, order),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _body(
+    List<Location> level,
+    Map<String, Offset> spots,
+    Size content,
+    Size canvas,
+    List<Problem> problems,
+    List<Location> order,
+  ) => level.isEmpty
+      ? (_path.isEmpty
+            ? const EmptyWorld()
+            : EmptyLevel(place: _path.last, depth: _path.length))
+      : _saved == null
+      ? const Center(child: CircularProgressIndicator())
+      : LayoutBuilder(
+          builder: (context, box) {
+            final vp = box.biggest;
+            if (_viewport == null) _view.value = _fit(content, vp);
+            _viewport = vp;
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: DotGrid(
+                      _view,
+                      Theme.of(context).colorScheme.outline
+                          .withValues(alpha: .3),
+                    ),
+                  ),
+                ),
+                InteractiveViewer(
+                  key: const Key('map-canvas'),
+                  transformationController: _view,
+                  constrained: false,
+                  boundaryMargin: EdgeInsets.symmetric(
+                    horizontal: vp.width * .75,
+                    vertical: vp.height * .75,
+                  ),
+                  minScale: .35,
+                  maxScale: 2.5,
+                  onInteractionStart: (_) => _fly.stop(),
+                  child: SizedBox.fromSize(
+                    size: canvas,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        for (final l in order)
+                          Positioned(
+                            key: ValueKey(l.id),
+                            left: _pad + spots[l.id]!.dx,
+                            top: _pad + spots[l.id]!.dy,
+                            child: BlockDrag(
+                              onStart: () => setState(() {
+                                _dragging = l.id;
+                                _origin = spots[l.id]!;
+                              }),
+                              onMove: (d) => _move(l.id, d),
+                              onDrop: () => _drop(l.id),
+                              child: RepaintBoundary(
+                                child: PlaceBlock(
+                                  key: Key('place-${l.slug}'),
+                                  place: l,
+                                  stats: placeStats(_w, l, problems),
+                                  onTap: () => _openPlace(context, l),
+                                  onEnter: () => _go([..._path, l]),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
 }

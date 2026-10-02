@@ -16,11 +16,15 @@ class PlaceBlock extends StatelessWidget {
     required this.place,
     required this.stats,
     required this.onTap,
+    required this.onEnter,
   });
 
   final Location place;
   final PlaceStats stats;
   final VoidCallback onTap;
+
+  /// «Войти» — холст уровнем ниже (5а.5).
+  final VoidCallback onEnter;
 
   /// Для озвучки и тестов: «Копи, жителей 3, внутри 1, ошибка».
   String get label => [
@@ -41,7 +45,10 @@ class PlaceBlock extends StatelessWidget {
       excludeSemantics: true,
       child: SizedBox.fromSize(
         size: blockSize,
-        child: _Pressable(onTap: onTap, child: _Frame(place, stats, hue)),
+        child: _Pressable(
+          onTap: onTap,
+          child: _Frame(place, stats, hue, onEnter),
+        ),
       ),
     );
   }
@@ -169,10 +176,11 @@ class _ProblemCell extends StatelessWidget {
 /// Рамка-план: тёмная ячейка с крупным приглушённым значком; если внутри есть
 /// места, позади видны рамки «этажей» — сразу ясно, что в место можно войти.
 class _Frame extends StatelessWidget {
-  const _Frame(this.place, this.stats, this.hue);
+  const _Frame(this.place, this.stats, this.hue, this.onEnter);
   final Location place;
   final PlaceStats stats;
   final Color hue;
+  final VoidCallback onEnter;
 
   @override
   Widget build(BuildContext context) {
@@ -205,12 +213,13 @@ class _Frame extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned(
-                  right: -6,
-                  bottom: -10,
-                  child: Icon(
-                    Symbols.landscape_rounded,
-                    size: 76,
-                    color: hue.withValues(alpha: .28),
+                  right: 0,
+                  bottom: 0,
+                  child: _EnterCell(
+                    key: Key('enter-${place.slug}'),
+                    hue: hue,
+                    full: stats.inner > 0,
+                    onTap: onEnter,
                   ),
                 ),
                 Positioned(
@@ -265,6 +274,54 @@ class _Frame extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Кнопка «войти» в углу блока: зона нажатия 48×48. Внутри есть места — ячейка залита цветом
+/// места, приглашает; пусто — только рамка (войти можно, там подсказка).
+class _EnterCell extends StatelessWidget {
+  const _EnterCell({
+    super.key,
+    required this.hue,
+    required this.full,
+    required this.onTap,
+  });
+  final Color hue;
+  final bool full;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: 'Войти',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: SizedBox.square(
+          dimension: 48,
+          child: Align(
+            alignment: Alignment.bottomRight,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: full ? hue : Colors.transparent,
+                border: Border.all(color: hue, width: 1.5),
+              ),
+              child: Icon(
+                Symbols.south_east_rounded,
+                size: 20,
+                color: full ? s.surface : hue,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
