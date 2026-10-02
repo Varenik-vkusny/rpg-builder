@@ -10,6 +10,9 @@ import 'manual_edit.dart';
 import 'quest.dart';
 import 'slug.dart';
 
+/// Где лежит блок места на карте (dp холста при масштабе 1).
+typedef Spot = ({double x, double y});
+
 /// Содержимое одного мира. Чьё содержимое видно — решает RLS в базе.
 abstract class ContentRepo {
   Future<List<Location>> locations(String worldId);
@@ -42,6 +45,13 @@ abstract class ContentRepo {
 
   /// Правка или удаление вручную — набором в историю, одной транзакцией.
   Future<void> applyManualEdit(String worldId, ManualEdit edit);
+
+  /// Раскладка карты: положение блоков по id места. Раскладка автора, не содержимое мира:
+  /// мимо истории, отката, плана ИИ и экспорта (VISION §10). Нет записи — место без положения.
+  Future<Map<String, Spot>> layout(String worldId);
+
+  /// Автор перетащил блок места — запомнить, где он лежит.
+  Future<void> moveLocation(String worldId, String locationId, Spot spot);
 }
 
 extension WorldSnapshotLoad on ContentRepo {
@@ -208,6 +218,30 @@ class SupabaseContentRepo implements ContentRepo {
       'p_ops': edit.ops,
     },
   );
+
+  @override
+  Future<Map<String, Spot>> layout(String worldId) async {
+    final rows = await _client
+        .from('location_layout')
+        .select('location_id, x, y')
+        .eq('project_id', worldId);
+    return {
+      for (final r in rows)
+        r['location_id'] as String: (
+          x: (r['x'] as num).toDouble(),
+          y: (r['y'] as num).toDouble(),
+        ),
+    };
+  }
+
+  @override
+  Future<void> moveLocation(String worldId, String locationId, Spot spot) =>
+      _client.from('location_layout').upsert({
+        'location_id': locationId,
+        'project_id': worldId,
+        'x': spot.x,
+        'y': spot.y,
+      });
 
   Future<List<String>> _slugs(String table, String worldId) async {
     final rows = await _client

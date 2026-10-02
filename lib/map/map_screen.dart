@@ -13,10 +13,14 @@ import '../content/world_pages.dart';
 import '../ui/object_page.dart';
 import '../worlds/world.dart';
 import 'map_model.dart';
+import 'block_drag.dart';
 import 'place_block.dart';
 
 /// Поле вокруг блоков, чтобы крайний блок не прилипал к краю экрана.
 const _pad = 16.0;
+
+/// Запас холста справа и снизу — есть куда утащить блок.
+const _room = 480.0;
 
 class MapScreen extends StatefulWidget {
   const MapScreen({
@@ -44,11 +48,21 @@ class _MapScreenState extends State<MapScreen>
   Animation<Matrix4>? _flight;
   Size? _viewport;
 
+  /// Где стоят блоки уровня (единицы холста); null — раскладка ещё грузится.
+  Map<String, Offset>? _spots;
+
+  /// Блок, который тащат, и откуда его подняли.
+  String? _dragging;
+  Offset _origin = Offset.zero;
+
   @override
   void initState() {
     super.initState();
     _fly.addListener(() {
       if (_flight case final f?) _view.value = f.value;
+    });
+    widget.repo.layout(widget.world.id).then((saved) {
+      if (mounted) setState(() => _spots = placeLevel(_level, saved));
     });
   }
 
@@ -60,9 +74,10 @@ class _MapScreenState extends State<MapScreen>
   }
 
   WorldSnapshot get _w => widget.snapshot;
+  List<Location> get _level => levelOf(_w.locations, null);
 
-  /// Размер холста — по блокам этого уровня.
-  Size _canvas(List<Offset> spots) {
+  /// Сколько места занимают блоки уровня (с полем) — по нему кадр «показать всё».
+  Size _content(Iterable<Offset> spots) {
     var r = Rect.zero;
     for (final o in spots) {
       r = r.expandToInclude(o & blockSize);
@@ -70,7 +85,40 @@ class _MapScreenState extends State<MapScreen>
     return Size(r.width + 2 * _pad, r.height + 2 * _pad);
   }
 
-  /// Весь уровень в кадре по центру: мало мест — крупнее (до 1.3), чтобы по блоку было
+  void _move(String id, Offset delta) => setState(() {
+    final o = _origin + delta;
+    _spots![id] = Offset(o.dx < 0 ? 0 : o.dx, o.dy < 0 ? 0 : o.dy);
+  });
+
+  /// Отпустил блок — к сетке 8 dp и в раскладку; не сохранилось — блок на прежнее место.
+  Future<void> _drop(String id) async {
+    final o = _spots![id]!;
+    final snapped = Offset(
+      (o.dx / 8).roundToDouble() * 8,
+      (o.dy / 8).roundToDouble() * 8,
+    );
+    final back = _origin;
+    setState(() {
+      _spots![id] = snapped;
+      _dragging = null;
+    });
+    try {
+      await widget.repo.moveLocation(widget.world.id, id, (
+        x: snapped.dx,
+        y: snapped.dy,
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _spots![id] = back);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Не удалось запомнить, где лежит блок. Проверь связь'),
+        ),
+      );
+    }
+  }
+
+  /// Все блоки уровня в кадре по центру: мало мест — крупнее (до 1.3), чтобы по блоку было
   /// легко попасть; много — мельче, но не меньше 0.5.
   Matrix4 _fit(Size canvas, Size viewport) {
     final k = math
@@ -102,10 +150,16 @@ class _MapScreenState extends State<MapScreen>
 
   @override
   Widget build(BuildContext context) {
-    final level = levelOf(_w.locations, null);
-    final spots = autoLayout(level.length);
-    final canvas = _canvas(spots);
+    final level = _level;
+    final spots = _spots;
+    final content = _content(spots?.values ?? const []);
+    final canvas = Size(content.width + _room, content.height + _room);
     final problems = checkWorld(_w);
+    // Поднятый блок рисуется последним — поверх соседей.
+    final order = [
+      ...level.where((l) => l.id != _dragging),
+      ...level.where((l) => l.id == _dragging),
+    ];
     return Scaffold(
       appBar: AppBar(
         title: const Text('Карта'),
@@ -115,16 +169,18 @@ class _MapScreenState extends State<MapScreen>
               key: const Key('map-fit'),
               tooltip: 'Показать всё',
               icon: const Icon(Symbols.fit_screen_rounded),
-              onPressed: () => _showAll(canvas),
+              onPressed: () => _showAll(content),
             ),
         ],
       ),
       body: level.isEmpty
           ? const _Empty()
+          : spots == null
+          ? const Center(child: CircularProgressIndicator())
           : LayoutBuilder(
               builder: (context, box) {
                 final vp = box.biggest;
-                if (_viewport == null) _view.value = _fit(canvas, vp);
+                if (_viewport == null) _view.value = _fit(content, vp);
                 _viewport = vp;
                 return Stack(
                   children: [
@@ -153,16 +209,25 @@ class _MapScreenState extends State<MapScreen>
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            for (final (i, l) in level.indexed)
+                            for (final l in order)
                               Positioned(
-                                left: _pad + spots[i].dx,
-                                top: _pad + spots[i].dy,
-                                child: RepaintBoundary(
-                                  child: PlaceBlock(
-                                    key: Key('place-${l.slug}'),
-                                    place: l,
-                                    stats: placeStats(_w, l, problems),
-                                    onTap: () => _openPlace(context, l),
+                                key: ValueKey(l.id),
+                                left: _pad + spots[l.id]!.dx,
+                                top: _pad + spots[l.id]!.dy,
+                                child: BlockDrag(
+                                  onStart: () => setState(() {
+                                    _dragging = l.id;
+                                    _origin = spots[l.id]!;
+                                  }),
+                                  onMove: (d) => _move(l.id, d),
+                                  onDrop: () => _drop(l.id),
+                                  child: RepaintBoundary(
+                                    child: PlaceBlock(
+                                      key: Key('place-${l.slug}'),
+                                      place: l,
+                                      stats: placeStats(_w, l, problems),
+                                      onTap: () => _openPlace(context, l),
+                                    ),
                                   ),
                                 ),
                               ),

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/check/world_check.dart';
+import 'package:flutter/gestures.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/map/map_model.dart';
@@ -15,6 +16,19 @@ Future<void> openMap(WidgetTester t) async {
   await t.ensureVisible(find.byKey(const Key('map-open')));
   await t.tap(find.byKey(const Key('map-open')));
   await t.pumpAndSettle();
+}
+
+/// Где блок лежит на холсте (не на экране: кадр при входе подстраивается под блоки).
+Offset spotOf(WidgetTester t, String slug) {
+  final p = t.widget<Positioned>(
+    find
+        .ancestor(
+          of: find.byKey(Key('place-$slug')),
+          matching: find.byType(Positioned),
+        )
+        .first,
+  );
+  return Offset(p.left!, p.top!);
 }
 
 String blockLabel(WidgetTester t, String slug) =>
@@ -115,6 +129,39 @@ void main() {
     expect(size.height, greaterThanOrEqualTo(48));
   });
 
+  testWidgets('долгое нажатие и тащить — блок переезжает и остаётся там', (
+    t,
+  ) async {
+    final c = await nestedMines();
+    await openWorldOf(t, c);
+    await openMap(t);
+    final block = find.byKey(const Key('place-rynok'));
+    final from = t.getTopLeft(block);
+
+    final g = await t.startGesture(t.getCenter(block));
+    await t.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    for (var i = 0; i < 6; i++) {
+      await g.moveBy(const Offset(15, 20));
+      await t.pump();
+    }
+    await g.up();
+    await t.pumpAndSettle();
+
+    final to = t.getTopLeft(block);
+    expect(to.dx, greaterThan(from.dx + 40));
+    expect(to.dy, greaterThan(from.dy + 60));
+    final spot = spotOf(t, 'rynok');
+    expect(c.moves, 1, reason: 'положение сохранено');
+    // Страница места не открылась: перенос — не нажатие.
+    expect(find.byKey(const Key('map-canvas')), findsOneWidget);
+
+    // Вышел и зашёл — блок там же.
+    await t.pageBack();
+    await t.pumpAndSettle();
+    await openMap(t);
+    expect(spotOf(t, 'rynok'), spot);
+  });
+
   testWidgets('мир без мест — подсказка, а не пустой холст', (t) async {
     await openWorldOf(t, FakeContent());
     await openMap(t);
@@ -166,8 +213,36 @@ void main() {
       expect(s.problems, 2);
     });
 
+    test('раскладка: сохранённое место стоит где положили, новое — в свободной клетке', () {
+      final ls = [place('a'), place('b'), place('c')];
+      // «a» перетащили туда, где по сетке стояла бы «b».
+      final b0 = placeLevel(ls, const {})['b']!;
+      final spots = placeLevel(ls, {'a': (x: b0.dx, y: b0.dy)});
+      expect(spots['a'], b0);
+      for (final id in ['b', 'c']) {
+        expect(
+          (spots[id]! & blockSize).overlaps(spots['a']! & blockSize),
+          isFalse,
+          reason: id,
+        );
+      }
+    });
+
+    test('раскладка: новое место не сдвигает старые', () {
+      final four = [
+        for (final id in ['a', 'b', 'c', 'd']) place(id),
+      ];
+      final before = placeLevel(four, const {});
+      final after = placeLevel([...four, place('e')], const {});
+      for (final l in four) {
+        expect(after[l.id], before[l.id], reason: l.id);
+      }
+    });
+
     test('автораскладка: блоки не налезают друг на друга', () {
-      final spots = autoLayout(7);
+      final spots = placeLevel([
+        for (var i = 0; i < 7; i++) place('p$i'),
+      ], const {}).values.toList();
       for (var i = 0; i < spots.length; i++) {
         for (var j = i + 1; j < spots.length; j++) {
           expect(

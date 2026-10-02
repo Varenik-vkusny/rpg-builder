@@ -269,6 +269,22 @@ class FakeContent implements ContentRepo {
     ], before);
   }
 
+  /// Раскладка карты по мирам: id места → положение. Мимо истории, как в базе.
+  final _layout = <String, Map<String, Spot>>{};
+
+  /// Сколько раз автор перетаскивал блоки — тестам видно, что перенос сохранён.
+  int moves = 0;
+
+  @override
+  Future<Map<String, Spot>> layout(String worldId) async =>
+      Map.of(_layout[worldId] ?? const {});
+
+  @override
+  Future<void> moveLocation(String worldId, String locationId, Spot spot) async {
+    moves++;
+    _layout.putIfAbsent(worldId, () => {})[locationId] = spot;
+  }
+
   @override
   Future<List<ChangeSetEntry>> history(String worldId) async => [
     for (final s in journal.reversed)
