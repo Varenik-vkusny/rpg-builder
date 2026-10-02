@@ -73,3 +73,13 @@ test("вложенность: модель видит родителя мест 
   assert.match(text, /"parent":"kopi"/);
   assert.match(text, /не глубже 3 уровней/);
 });
+
+test("вложенность: модели названы места внутри области — каждому своё описание", () => {
+  const text = systemPrompt(nested, kopiScope());
+  // Живой прогон 02.10: модель меняла только Копи, штольню внутри — нет.
+  assert.match(text, /Внутри «Копи»: «Штольня №3» \(location:shtolnya_3\)/);
+  assert.match(text, /своей операцией update с новым description/);
+  // Область штольни: внутри — забой; у места без вложенных строки нет.
+  assert.match(systemPrompt(nested, scopeOf(nested, "location", "shtolnya_3")), /Внутри «Штольня №3»: «Забой»/);
+  assert.doesNotMatch(systemPrompt(nested, scopeOf(nested, "location", "rynok")), /Внутри «/);
+});

@@ -1,13 +1,34 @@
 {
   "_source": "Живой прогон live/kopi_flood_live_test.dart 01.10.2026 14:27 UTC, gpt-oss-120b; восстановлен по выводу теста (операции и названия). Поля — только те, что видны в выводе; описание Копи — вид операции, не текст.",
-  "questions_asked": 0,
   "plan": {
     "summary": "Затопил копи, удалил слизня, убрал шаг убийства слизня из квеста и сделал ключ наградой",
     "ops": [
-      { "action": "update", "type": "location", "slug": "kopi", "fields": { "description": "затоплены" } },
-      { "action": "delete", "type": "quest_step", "quest": "obval", "position": 2 },
-      { "action": "create", "type": "quest_reward", "quest": "obval", "item": "klyuch" },
-      { "action": "delete", "type": "character", "slug": "slizen" }
+      {
+        "action": "update",
+        "type": "location",
+        "slug": "kopi",
+        "fields": {
+          "description": "затоплены"
+        }
+      },
+      {
+        "action": "delete",
+        "type": "quest_step",
+        "quest": "obval",
+        "position": 2
+      },
+      {
+        "action": "create",
+        "type": "quest_reward",
+        "quest": "obval",
+        "item": "klyuch"
+      },
+      {
+        "action": "delete",
+        "type": "character",
+        "slug": "slizen"
+      }
     ]
-  }
+  },
+  "questions": []
 }

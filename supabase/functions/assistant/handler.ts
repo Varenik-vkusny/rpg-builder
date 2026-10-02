@@ -1,6 +1,7 @@
 // Ассистент правок: просьба + область → план. В базу не пишет ничего.
 // Модель и мир приходят зависимостями — тесты подставляют заранее заданную модель.
 import type { AuthorQuestion, Plan } from "./plan.ts";
+import { authorCheck, isServerQuestion, SERVER_QUESTIONS } from "./inner_places.ts";
 import { outOfScope, TOOLS } from "./plan.ts";
 import type { ScopeType, World } from "./world.ts";
 import { key, objectsByKey, scopeOf } from "./world.ts";
@@ -126,7 +127,10 @@ export function parseRequest(b: unknown): AssistantRequest | string {
   ) {
     return "answers — список {question, answer}";
   }
-  if (answers.length > MAX_QUESTIONS) return `не больше ${MAX_QUESTIONS} вопросов автору`;
+  const fromServer = (answers as Answer[]).filter((a) => isServerQuestion(a.question)).length;
+  if (answers.length - fromServer > MAX_QUESTIONS || fromServer > SERVER_QUESTIONS.length) {
+    return `не больше ${MAX_QUESTIONS} вопросов автору`;
+  }
   const image = (r.image ?? null) as SketchImage | null;
   if (image !== null) {
     if (!IMAGE_MIMES.includes(image?.mime) || typeof image.data !== "string" || !image.data) {
@@ -265,8 +269,10 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
   const scope = scopeOf(world, req.scope.type, req.scope.slug);
   if (scope.size === 0) return fail(404, "объект области не найден");
 
-  // Спросить автора можно только о самой просьбе (не в исправлении) и не больше MAX_QUESTIONS раз.
-  const mayAsk = req.attempt === 0 && req.answers.length < MAX_QUESTIONS;
+  // Спросить автора можно только о самой просьбе (не в исправлении) и не больше MAX_QUESTIONS раз;
+  // вопросы сервера (inner_places.ts) в этот счёт не входят.
+  const modelAsked = req.answers.filter((a) => !isServerQuestion(a.question)).length;
+  const mayAsk = req.attempt === 0 && modelAsked < MAX_QUESTIONS;
   const now = deps.now ?? Date.now;
   const call = firstCall(req, world, scope, mayAsk, now() + TOTAL_MS);
   const worldKeys = new Set(objectsByKey(world).keys());
@@ -296,7 +302,15 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
     const proposed = uses.find((b) => b.name === "propose_plan");
     if (proposed) {
       const r = planReply(proposed.input, scope, worldKeys, usage);
-      if ("status" in r) return r;
+      if ("status" in r) {
+        // Места внутри места и удаление жителя — с согласия автора (inner_places.ts).
+        const check = authorCheck(r.body.plan as Plan, world, scope, req.answers, req.attempt === 0);
+        if (!check) return r;
+        if ("ask" in check) return { status: 200, body: { question: check.ask, usage } };
+        trace.push(check.reject[0]);
+        call.messages.push(rejectPlan(uses, proposed, check.reject));
+        continue;
+      }
       trace.push(r.trace);
       if (!r.outside) schemaFails = onSchemaFail(call, schemaFails + 1, trace);
       if (r.outside && ++outside >= MAX_OUT_OF_SCOPE) {

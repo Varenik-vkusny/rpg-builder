@@ -1,7 +1,7 @@
 // Тексты для модели: правила мира и просьба автора.
 import type { AssistantRequest } from "./handler.ts";
 import type { World } from "./world.ts";
-import { objectsByKey } from "./world.ts";
+import { key, objectsByKey } from "./world.ts";
 import { toShort } from "./ops.ts";
 
 export function systemPrompt(w: World, scope: Set<string>): string {
@@ -11,6 +11,7 @@ export function systemPrompt(w: World, scope: Set<string>): string {
     .join("\n");
   // Все поля объектов области сразу: модели не нужно читать их по одному (1 вызов на попытку).
   const data = [...scope].map((k) => `${k}: ${JSON.stringify(all.get(k)!.data)}`).join("\n");
+  const nested = nestedHint(w, scope);
   return `Ты — ассистент правок мира RPG. Автор описывает изменение одной фразой, ты составляешь план изменений.
 В базу ты не пишешь: план увидит автор, код проверит его на копии мира, и только автор решит, применять ли.
 
@@ -20,7 +21,7 @@ export function systemPrompt(w: World, scope: Set<string>): string {
 ${list}
 Менять, удалять и упоминать можно только их и объекты, которые план сам создаёт. Остальной мир тебе не виден.
 Все поля и связи объектов области (ссылки — по slug):
-${data}
+${data}${nested}
 Итог отдай одним вызовом propose_plan.
 Просьба спорит с правилами мира (потолки, уровни) или её можно понять по-разному — не исправляй
 молча и не угадывай: если доступен ask_author, спроси автора (что просил, почему так нельзя, 2–4 варианта,
@@ -46,6 +47,20 @@ ${data}
 - Потолок атаки врага: 4 + уровень × 2. Уровень врага не выше верхнего уровня его локации.
 - Каждый предмет должен выпадать из врага или выдаваться наградой.
 Затрагивай всё связанное: если врага переселили, проверь квесты, где его надо убить, и его добычу.`;
+}
+
+/// Места внутри мест области — по имени: без этого модель меняла только верхнее место (02.10).
+function nestedHint(w: World, scope: Set<string>): string {
+  const inScope = (slug: string) => scope.has(key("location", slug));
+  const inner = w.locations
+    .filter((l) => inScope(l.slug))
+    .map((l) => ({ l, kids: w.locations.filter((c) => c.parent === l.slug && inScope(c.slug)) }))
+    .filter(({ kids }) => kids.length > 0)
+    .map(({ l, kids }) => `Внутри «${l.title}»: ${kids.map((c) => `«${c.title}» (location:${c.slug})`).join(", ")}.`);
+  if (inner.length === 0) return "";
+  return `
+${inner.join("\n")}
+Просьба про место относится и к местам внутри него: каждое вложенное место, которого она касается, меняй своей операцией update с новым description — изменить одно верхнее место мало.`;
 }
 
 export function userPrompt(req: AssistantRequest): string {

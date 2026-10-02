@@ -1,0 +1,50 @@
+{
+  "_source": "Живой прогон live/kopi_flood_live_test.dart 02.10.2026, функция v35, gpt-oss-120b; восстановлен по выводу теста build/live/kopi-0210-v35.log (операции, вопрос). Описания мест — вид операции, не текст.",
+  "questions": [
+    "Места внутри «Копи» — «Штольня №3» — план не меняет. Изменить и их? Да, и их тоже ассистент опишет, что стало с «Штольня №3» Нет, только «Копи» места внутри останутся как есть"
+  ],
+  "plan": {
+    "summary": "Затопить копи и штольню, удалить слизня и его шаги квеста, добавить ключ как награду квеста",
+    "ops": [
+      {
+        "action": "update",
+        "type": "location",
+        "slug": "kopi",
+        "fields": {
+          "description": "затоплены"
+        }
+      },
+      {
+        "action": "update",
+        "type": "location",
+        "slug": "shtolnya_3",
+        "fields": {
+          "description": "затоплена"
+        }
+      },
+      {
+        "action": "delete",
+        "type": "quest_step",
+        "quest": "obval",
+        "position": 2
+      },
+      {
+        "action": "delete",
+        "type": "quest_step",
+        "quest": "obval",
+        "position": 2
+      },
+      {
+        "action": "create",
+        "type": "quest_reward",
+        "quest": "obval",
+        "item": "klyuch"
+      },
+      {
+        "action": "delete",
+        "type": "character",
+        "slug": "slizen"
+      }
+    ]
+  }
+}

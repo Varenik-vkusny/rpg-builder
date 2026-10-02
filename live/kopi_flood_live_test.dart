@@ -3,7 +3,7 @@
 //   bash -c 'set -a; . ./.env.test; flutter test --no-pub live/kopi_flood_live_test.dart'
 // Мир: Копи › Штольня №3 (со слизнем) и Рынок рядом. Область — Копи.
 // Прибор: судья live/kopi_flood_judge.dart (описание Штольни №3 изменено; житель удалён — только
-// после вопроса автору), Рынок не тронут, план применяется и откатывается.
+// после вопроса автору о нём), Рынок не тронут, план применяется и откатывается.
 @Tags(['live'])
 @Timeout(Duration(minutes: 10))
 library;
@@ -77,7 +77,17 @@ void main() {
       for (final op in run.proposal.plan.ops) ?op.str('location'),
     };
     expect(
-      judgeKopiFlood(run.proposal.plan, questionsAsked: asked.length),
+      judgeKopiFlood(
+        run.proposal.plan,
+        questions: [
+          for (final q in asked)
+            [
+              q.question,
+              for (final o in q.options) '${o.label} ${o.description}',
+            ].join(' '),
+        ],
+        titles: {for (final ch in before.characters) ch.slug: ch.title},
+      ),
       isEmpty,
       reason: 'план: $touched',
     );
