@@ -67,7 +67,11 @@ export function userPrompt(req: AssistantRequest): string {
   const sketch = req.image
     ? "\nК просьбе приложен рисунок автора (скетч): облик, имя, роль и описание бери с него, числа — по правилам мира."
     : "";
-  const ask = `Область: ${req.scope.type}:${req.scope.slug}.\nПросьба автора: ${req.request}${sketch}`;
+  // Просьба про место — его описание первой операцией (решение владельца 02.10).
+  const first = req.scope.type === "location"
+    ? `\nПросьба про место location:${req.scope.slug}: первой операцией плана измени его description, потом — места внутри и жителей.`
+    : "";
+  const ask = `Область: ${req.scope.type}:${req.scope.slug}.\nПросьба автора: ${req.request}${sketch}${first}`;
   const answered = req.answers.length === 0 ? "" : `
 Ответы автора на твои вопросы — следуй им:
 ${req.answers.map((a) => `- Вопрос: ${a.question}\n  Ответ: ${a.answer}`).join("\n")}`;

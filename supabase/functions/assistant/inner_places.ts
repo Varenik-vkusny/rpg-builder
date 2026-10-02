@@ -58,9 +58,43 @@ export function innerRejectLines(missed: WorldLocation[]): string[] {
 export const RESIDENT_QUESTION_PREFIX = "Удалить жителя";
 const KEEP = "Нет, оставить";
 
+// Место не изменено (02.10, решение владельца): прогон v38 — модель спросила про слизня и не
+// тронула ни одного места. Сервер спрашивает ««Копи» в плане не изменено — изменить описание?».
+export const UNCHANGED_MARK = "в плане не изменено";
+const REDESCRIBE = "Да, описать заново";
+
 /// Вопросы, которые задаёт сервер, а не модель: лимит вопросов модели они не съедают.
-export const SERVER_QUESTIONS = [INNER_QUESTION_PREFIX, RESIDENT_QUESTION_PREFIX];
-export const isServerQuestion = (q: string) => SERVER_QUESTIONS.some((p) => q.startsWith(p));
+export const SERVER_QUESTIONS = [INNER_QUESTION_PREFIX, RESIDENT_QUESTION_PREFIX, UNCHANGED_MARK];
+/// Свой вопрос сервер узнаёт только по началу: модель не протащит вопрос мимо лимита (ревью 02.10).
+const isUnchangedQuestion = (q: string) => new RegExp(`^«[^»]+» ${UNCHANGED_MARK}`).test(q);
+export const isServerQuestion = (q: string) =>
+  q.startsWith(INNER_QUESTION_PREFIX) || q.startsWith(RESIDENT_QUESTION_PREFIX) || isUnchangedQuestion(q);
+
+export function unchangedQuestion(l: WorldLocation): AuthorQuestion {
+  return {
+    question: `«${l.title}» ${UNCHANGED_MARK} — изменить описание?`,
+    options: [
+      { label: REDESCRIBE, description: `ассистент опишет, что стало с «${l.title}»` },
+      { label: "Нет, оставить как есть", description: "план уйдёт без этого места" },
+    ],
+  };
+}
+
+/// Место, названное в просьбе («затопи копи» → Копи), если план не описывает заново ни одно из
+/// названных: место области и места внутри него. Просьба не называет места — не спрашиваем:
+/// «уменьши атаку слизня» не про описание места.
+function untouchedNamed(plan: Plan, w: World, scope: Set<string>, root: WorldLocation | null, request: string) {
+  if (!root) return null;
+  const text = request.toLowerCase();
+  const named = [root, ...w.locations.filter((l) => l.parent === root.slug && scope.has(key("location", l.slug)))]
+    .filter((l) => names(text, l.title));
+  if (named.length === 0) return null;
+  const slugs = new Set(named.map((l) => l.slug));
+  const described = plan.ops.some((o) =>
+    o.type === "location" && o.action === "update" && o.fields.description != null && slugs.has(o.slug ?? "")
+  );
+  return described ? null : named[0];
+}
 
 type Resident = { slug: string; title: string };
 
@@ -68,12 +102,19 @@ type Resident = { slug: string; title: string };
 export const nameStems = (title: string) =>
   title.toLowerCase().split(/[^\p{L}\d]+/u).filter((w) => w.length > 0).map((w) => w.slice(0, 4));
 
+/// Текст называет имя: каждое слово имени — начало какого-то слова текста по основе.
+/// «Копи» есть в «затопи копи», но не в «скопируй» и «накопи» (ревью 02.10).
+const names = (text: string, title: string) => {
+  const words = text.toLowerCase().split(/[^\p{L}\d]+/u);
+  return nameStems(title).every((s) => words.some((w) => w.startsWith(s)));
+};
+
 /// Вопрос (с ответом) называет жителя — все слова его имени. Свой вопрос про места внутри
 /// сервер не считает: «Хозяин копи» не спрошен оттого, что спросили про «Копи» (ревью 02.10).
 const mentions = (a: Answer, r: Resident) => {
-  if (a.question.startsWith(INNER_QUESTION_PREFIX)) return false;
+  if (a.question.startsWith(INNER_QUESTION_PREFIX) || isUnchangedQuestion(a.question)) return false;
   const text = `${a.question} ${a.answer}`.toLowerCase();
-  return nameStems(r.title).every((s) => text.includes(s));
+  return names(text, r.title);
 };
 
 function deletedResidents(plan: Plan, w: World): Resident[] {
@@ -99,7 +140,22 @@ export function authorCheck(
   scope: Set<string>,
   answers: Answer[],
   mayAsk: boolean,
+  root: WorldLocation | null = null,
+  request = "",
 ): { ask: AuthorQuestion } | { reject: string[] } | null {
+  const untouched = untouchedNamed(plan, w, scope, root, request);
+  if (untouched) {
+    const a = answers.find((x) => isUnchangedQuestion(x.question));
+    if (a?.answer.startsWith(REDESCRIBE)) {
+      return {
+        reject: [
+          `Автор ответил: опиши заново location:${untouched.slug} «${untouched.title}» — операцией update с новым description.`,
+          "Отдай план целиком заново.",
+        ],
+      };
+    }
+    if (!a && mayAsk) return { ask: unchangedQuestion(untouched) };
+  }
   const missed = innerPlacesMissed(plan, w, scope);
   const said = innerAnswer(answers);
   if (missed.length > 0 && said === "yes") return { reject: innerRejectLines(missed) };

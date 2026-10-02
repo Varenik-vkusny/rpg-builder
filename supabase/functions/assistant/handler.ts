@@ -304,7 +304,8 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
       const r = planReply(proposed.input, scope, worldKeys, usage);
       if ("status" in r) {
         // Места внутри места и удаление жителя — с согласия автора (inner_places.ts).
-        const check = authorCheck(r.body.plan as Plan, world, scope, req.answers, req.attempt === 0);
+        const root = req.scope.type === "location" ? world.locations.find((l) => l.slug === req.scope.slug) ?? null : null;
+        const check = authorCheck(r.body.plan as Plan, world, scope, req.answers, req.attempt === 0, root, req.request);
         if (!check) return r;
         if ("ask" in check) return { status: 200, body: { question: check.ask, usage } };
         trace.push(check.reject[0]);
