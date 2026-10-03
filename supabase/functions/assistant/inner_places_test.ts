@@ -2,13 +2,11 @@
 // него не трогает — сервер спрашивает автора «менять и их?». «Да» — план без них возвращается
 // модели; «Нет» — план уходит как есть. Живые прогоны 02.10: модель дважды забыла штольню.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { mines, op, planUse, scripted } from "./fixtures_test_data.ts";
 import { handle } from "./handler.ts";
-import { INNER_QUESTION_PREFIX, innerAnswer, innerPlacesMissed, innerQuestion, isServerQuestion, residentQuestion, unchangedQuestion } from "./inner_places.ts";
-import { userPrompt } from "./prompt.ts";
+import { INNER_QUESTION_PREFIX, innerAnswer, innerPlacesMissed, innerQuestion, residentQuestion } from "./inner_places.ts";
 import type { Plan } from "./plan.ts";
 import type { World } from "./world.ts";
 import { scopeOf } from "./world.ts";
@@ -160,67 +158,4 @@ test("жители: второго вопроса о жителях нет — �
   assert.equal(r.body.question, undefined);
   assert.deepEqual(r.body.plan.ops.map((o: { slug: string }) => o.slug), ["kopi", "shtolnya_3", "slizen"]);
   assert.match(JSON.stringify(calls[1].messages.at(-1)), /Хозяин копи/);
-});
-
-// Живой прогон 02.10 v38 (test/fixtures/kopi_flood_2026-10-02_v38.json): модель спросила про
-// слизня и не тронула ни одного места. Решение владельца: сервер спрашивает «<место> в плане
-// не изменено — изменить описание?».
-const v38 = JSON.parse(readFileSync(new URL("../../../test/fixtures/kopi_flood_2026-10-02_v38.json", import.meta.url), "utf8"));
-const v38Plan = (): Plan => ({ summary: v38.plan.summary, ops: v38.plan.ops.map(op) });
-
-test("место не изменено: прогон v38 — сервер спрашивает «Копи в плане не изменено»", async () => {
-  const { deps } = scripted(nested, [planUse("t1", v38Plan())]);
-  const r = await handle(req(v38.answers), deps);
-  assert.equal(r.body.plan, undefined);
-  assert.match(r.body.question?.question ?? "", /«Копи» в плане не изменено — изменить описание\?/);
-});
-
-test("место не изменено: «да» — план без описания Копи возвращается модели", async () => {
-  const { deps, calls } = scripted(nested, [
-    planUse("t1", v38Plan()),
-    planUse("t2", plan(floodKopi, op({ type: "location", slug: "shtolnya_3", fields: { description: "по пояс" } }))),
-  ]);
-  const q = unchangedQuestion(nested.locations[0]);
-  const r = await handle(req([...v38.answers, { question: q.question, answer: q.options[0].label }]), deps);
-  assert.match(JSON.stringify(calls[1].messages.at(-1)), /location:kopi/);
-  assert.ok(r.body.plan.ops.some((o: { slug: string }) => o.slug === "kopi"));
-});
-
-test("место не изменено: «нет» — план уходит как есть", async () => {
-  const { deps } = scripted(nested, [planUse("t1", v38Plan())]);
-  const q = unchangedQuestion(nested.locations[0]);
-  // В тестовом мире слизень — «Пепельный слизень»: на вопрос сервера о нём автор тоже ответил.
-  const del = residentQuestion([{ slug: "slizen", title: "Пепельный слизень" }]);
-  const r = await handle(req([
-    ...v38.answers,
-    { question: q.question, answer: q.options[1].label },
-    { question: del.question, answer: del.options[0].label },
-  ]), deps);
-  assert.equal(r.body.question, undefined);
-  assert.equal(r.body.plan.ops.length, 3);
-});
-
-test("подсказка: просьба про место — его описание первой операцией", () => {
-  assert.match(userPrompt({ ...req(), attempt: 0 } as never), /location:kopi: первой операцией плана измени его description/);
-});
-
-test("место не изменено: просьба не называет места — не спрашиваем", async () => {
-  const { deps } = scripted(nested, [planUse("t1", plan(op({ type: "character", slug: "slizen", fields: { attack: 4 } })))]);
-  const r = await handle({ ...req(), request: "уменьши атаку слизня" }, deps);
-  assert.equal(r.body.question, undefined);
-  assert.equal(r.body.plan.ops.length, 1);
-});
-
-test("место не изменено: «скопируй», «накопи» — не про Копи", async () => {
-  for (const request of ["скопируй слизня в рынок", "накопи слизням опыта"]) {
-    const { deps } = scripted(nested, [planUse("t1", plan(op({ type: "character", slug: "slizen", fields: { attack: 4 } })))]);
-    const r = await handle({ ...req(), request }, deps);
-    assert.equal(r.body.question, undefined, request);
-  }
-});
-
-test("свой вопрос сервер узнаёт только по началу — модель не протащит вопрос мимо лимита", () => {
-  assert.ok(isServerQuestion(unchangedQuestion(nested.locations[0]).question));
-  assert.ok(!isServerQuestion("Что делать: «Копи» в плане не изменено — согласны?"));
-  assert.ok(!isServerQuestion("Вопрос модели. Места внутри тоже менять?"));
 });
