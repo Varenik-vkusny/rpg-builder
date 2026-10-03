@@ -50,6 +50,17 @@ Future<void> checkForm(WidgetTester t, String form) async {
   ];
   expect(bare, isEmpty, reason: '$form: поля без справки — ${bare.join(', ')}');
 
+  // Ключ справки — от этого поля, а не от соседнего: подпись поля равна названию в шторке.
+  // У объекта области подпись меняется с видом области («Локация», «Квест», «Персонаж»).
+  final wrong = <String>[];
+  for (final e in find.byType(InputDecorator).evaluate()) {
+    final label = (e.widget as InputDecorator).decoration.labelText;
+    final id = e.findAncestorWidgetOfExactType<HelpField>()?.id;
+    if (label == null || id == null || id == 'assistant.scope.object') continue;
+    if (fieldHelp[id]?.title != label) wrong.add('«$label» ← $id');
+  }
+  expect(wrong, isEmpty, reason: '$form: чужой текст — ${wrong.join(', ')}');
+
   final marks = find.byType(HelpField);
   expect(marks, findsWidgets, reason: '$form: ни одного «?»');
   for (final id in {for (final m in t.widgetList<HelpField>(marks)) m.id}) {
