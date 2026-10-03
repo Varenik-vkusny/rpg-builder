@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../assistant/assistant_service.dart';
 import '../content/content_repo.dart';
 import '../content/world_screen.dart';
+import '../help/help.dart';
 import '../open5e/open5e_api.dart';
 import 'new_world_screen.dart';
 import '../ui/cover_card.dart';
@@ -59,6 +60,7 @@ class _WorldsScreenState extends State<WorldsScreen> {
             icon: const Icon(Symbols.logout_rounded),
             onPressed: widget.onSignOut,
           ),
+          const HelpAction('worlds'),
         ],
       ),
       // Полоса внизу, а не плавающая кнопка: плавающая закрывала строки списка.

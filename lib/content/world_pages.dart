@@ -46,6 +46,7 @@ class WorldPages {
       builder: (context) => ObjectPage(
         icon: Symbols.landscape_rounded,
         title: l.title,
+        help: 'page.location',
         kind: 'Локация · ур. ${l.levelMin}–${l.levelMax}',
         path: [if (up.isNotEmpty) pathOf(c.locations, l)],
         pathKey: const Key('place-path'),
@@ -117,6 +118,7 @@ class WorldPages {
       builder: (context) => ObjectPage(
         icon: characterIcon(ch),
         title: ch.title,
+        help: 'page.character',
         kind: ch.role.label,
         path: [if (home != null) pathOf(c.locations, home)],
         description: ch.description,
@@ -183,6 +185,7 @@ class WorldPages {
       builder: (context) => ObjectPage(
         icon: itemIcon(i),
         title: i.title,
+        help: 'page.item',
         kind: '${i.kind.label} · ${i.rarity.label}',
         tiles: [
           StatTile(Symbols.military_tech_rounded, 'Уровень', '${i.level}'),
@@ -257,6 +260,7 @@ class WorldPages {
       builder: (context) => ObjectPage(
         icon: Symbols.flag_rounded,
         title: q.title,
+        help: 'page.quest',
         kind: 'Квест',
         description: q.description,
         edit: () => NewQuestScreen(

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import 'cover_card.dart';
 import 'parts.dart';
 
@@ -143,6 +144,7 @@ class ObjectPage extends StatefulWidget {
     required this.title,
     required this.kind,
     required this.edit,
+    required this.help,
     this.path = const [],
     this.pathKey,
     this.cover = false,
@@ -172,6 +174,9 @@ class ObjectPage extends StatefulWidget {
   final List<StatTile> tiles;
   final String description;
   final List<ObjectSection> sections;
+
+  /// Ключ справки экрана: «?» в шапке.
+  final String help;
 
   /// Форма правки; вернула true — объект изменён или удалён.
   final Widget Function() edit;
@@ -204,6 +209,7 @@ class _ObjectPageState extends State<ObjectPage> {
           duration: const Duration(milliseconds: 150),
           child: _titleInBar ? Text(w.title) : const SizedBox.shrink(),
         ),
+        actions: [HelpAction(w.help)],
       ),
       floatingActionButton: FloatingActionButton(
         key: const Key('object-edit'),

@@ -62,7 +62,10 @@ void main() {
       }
       for (final l in lines) {
         if (_water.hasMatch(l)) bad.add('${e.key}: вода — «$l»');
-        if (_sentences(l) > 1) bad.add('${e.key}: не одна фраза — «$l»');
+        // Одна фраза; после неё допустим пример.
+        if (_sentences(l.split(' Пример: ').first) > 1) {
+          bad.add('${e.key}: не одна фраза — «$l»');
+        }
         if (l.length > fieldHelpLimit) bad.add('${e.key}: длинно — «$l»');
       }
     }

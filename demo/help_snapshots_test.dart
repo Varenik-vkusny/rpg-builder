@@ -94,6 +94,10 @@ void main() {
     await pumpApp(t, content: await minesContent(), wrap: frame);
     await signUp(t, 'author@test.dev');
     await createWorld(t, 'Пепельные копи');
+    await tapShown(t, find.byKey(const Key('help-screen-worlds')));
+    await shot(t, 'help-screen-worlds-sheet');
+    await t.tapAt(const Offset(180, 40));
+    await t.pumpAndSettle();
     await openWorld(t, 'Пепельные копи');
     await shot(t, 'help-screen-world');
     await tapShown(t, find.byKey(const Key('help-screen-world')));
@@ -112,5 +116,14 @@ void main() {
     await tapShown(t, find.byKey(const Key('check-world')));
     await tapShown(t, find.byKey(const Key('help-screen-check')));
     await shot(t, 'help-screen-check-sheet');
+    await t.tapAt(const Offset(180, 40));
+    await t.pumpAndSettle();
+    await t.pageBack();
+    await t.pumpAndSettle();
+
+    await tapShown(t, find.byKey(const Key('open-shtolnya_3')));
+    await shot(t, 'help-page-place');
+    await tapShown(t, find.byKey(const Key('help-screen-page.location')));
+    await shot(t, 'help-page-place-sheet');
   });
 }
