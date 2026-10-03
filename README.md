@@ -1,5 +1,10 @@
 # RPG Builder — кузница игрового контента RPG
 
+> **English:** a mobile worldbuilding tool for RPG developers. Describe your game world — locations, characters,
+> items, quests — and an AI assistant edits it from a single phrase ("shaft three is now flooded"). The assistant
+> only proposes a plan: the app validates it on a copy of the world, shows a before/after diff, waits for your
+> approval, and every change can be undone. Flutter + Supabase, JSON export for Unity / Godot / Flame.
+
 Мобильное приложение для разработчика RPG. Автор описывает мир своей игры — места, персонажей,
 предметы, квесты — а ИИ-ассистент меняет его по одной фразе: «третья штольня теперь затоплена».
 
