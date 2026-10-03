@@ -175,10 +175,10 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
             value: _parentId,
             onChanged: (v) => setState(() => _parentId = v),
           ),
-          const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SizedBox(height: 16),
               Text('Уровни: ${_levels.start.round()}–${_levels.end.round()}'),
               if (w.levelMin < w.levelMax)
                 RangeSlider(
@@ -190,7 +190,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
                   onChanged: (v) => setState(() => _levels = v),
                 ),
             ],
-          ).help('location.levels'),
+          ).help('location.levels', top: 16),
           if (_error != null)
             Text(
               _error!,

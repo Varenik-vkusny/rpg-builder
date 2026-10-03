@@ -5,12 +5,19 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import 'help_texts.dart';
 
+/// Зона нажатия «?» и размер значка — одни для полей и для экрана мира.
+const helpZone = 48.0;
+const helpMarkSize = 16.0;
+
 /// Поле формы с «?» в правом верхнем углу. Значок лежит поверх поля и разметку не двигает.
 class HelpField extends StatelessWidget {
-  const HelpField(this.id, {super.key, required this.child});
+  const HelpField(this.id, {super.key, this.top = 0, required this.child});
 
   /// Ключ текста в [fieldHelp].
   final String id;
+
+  /// На сколько опустить значок: группа с отступом сверху держит «?» на строке подписи.
+  final double top;
   final Widget child;
 
   @override
@@ -22,6 +29,7 @@ class HelpField extends StatelessWidget {
       markKey: Key('help-$id'),
       title: help.title,
       body: [Text(help.what), _Example(help.example)],
+      top: top,
       child: child,
     );
   }
@@ -55,12 +63,17 @@ class _Corner extends StatelessWidget {
     required this.markKey,
     required this.title,
     required this.body,
+    this.top = 0,
     required this.child,
   });
   final Key markKey;
   final String title;
   final List<Widget> body;
+  final double top;
   final Widget child;
+
+  /// Зона нажатия — не меньше 48 dp: палец попадает в «?», а не в поле под ним.
+  static const zone = helpZone;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -77,18 +90,18 @@ class _Corner extends StatelessWidget {
           excludeSemantics: true,
           child: InkResponse(
             key: markKey,
-            radius: 20,
+            radius: 24,
             onTap: () => _sheet(context, title, body),
             child: SizedBox(
-              width: 44,
-              height: 32,
+              width: zone,
+              height: zone,
               child: Align(
                 alignment: Alignment.topRight,
                 child: Padding(
-                  padding: const EdgeInsets.all(5),
+                  padding: EdgeInsets.fromLTRB(5, 5 + top, 5, 5),
                   child: Icon(
                     Symbols.help_rounded,
-                    size: 16,
+                    size: helpMarkSize,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -103,7 +116,8 @@ class _Corner extends StatelessWidget {
 
 /// `поле.help('ключ')` — то же, что [HelpField], без лишней вложенности в форме.
 extension HelpFieldX on Widget {
-  Widget help(String id) => HelpField(id, child: this);
+  Widget help(String id, {double top = 0}) =>
+      HelpField(id, top: top, child: this);
 }
 
 /// «?» в шапке экрана.

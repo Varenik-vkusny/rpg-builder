@@ -1,8 +1,10 @@
 // Скетч (4.4): фото рисунка с камеры или из галереи уходит ассистенту вместе с просьбой.
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import 'assistant_service.dart';
 
 /// Кнопка «Фото скетча» и превью приложенного рисунка с «убрать».
@@ -45,7 +47,7 @@ class SketchField extends StatelessWidget {
               label: Text(i == null ? 'Фото скетча' : 'Другое фото'),
               onPressed: () => _attach(context),
             ),
-          ),
+          ).help('assistant.sketch'),
         ),
         if (i != null)
           IconButton(
@@ -92,7 +94,10 @@ Future<SketchImage?> pickSketch(BuildContext context) async {
     imageQuality: 80,
   );
   if (file == null) return null;
-  return SketchImage(await file.readAsBytes(), file.mimeType ?? _mimeOf(file.name));
+  return SketchImage(
+    await file.readAsBytes(),
+    file.mimeType ?? _mimeOf(file.name),
+  );
 }
 
 /// Тип по расширению: сжатое фото с камеры — JPEG.

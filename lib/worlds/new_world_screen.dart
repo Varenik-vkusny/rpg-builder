@@ -85,10 +85,10 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
             controller: _tone,
             decoration: const InputDecoration(labelText: 'Тон'),
           ).help('world.tone'),
-          const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SizedBox(height: 16),
               Text('Уровни: ${_levels.start.round()}–${_levels.end.round()}'),
               RangeSlider(
                 values: _levels,
@@ -98,7 +98,7 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
                 onChanged: (v) => setState(() => _levels = v),
               ),
             ],
-          ).help('world.levels'),
+          ).help('world.levels', top: 16),
           if (_error != null)
             Text(
               _error!,

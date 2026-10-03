@@ -274,10 +274,10 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
             maxLines: 3,
             decoration: const InputDecoration(labelText: 'Описание'),
           ).help('character.description'),
-          const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 16),
               const Text('Роль'),
               Wrap(
                 spacing: 8,
@@ -294,7 +294,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
                 ],
               ),
             ],
-          ).help('character.role'),
+          ).help('character.role', top: 16),
           DropdownButtonFormField<String?>(
             key: const Key('character-location'),
             initialValue: _locationId,

@@ -197,10 +197,10 @@ class _NewItemScreenState extends State<NewItemScreen> {
             controller: _title,
             decoration: const InputDecoration(labelText: 'Название'),
           ).help('item.title'),
-          const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 16),
               const Text('Тип'),
               Wrap(
                 spacing: 8,
@@ -217,11 +217,11 @@ class _NewItemScreenState extends State<NewItemScreen> {
                 ],
               ),
             ],
-          ).help('item.kind'),
-          const SizedBox(height: 16),
+          ).help('item.kind', top: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 16),
               const Text('Редкость'),
               Wrap(
                 spacing: 8,
@@ -236,7 +236,7 @@ class _NewItemScreenState extends State<NewItemScreen> {
                 ],
               ),
             ],
-          ).help('item.rarity'),
+          ).help('item.rarity', top: 16),
           _number(
             const Key('item-level'),
             _level,

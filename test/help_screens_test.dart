@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/character.dart';
+import 'package:rpg_builder/help/help.dart';
 import 'package:rpg_builder/help/help_texts.dart';
 
 import 'assistant_fixtures.dart';
@@ -31,6 +32,12 @@ Future<void> checkScreen(WidgetTester t, String id) async {
     find.byKey(Key('help-screen-$id')),
     findsOneWidget,
     reason: 'экран «$id» без справки',
+  );
+  final zone = t.getSize(find.byKey(Key('help-screen-$id')));
+  expect(
+    zone.width >= 48 && zone.height >= 48,
+    isTrue,
+    reason: 'экран «$id»: зона «?» $zone меньше 48 dp',
   );
   await tapKey(t, 'help-screen-$id');
   final h = screenHelp[id]!;
@@ -73,6 +80,18 @@ void main() {
     await createWorld(t, 'Пепельные копи');
     await openWorld(t, 'Пепельные копи');
     await checkScreen(t, 'world');
+    // На экране мира «?» того же размера, что в формах.
+    expect(
+      t
+          .widget<Icon>(
+            find.descendant(
+              of: find.byKey(const Key('help-screen-world')),
+              matching: find.byType(Icon),
+            ),
+          )
+          .size,
+      helpMarkSize,
+    );
 
     await tapKey(t, 'map-open');
     await checkScreen(t, 'map');

@@ -349,7 +349,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 _request.text = 'Создай персонажа по этому скетчу';
               }
             }),
-          ).help('assistant.sketch'),
+          ),
           const SizedBox(height: 16),
           if (_error != null && _run == null) _errorText(),
           FilledButton(
