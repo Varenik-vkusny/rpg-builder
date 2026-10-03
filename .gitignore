@@ -21,3 +21,13 @@ debug.log
 .impeccable/
 .playwright-mcp/
 supabase/.temp/
+
+# рабочие документы и настройки инструментов — только локально
+CLAUDE.md
+.claude/
+STATE.md
+VISION.md
+FEATURES.md
+PRODUCT.md
+ideya.md
+docs/opisanie_proekta.md
