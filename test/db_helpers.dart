@@ -17,11 +17,29 @@ String env(String name) {
   return v;
 }
 
+/// Адрес сервера и ключ: из сборки (--dart-define-from-file=.env), из окружения или прямо из .env —
+/// чтобы `flutter test` работал без флагов. Нет нигде — тест КРАСНЫЙ.
+String server(String name, String fromBuild) {
+  if (fromBuild.isNotEmpty) return fromBuild;
+  final v = Platform.environment[name];
+  if (v != null && v.isNotEmpty) return v;
+  final file = File('.env');
+  if (file.existsSync()) {
+    for (final line in file.readAsLinesSync()) {
+      if (line.startsWith('$name=')) return line.substring(name.length + 1).trim();
+    }
+  }
+  fail('Не задан $name: нет ни в сборке, ни в окружении, ни в .env (см. README.md)');
+}
+
+String get _url => server('SUPABASE_URL', supabaseUrl);
+String get _key => server('SUPABASE_KEY', supabasePublishableKey);
+
 /// Входит тестовым автором; если его ещё нет — регистрирует.
 Future<SupabaseClient> author(String email, String password) async {
   final c = SupabaseClient(
-    supabaseUrl,
-    supabasePublishableKey,
+    _url,
+    _key,
     authOptions: const AuthClientOptions(
       autoRefreshToken: false,
       authFlowType: AuthFlowType.implicit,
@@ -58,8 +76,7 @@ Future<(SupabaseClient, SupabaseClient)> twoAuthors() async => (
 );
 
 /// Клиент без входа.
-SupabaseClient anonymous() =>
-    SupabaseClient(supabaseUrl, supabasePublishableKey);
+SupabaseClient anonymous() => SupabaseClient(_url, _key);
 
 /// Запрет смены slug (VISION.md, правило 8) проверяется самим триггером базы:
 /// проба `slug_change_blocked` делает настоящий update и откатывает его.

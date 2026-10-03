@@ -5,7 +5,7 @@
 set -u
 mkdir -p build/demo
 set -a; . ./.env.test; set +a
-flutter test integration_test/demo_video_test.dart -d windows --no-pub \
+flutter test integration_test/demo_video_test.dart -d windows --no-pub   --dart-define-from-file=.env \
   --dart-define=RPGB_TEST_EMAIL_T="$RPGB_TEST_EMAIL_T" \
   --dart-define=RPGB_TEST_PASSWORD="$RPGB_TEST_PASSWORD" > build/demo/test.log 2>&1 &
 test_pid=$!

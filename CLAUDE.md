@@ -3,7 +3,7 @@
 Мобильное приложение для инди-разработчика RPG: связанный мир игры безопасно меняется одной фразой. Замысел — VISION.md, план — FEATURES.md.
 
 ## Стек
-Flutter/Dart (`lib/`), Supabase: Postgres + вход + RLS (проект `YOUR-PROJECT-REF`, миграции в `supabase/migrations/`).
+Flutter/Dart (`lib/`), Supabase: Postgres + вход + RLS (адрес и ключ проекта — в `.env`, в репозитории их нет; миграции в `supabase/migrations/`).
 
 ## Проверка
 `bash scripts/check.sh` — единственная команда, подтверждающая, что проект цел.
@@ -14,6 +14,7 @@ Flutter/Dart (`lib/`), Supabase: Postgres + вход + RLS (проект `YOUR-P
 
 ## Ловушки этого проекта
 - 24.09.2026: тестовый клиент Supabase вне Flutter требует `AuthFlowType.implicit`, иначе падает на PKCE.
+- 03.10.2026: репозиторий публичный — сборка приложения только с `--dart-define-from-file=.env`, иначе экран «Сервер не задан».
 - 24.09.2026: домены `.test` Supabase не принимает как почту — тестовые авторы в `.env.test`.
 
 ## Границы

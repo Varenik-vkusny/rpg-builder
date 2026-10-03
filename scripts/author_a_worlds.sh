@@ -5,10 +5,10 @@
 # Не смог войти или сосчитать — код 1: пустота не должна сойти за «всё хорошо».
 cd "$(dirname "$0")/.." || exit 1
 [ -f .env.test ] && { set -a; . ./.env.test; set +a; }
+[ -f .env ] && { set -a; . ./.env; set +a; }
 : "${RPGB_TEST_EMAIL_A:?нет RPGB_TEST_EMAIL_A}" "${RPGB_TEST_PASSWORD:?нет RPGB_TEST_PASSWORD}"
-URL=$(sed -n "s/.*defaultValue: '\(https:[^']*\)'.*/\1/p" lib/config.dart)
-KEY=$(sed -n "s/.*defaultValue: '\(sb_publishable_[^']*\)'.*/\1/p" lib/config.dart)
-[ -n "$URL" ] && [ -n "$KEY" ] || { echo "не нашёл адрес или ключ в lib/config.dart" >&2; exit 1; }
+URL=${SUPABASE_URL:-}; KEY=${SUPABASE_KEY:-}
+[ -n "$URL" ] && [ -n "$KEY" ] || { echo "нет SUPABASE_URL или SUPABASE_KEY в .env" >&2; exit 1; }
 PY="python"; command -v python >/dev/null 2>&1 || PY="python3"
 STATE=build/author_a.state  # build/ не попадает в git
 json() { "$PY" -c "import json,sys; print(json.load(sys.stdin)$1)" 2>/dev/null; }

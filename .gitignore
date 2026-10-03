@@ -3,7 +3,8 @@
 .claude/last-green
 .claude/sessions/
 
-# тестовые аккаунты для проверки RLS
+# адрес и ключ своего сервера, тестовые аккаунты для проверки RLS
+.env
 .env.test
 
 # Flutter / Dart
