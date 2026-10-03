@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
+import '../help/help.dart';
 import '../worlds/world.dart';
 import 'assistant_service.dart';
 import 'change_set.dart';
@@ -290,7 +291,10 @@ class _AssistantScreenState extends State<AssistantScreen> {
   Widget build(BuildContext context) {
     final run = _run;
     return Scaffold(
-      appBar: AppBar(title: const Text('Ассистент')),
+      appBar: AppBar(
+        title: const Text('Ассистент'),
+        actions: [if (run != null) const HelpAction('plan')],
+      ),
       bottomNavigationBar: run == null ? null : _decision(run),
       body: ListView(
         padding: const EdgeInsets.all(16),

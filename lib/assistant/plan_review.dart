@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import 'plan_cards.dart';
 import 'plan_preview.dart';
 
@@ -45,6 +46,7 @@ class _PlanReviewScreenState extends State<PlanReviewScreen> {
           icon: const Icon(Symbols.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: const [HelpAction('plan')],
       ),
       body: Column(
         children: [
