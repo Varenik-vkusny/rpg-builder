@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'content_repo.dart';
@@ -161,13 +162,13 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
             key: const Key('location-title'),
             controller: _title,
             decoration: const InputDecoration(labelText: 'Название'),
-          ),
+          ).help('location.title'),
           TextField(
             key: const Key('location-description'),
             controller: _description,
             maxLines: 3,
             decoration: const InputDecoration(labelText: 'Описание'),
-          ),
+          ).help('location.description'),
           _ParentPicker(
             locations: widget.locations,
             self: widget.editing,
@@ -175,16 +176,21 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
             onChanged: (v) => setState(() => _parentId = v),
           ),
           const SizedBox(height: 16),
-          Text('Уровни: ${_levels.start.round()}–${_levels.end.round()}'),
-          if (w.levelMin < w.levelMax)
-            RangeSlider(
-              key: const Key('location-levels'),
-              values: _levels,
-              min: w.levelMin.toDouble(),
-              max: w.levelMax.toDouble(),
-              divisions: w.levelMax - w.levelMin,
-              onChanged: (v) => setState(() => _levels = v),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Уровни: ${_levels.start.round()}–${_levels.end.round()}'),
+              if (w.levelMin < w.levelMax)
+                RangeSlider(
+                  key: const Key('location-levels'),
+                  values: _levels,
+                  min: w.levelMin.toDouble(),
+                  max: w.levelMax.toDouble(),
+                  divisions: w.levelMax - w.levelMin,
+                  onChanged: (v) => setState(() => _levels = v),
+                ),
+            ],
+          ).help('location.levels'),
           if (_error != null)
             Text(
               _error!,
@@ -235,6 +241,6 @@ class _ParentPicker extends StatelessWidget {
           ),
       ],
       onChanged: onChanged,
-    );
+    ).help('location.parent');
   }
 }

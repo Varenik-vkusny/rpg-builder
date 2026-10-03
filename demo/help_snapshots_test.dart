@@ -43,7 +43,34 @@ void main() {
     await t.pageBack();
     await t.pumpAndSettle();
 
+    // Срез 2: остальные формы.
+    for (final (slug, name) in [
+      ('shtolnya_3', 'place'),
+      ('klyuch', 'item'),
+      ('obval', 'quest'),
+    ]) {
+      await t.drag(find.byType(Scrollable).first, const Offset(0, 3000));
+      await t.pumpAndSettle();
+      await t.scrollUntilVisible(
+        find.byKey(Key('open-$slug')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tapShown(t, find.byKey(Key('open-$slug')));
+      await tapShown(t, find.byKey(const Key('object-edit')));
+      await shot(t, 'help-form-$name');
+      await t.pageBack();
+      await t.pumpAndSettle();
+      await t.pageBack();
+      await t.pumpAndSettle();
+    }
+
     await tapShown(t, find.byKey(const Key('assistant-open')));
+    await shot(t, 'help-form-request');
+    await tapShown(t, find.byKey(const Key('help-assistant.scope.object')));
+    await shot(t, 'help-form-request-sheet');
+    await t.tapAt(const Offset(180, 40));
+    await t.pumpAndSettle();
     await pick(t, 'scope-object-location', 'Штольня №3');
     await t.enterText(
       find.byKey(const Key('assistant-request')),

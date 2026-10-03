@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../help/help.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
 
@@ -72,27 +73,32 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
             key: const Key('world-title'),
             controller: _title,
             decoration: const InputDecoration(labelText: 'Название'),
-          ),
+          ).help('world.title'),
           TextField(
             key: const Key('world-setting'),
             controller: _setting,
             maxLines: 3,
             decoration: const InputDecoration(labelText: 'Сеттинг'),
-          ),
+          ).help('world.setting'),
           TextField(
             key: const Key('world-tone'),
             controller: _tone,
             decoration: const InputDecoration(labelText: 'Тон'),
-          ),
+          ).help('world.tone'),
           const SizedBox(height: 16),
-          Text('Уровни: ${_levels.start.round()}–${_levels.end.round()}'),
-          RangeSlider(
-            values: _levels,
-            min: 1,
-            max: _maxLevel.toDouble(),
-            divisions: _maxLevel - 1,
-            onChanged: (v) => setState(() => _levels = v),
-          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Уровни: ${_levels.start.round()}–${_levels.end.round()}'),
+              RangeSlider(
+                values: _levels,
+                min: 1,
+                max: _maxLevel.toDouble(),
+                divisions: _maxLevel - 1,
+                onChanged: (v) => setState(() => _levels = v),
+              ),
+            ],
+          ).help('world.levels'),
           if (_error != null)
             Text(
               _error!,

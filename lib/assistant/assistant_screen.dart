@@ -299,22 +299,27 @@ class _AssistantScreenState extends State<AssistantScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Область'),
-          Wrap(
-            spacing: 8,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final t in ScopeType.values)
-                ChoiceChip(
-                  key: Key('scope-type-${t.name}'),
-                  label: Text(t.label),
-                  selected: _type == t,
-                  onSelected: (_) => setState(() {
-                    _type = t;
-                    _slug = null;
-                  }),
-                ),
+              const Text('Область'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final t in ScopeType.values)
+                    ChoiceChip(
+                      key: Key('scope-type-${t.name}'),
+                      label: Text(t.label),
+                      selected: _type == t,
+                      onSelected: (_) => setState(() {
+                        _type = t;
+                        _slug = null;
+                      }),
+                    ),
+                ],
+              ),
             ],
-          ),
+          ).help('assistant.scope.type'),
           DropdownButtonFormField<String>(
             key: Key('scope-object-${_type.name}'),
             initialValue: _slug,
@@ -325,7 +330,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 DropdownMenuItem(value: slug, child: Text(title)),
             ],
             onChanged: (v) => setState(() => _slug = v),
-          ),
+          ).help('assistant.scope.object'),
           TextField(
             key: const Key('assistant-request'),
             controller: _request,
@@ -334,7 +339,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
               labelText: 'Просьба',
               hintText: 'Затопи штольню, слизни там жить не могут',
             ),
-          ),
+          ).help('assistant.request'),
           const SizedBox(height: 8),
           SketchField(
             image: _image,
@@ -344,7 +349,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 _request.text = 'Создай персонажа по этому скетчу';
               }
             }),
-          ),
+          ).help('assistant.sketch'),
           const SizedBox(height: 16),
           if (_error != null && _run == null) _errorText(),
           FilledButton(

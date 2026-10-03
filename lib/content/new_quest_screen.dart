@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'character.dart';
@@ -242,7 +243,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
                   s.kind = k!;
                   s.targetId = null;
                 }),
-              ),
+              ).help('quest.step.kind'),
             ),
             IconButton(
               tooltip: 'Убрать шаг',
@@ -267,7 +268,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
                     DropdownMenuItem(value: t.key, child: Text(t.value)),
                 ],
                 onChanged: (v) => setState(() => s.targetId = v),
-              ),
+              ).help('quest.step.target'),
             ),
             if (s.kind.counted) ...[
               const SizedBox(width: 8),
@@ -278,7 +279,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
                   controller: s.amount,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(labelText: 'Сколько'),
-                ),
+                ).help('quest.step.amount'),
               ),
             ],
           ],
@@ -302,7 +303,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
               DropdownMenuItem(value: it.id, child: Text(it.title)),
           ],
           onChanged: (v) => setState(() => _rewards[i].itemId = v),
-        ),
+        ).help('quest.reward'),
       ),
       IconButton(
         tooltip: 'Убрать награду',
@@ -334,13 +335,13 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
             key: const Key('quest-title'),
             controller: _title,
             decoration: const InputDecoration(labelText: 'Название'),
-          ),
+          ).help('quest.title'),
           TextField(
             key: const Key('quest-description'),
             controller: _description,
             maxLines: 3,
             decoration: const InputDecoration(labelText: 'Описание'),
-          ),
+          ).help('quest.description'),
           DropdownButtonFormField<String>(
             key: const Key('quest-giver'),
             initialValue: _giverId,
@@ -350,7 +351,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
                 DropdownMenuItem(value: g.id, child: Text(g.title)),
             ],
             onChanged: (v) => setState(() => _giverId = v),
-          ),
+          ).help('quest.giver'),
           if (_givers.isEmpty)
             const Text('Квест выдаёт только житель — сначала создай жителя'),
           const SizedBox(height: 16),

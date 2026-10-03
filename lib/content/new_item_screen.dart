@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'content_repo.dart';
@@ -195,40 +196,63 @@ class _NewItemScreenState extends State<NewItemScreen> {
             key: const Key('item-title'),
             controller: _title,
             decoration: const InputDecoration(labelText: 'Название'),
-          ),
+          ).help('item.title'),
           const SizedBox(height: 16),
-          const Text('Тип'),
-          Wrap(
-            spacing: 8,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final k in ItemKind.values)
-                ChoiceChip(
-                  key: Key('item-kind-${k.name}'),
-                  label: Text(k.label),
-                  selected: _kind == k,
-                  onSelected: _editing
-                      ? null
-                      : (_) => setState(() => _kind = k),
-                ),
+              const Text('Тип'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final k in ItemKind.values)
+                    ChoiceChip(
+                      key: Key('item-kind-${k.name}'),
+                      label: Text(k.label),
+                      selected: _kind == k,
+                      onSelected: _editing
+                          ? null
+                          : (_) => setState(() => _kind = k),
+                    ),
+                ],
+              ),
             ],
-          ),
+          ).help('item.kind'),
           const SizedBox(height: 16),
-          const Text('Редкость'),
-          Wrap(
-            spacing: 8,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final r in Rarity.values)
-                ChoiceChip(
-                  key: Key('item-rarity-${r.name}'),
-                  label: Text(r.label),
-                  selected: _rarity == r,
-                  onSelected: (_) => setState(() => _rarity = r),
-                ),
+              const Text('Редкость'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final r in Rarity.values)
+                    ChoiceChip(
+                      key: Key('item-rarity-${r.name}'),
+                      label: Text(r.label),
+                      selected: _rarity == r,
+                      onSelected: (_) => setState(() => _rarity = r),
+                    ),
+                ],
+              ),
             ],
-          ),
-          _number(const Key('item-level'), _level, 'Уровень'),
-          if (_hasStat) _number(const Key('item-stat'), _stat, _statLabel),
-          _number(const Key('item-price'), _price, 'Цена, золото'),
+          ).help('item.rarity'),
+          _number(
+            const Key('item-level'),
+            _level,
+            'Уровень',
+          ).help('item.level'),
+          if (_hasStat)
+            _number(
+              const Key('item-stat'),
+              _stat,
+              _statLabel,
+            ).help(_kind == ItemKind.weapon ? 'item.damage' : 'item.defense'),
+          _number(
+            const Key('item-price'),
+            _price,
+            'Цена, золото',
+          ).help('item.price'),
           const SizedBox(height: 16),
           if (_error != null)
             Text(

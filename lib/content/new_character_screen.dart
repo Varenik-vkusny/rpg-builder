@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../check/world_check.dart';
 import '../help/help.dart';
+import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
@@ -205,32 +205,26 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
       children: [
         Expanded(
           flex: 3,
-          child: HelpField(
-            'loot.item',
-            child: DropdownButtonFormField<String>(
-              key: Key('loot-item-$i'),
-              initialValue: row.itemId,
-              decoration: const InputDecoration(labelText: 'Предмет'),
-              items: [
-                for (final it in widget.items)
-                  DropdownMenuItem(value: it.id, child: Text(it.title)),
-              ],
-              onChanged: (v) => setState(() => row.itemId = v),
-            ),
-          ),
+          child: DropdownButtonFormField<String>(
+            key: Key('loot-item-$i'),
+            initialValue: row.itemId,
+            decoration: const InputDecoration(labelText: 'Предмет'),
+            items: [
+              for (final it in widget.items)
+                DropdownMenuItem(value: it.id, child: Text(it.title)),
+            ],
+            onChanged: (v) => setState(() => row.itemId = v),
+          ).help('loot.item'),
         ),
         const SizedBox(width: 8),
         Expanded(
           flex: 2,
-          child: HelpField(
-            'loot.chance',
-            child: TextField(
-              key: Key('loot-chance-$i'),
-              controller: row.chance,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Шанс, %'),
-            ),
-          ),
+          child: TextField(
+            key: Key('loot-chance-$i'),
+            controller: row.chance,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Шанс, %'),
+          ).help('loot.chance'),
         ),
         IconButton(
           tooltip: 'Убрать',
@@ -243,15 +237,12 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
 
   Widget _statField(String key, TextEditingController c, String label) =>
       Expanded(
-        child: HelpField(
-          key.replaceFirst('-', '.'),
-          child: TextField(
-            key: Key(key),
-            controller: c,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: label),
-          ),
-        ),
+        child: TextField(
+          key: Key(key),
+          controller: c,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(labelText: label),
+        ).help(key.replaceFirst('-', '.')),
       );
 
   @override
@@ -272,61 +263,49 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          HelpField(
-            'character.title',
-            child: TextField(
-              key: const Key('character-title'),
-              controller: _title,
-              decoration: const InputDecoration(labelText: 'Имя'),
-            ),
-          ),
-          HelpField(
-            'character.description',
-            child: TextField(
-              key: const Key('character-description'),
-              controller: _description,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Описание'),
-            ),
-          ),
+          TextField(
+            key: const Key('character-title'),
+            controller: _title,
+            decoration: const InputDecoration(labelText: 'Имя'),
+          ).help('character.title'),
+          TextField(
+            key: const Key('character-description'),
+            controller: _description,
+            maxLines: 3,
+            decoration: const InputDecoration(labelText: 'Описание'),
+          ).help('character.description'),
           const SizedBox(height: 16),
-          HelpField(
-            'character.role',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Роль'),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final r in Role.values)
-                      ChoiceChip(
-                        key: Key('character-role-${r.name}'),
-                        label: Text(r.label),
-                        selected: _role == r,
-                        onSelected: _editing
-                            ? null
-                            : (_) => setState(() => _role = r),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          HelpField(
-            'character.location',
-            child: DropdownButtonFormField<String?>(
-              key: const Key('character-location'),
-              initialValue: _locationId,
-              decoration: const InputDecoration(labelText: 'Локация'),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('Без локации')),
-                for (final l in widget.locations)
-                  DropdownMenuItem(value: l.id, child: Text(l.title)),
-              ],
-              onChanged: (v) => setState(() => _locationId = v),
-            ),
-          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Роль'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final r in Role.values)
+                    ChoiceChip(
+                      key: Key('character-role-${r.name}'),
+                      label: Text(r.label),
+                      selected: _role == r,
+                      onSelected: _editing
+                          ? null
+                          : (_) => setState(() => _role = r),
+                    ),
+                ],
+              ),
+            ],
+          ).help('character.role'),
+          DropdownButtonFormField<String?>(
+            key: const Key('character-location'),
+            initialValue: _locationId,
+            decoration: const InputDecoration(labelText: 'Локация'),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Без локации')),
+              for (final l in widget.locations)
+                DropdownMenuItem(value: l.id, child: Text(l.title)),
+            ],
+            onChanged: (v) => setState(() => _locationId = v),
+          ).help('character.location'),
           Row(
             spacing: 8,
             children: [

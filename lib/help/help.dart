@@ -20,6 +20,7 @@ class HelpField extends StatelessWidget {
     if (help == null) return child;
     return Stack(
       fit: StackFit.passthrough,
+      clipBehavior: Clip.none,
       children: [
         child,
         Positioned(
@@ -37,8 +38,8 @@ class HelpField extends StatelessWidget {
                 _Example(help.example),
               ]),
               child: SizedBox(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 32,
                 child: Align(
                   alignment: Alignment.topRight,
                   child: Padding(
@@ -57,6 +58,11 @@ class HelpField extends StatelessWidget {
       ],
     );
   }
+}
+
+/// `поле.help('ключ')` — то же, что [HelpField], без лишней вложенности в форме.
+extension HelpFieldX on Widget {
+  Widget help(String id) => HelpField(id, child: this);
 }
 
 /// «?» в шапке экрана.

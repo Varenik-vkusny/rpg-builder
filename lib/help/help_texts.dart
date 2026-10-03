@@ -201,7 +201,7 @@ const fieldHelp = <String, FieldHelp>{
   'assistant.scope.type': FieldHelp(
     'Область',
     'Что ассистенту можно менять; всё вне области он не тронет.',
-    'Место.',
+    'Локация.',
   ),
   'assistant.scope.object': FieldHelp(
     'Объект области',
