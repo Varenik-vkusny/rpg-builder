@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../content/quest.dart';
@@ -72,7 +73,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (!didPop) Navigator.of(context).pop(_changed);
     },
     child: Scaffold(
-      appBar: AppBar(title: const Text('История изменений')),
+      appBar: AppBar(
+        title: const Text('История изменений'),
+        actions: const [HelpAction('history')],
+      ),
       body: FutureBuilder(
         future: _data,
         builder: (context, snap) {

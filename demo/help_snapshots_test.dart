@@ -82,4 +82,35 @@ void main() {
     await tapShown(t, find.byKey(const Key('help-screen-plan')));
     await shot(t, 'help-5-plan-sheet');
   });
+
+  testWidgets('справка экранов: мир, карта, проверка', (t) async {
+    await t.runAsync(loadFont);
+    t.view.physicalSize = const Size(360, 780);
+    t.view.devicePixelRatio = 1;
+    t.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(t.view.reset);
+    addTearDown(t.platformDispatcher.clearPlatformBrightnessTestValue);
+
+    await pumpApp(t, content: await minesContent(), wrap: frame);
+    await signUp(t, 'author@test.dev');
+    await createWorld(t, 'Пепельные копи');
+    await openWorld(t, 'Пепельные копи');
+    await shot(t, 'help-screen-world');
+    await tapShown(t, find.byKey(const Key('help-screen-world')));
+    await shot(t, 'help-screen-world-sheet');
+    await t.tapAt(const Offset(180, 40));
+    await t.pumpAndSettle();
+
+    await tapShown(t, find.byKey(const Key('map-open')));
+    await tapShown(t, find.byKey(const Key('help-screen-map')));
+    await shot(t, 'help-screen-map-sheet');
+    await t.tapAt(const Offset(180, 40));
+    await t.pumpAndSettle();
+    await t.pageBack();
+    await t.pumpAndSettle();
+
+    await tapShown(t, find.byKey(const Key('check-world')));
+    await tapShown(t, find.byKey(const Key('help-screen-check')));
+    await shot(t, 'help-screen-check-sheet');
+  });
 }

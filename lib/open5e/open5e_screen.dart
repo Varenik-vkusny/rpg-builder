@@ -2,6 +2,7 @@
 // «Импортировать» одним набором изменений (в историю, с откатом).
 import 'package:flutter/material.dart';
 
+import '../help/help.dart';
 import '../assistant/change_set.dart';
 import '../assistant/plan.dart';
 import '../assistant/plan_preview.dart';
@@ -97,7 +98,10 @@ class _Open5eScreenState extends State<Open5eScreen> {
   Widget build(BuildContext context) {
     final error = TextStyle(color: Theme.of(context).colorScheme.error);
     return Scaffold(
-      appBar: AppBar(title: const Text('Образцы Open5e')),
+      appBar: AppBar(
+        title: const Text('Образцы Open5e'),
+        actions: const [HelpAction('open5e')],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

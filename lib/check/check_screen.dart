@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import '../assistant/assistant_screen.dart';
 import '../assistant/assistant_service.dart';
 import '../assistant/scope.dart';
@@ -65,7 +66,10 @@ class _CheckScreenState extends State<CheckScreen> {
         if (!didPop) Navigator.of(context).pop(_changed);
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Проверка мира')),
+        appBar: AppBar(
+          title: const Text('Проверка мира'),
+          actions: const [HelpAction('check')],
+        ),
         body: FutureBuilder<WorldSnapshot>(
           future: _world,
           builder: (context, snap) {

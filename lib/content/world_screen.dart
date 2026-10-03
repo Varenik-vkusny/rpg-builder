@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import '../assistant/assistant_screen.dart';
 import '../assistant/assistant_service.dart';
 import '../assistant/history.dart';
@@ -217,11 +218,14 @@ class _WorldScreenState extends State<WorldScreen> {
           return ListView(
             padding: const EdgeInsets.only(bottom: 96),
             children: [
-              WorldOverview(
-                world: c,
-                history: history,
-                onCheck: _openCheck,
-                onHistory: _openHistory,
+              HelpCorner(
+                'world',
+                child: WorldOverview(
+                  world: c,
+                  history: history,
+                  onCheck: _openCheck,
+                  onHistory: _openHistory,
+                ),
               ),
               ..._locations(c),
               const Divider(),

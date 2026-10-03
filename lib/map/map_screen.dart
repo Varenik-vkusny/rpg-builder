@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../help/help.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../content/location.dart';
@@ -198,6 +199,7 @@ class _MapScreenState extends State<MapScreen>
                 icon: const Icon(Symbols.fit_screen_rounded),
                 onPressed: () => _showAll(content),
               ),
+            const HelpAction('map'),
           ],
         ),
         body: Column(

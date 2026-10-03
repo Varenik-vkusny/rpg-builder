@@ -18,46 +18,87 @@ class HelpField extends StatelessWidget {
     final help = fieldHelp[id];
     assert(help != null, 'Нет текста справки для поля «$id»');
     if (help == null) return child;
-    return Stack(
-      fit: StackFit.passthrough,
-      clipBehavior: Clip.none,
-      children: [
-        child,
-        Positioned(
-          top: 0,
-          right: 0,
-          child: Semantics(
-            button: true,
-            label: 'Справка: ${help.title}',
-            excludeSemantics: true,
-            child: InkResponse(
-              key: Key('help-$id'),
-              radius: 20,
-              onTap: () => _sheet(context, help.title, [
-                Text(help.what),
-                _Example(help.example),
-              ]),
-              child: SizedBox(
-                width: 44,
-                height: 32,
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(5),
-                    child: Icon(
-                      Symbols.help_rounded,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+    return _Corner(
+      markKey: Key('help-$id'),
+      title: help.title,
+      body: [Text(help.what), _Example(help.example)],
+      child: child,
+    );
+  }
+}
+
+/// «?» экрана поверх угла первого блока — там, где в шапке значку нет места (экран мира).
+class HelpCorner extends StatelessWidget {
+  const HelpCorner(this.id, {super.key, required this.child});
+
+  /// Ключ текста в [screenHelp].
+  final String id;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final help = screenHelp[id];
+    assert(help != null, 'Нет текста справки для экрана «$id»');
+    if (help == null) return child;
+    return _Corner(
+      markKey: Key('help-screen-$id'),
+      title: help.title,
+      body: [for (final l in help.lines) Text(l)],
+      child: child,
+    );
+  }
+}
+
+/// [child] и «?» поверх его правого верхнего угла; нажатие — шторка.
+class _Corner extends StatelessWidget {
+  const _Corner({
+    required this.markKey,
+    required this.title,
+    required this.body,
+    required this.child,
+  });
+  final Key markKey;
+  final String title;
+  final List<Widget> body;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.passthrough,
+    clipBehavior: Clip.none,
+    children: [
+      child,
+      Positioned(
+        top: 0,
+        right: 0,
+        child: Semantics(
+          button: true,
+          label: 'Справка: $title',
+          excludeSemantics: true,
+          child: InkResponse(
+            key: markKey,
+            radius: 20,
+            onTap: () => _sheet(context, title, body),
+            child: SizedBox(
+              width: 44,
+              height: 32,
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(5),
+                  child: Icon(
+                    Symbols.help_rounded,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
             ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }
 
 /// `поле.help('ключ')` — то же, что [HelpField], без лишней вложенности в форме.

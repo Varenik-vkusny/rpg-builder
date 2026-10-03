@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../help/help.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'world_export.dart';
@@ -44,7 +45,12 @@ Future<bool> _confirmErrors(BuildContext context, List<Problem> errors) async =>
       context: context,
       builder: (context) => AlertDialog(
         key: const Key('export-errors'),
-        title: const Text('В мире есть ошибки'),
+        title: const Row(
+          children: [
+            Expanded(child: Text('В мире есть ошибки')),
+            HelpAction('export'),
+          ],
+        ),
         content: Text(
           [
             'Ошибок в мире: ${errors.length}. Игра может споткнуться о них.',
