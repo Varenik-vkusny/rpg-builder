@@ -13,3 +13,10 @@ build/
 .idea/
 *.iml
 debug.log
+
+# рабочие следы инструментов — не в репозиторий
+.claude/sessions.log
+.claude/hooks/*.bak-*
+.impeccable/
+.playwright-mcp/
+supabase/.temp/
