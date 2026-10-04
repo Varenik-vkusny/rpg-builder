@@ -6,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../test/assistant_fixtures.dart';
 import '../test/event_flow_test.dart' show choose;
+import '../test/event_map_test.dart' show minesWithEvents;
 import '../test/fakes.dart';
+import '../test/map_test.dart' show openMap;
 import 'shots.dart';
 
 void main() {
@@ -53,5 +55,38 @@ void main() {
 
     await tapShown(t, find.byKey(Key('open-$slug')));
     await shot(t, 'event-3-page');
+  });
+
+  testWidgets('событие: ⚡ на карте и раздел «События» на странице места', (
+    t,
+  ) async {
+    await t.runAsync(loadFont);
+    t.view.physicalSize = const Size(360, 780);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+
+    // Слизень 9-го уровня в сцене штольни 1–5: на блоке Копей ещё и значок проблемы.
+    await pumpApp(t, content: await minesWithEvents(slimeLevel: 9), wrap: frame);
+    await signUp(t, 'author@test.dev');
+    await createWorld(t, 'Пепельные копи');
+    await openWorld(t, 'Пепельные копи');
+    await openMap(t);
+    await shot(t, 'event-4-map');
+    await tapShown(t, find.byKey(const Key('help-screen-map')));
+    await shot(t, 'event-6-map-help');
+    await t.tapAt(const Offset(20, 40));
+    await t.pumpAndSettle();
+    await tapShown(t, find.byKey(const Key('enter-kopi')));
+    await shot(t, 'event-7-map-inside');
+    await t.pageBack();
+    await t.pumpAndSettle();
+
+    await tapShown(t, find.byKey(const Key('place-kopi')));
+    await t.scrollUntilVisible(
+      find.byKey(const Key('event-zasada_u_lebedki')),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await shot(t, 'event-5-place');
   });
 }

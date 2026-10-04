@@ -6,6 +6,8 @@ import '../help/help.dart';
 import 'cover_card.dart';
 import 'parts.dart';
 
+export 'rail.dart';
+
 /// Плитка характеристики: значок, подпись, значение.
 class StatTile extends StatelessWidget {
   const StatTile(this.icon, this.label, this.value, {super.key});
@@ -63,11 +65,13 @@ class PortraitCard extends StatelessWidget {
     required this.icon,
     required this.title,
     this.stats = const [],
+    this.caption,
     this.onTap,
   });
   final IconData icon;
   final String title;
   final List<(IconData, String)> stats;
+  final String? caption; // одной строкой вместо чисел: в каком месте идёт событие
   final VoidCallback? onTap;
 
   @override
@@ -95,7 +99,14 @@ class PortraitCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 13),
                 ),
-                if (stats.isNotEmpty)
+                if (caption != null)
+                  Text(
+                    caption!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: s.onSurfaceVariant),
+                  )
+                else if (stats.isNotEmpty)
                   Wrap(
                     spacing: 8,
                     alignment: WrapAlignment.center,
@@ -367,21 +378,4 @@ class _Hero extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Горизонтальная лента карточек.
-class Rail extends StatelessWidget {
-  const Rail(this.children, {super.key});
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 156,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      itemCount: children.length,
-      separatorBuilder: (_, _) => const SizedBox(width: 10),
-      itemBuilder: (_, i) => children[i],
-    ),
-  );
 }

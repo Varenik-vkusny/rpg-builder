@@ -1,6 +1,7 @@
 // Вложенность мест (5а): Копи › Штольня №3 › Забой — не глубже трёх уровней.
 // Чистый Dart над списком мест: им пользуются проверка, формы, страница места и область.
 import 'character.dart';
+import 'event.dart';
 import 'location.dart';
 
 /// Сколько уровней вложенности допустимо: место верхнего уровня — 1.
@@ -115,5 +116,15 @@ List<Character> residentsOf(
   return [
     for (final ch in characters)
       if (places.contains(ch.locationId)) ch,
+  ];
+}
+
+/// События места по всей глубине: раздел «События» на странице места и ⚡ на блоке карты —
+/// одно правило, как у жителей.
+List<Event> eventsIn(List<Location> locations, List<Event> events, String id) {
+  final places = placeAndInside(locations, id);
+  return [
+    for (final e in events)
+      if (places.contains(e.locationId)) e,
   ];
 }

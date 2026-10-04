@@ -26,11 +26,13 @@ class PlaceBlock extends StatelessWidget {
   /// «Войти» — холст уровнем ниже (5а.5).
   final VoidCallback onEnter;
 
-  /// Для озвучки и тестов: «Копи, жителей 3, внутри 1, ошибка».
+  /// Для озвучки и тестов: «Копи, жителей 3, внутри 1, событий 1, событий внутри 2, ошибка: 1».
   String get label => [
     place.title,
     'жителей ${stats.residents}',
     if (stats.inner > 0) 'внутри ${stats.inner}',
+    if (stats.events + stats.eventsInside > 0) 'событий ${stats.events}',
+    if (stats.eventsInside > 0) 'событий внутри ${stats.eventsInside}',
     if (stats.worst case final w?)
       '${w.label.toLowerCase()}: ${stats.problems}',
   ].join(', ');
@@ -48,7 +50,12 @@ class PlaceBlock extends StatelessWidget {
         size: blockSize,
         child: _Pressable(
           onTap: onTap,
-          child: _Frame(place, stats, hue, onEnter),
+          // Блок — фиксированного размера на холсте: крупный шрифт телефона растёт в нём
+          // только до предела, иначе название в две строки выдавливает счётчики за рамку.
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: blockTextScaleMax,
+            child: _Frame(place, stats, hue, onEnter),
+          ),
         ),
       ),
     );
@@ -110,10 +117,13 @@ class _Levels extends StatelessWidget {
 
 /// Число со значком: «👥 3».
 class _Count extends StatelessWidget {
-  const _Count(this.icon, this.n, this.color);
+  const _Count(this.icon, this.n, this.color, {this.plus = 0});
   final IconData icon;
   final int n;
   final Color color;
+
+  /// Сколько ещё у мест внутри: «⚡ 1 +2».
+  final int plus;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -122,7 +132,7 @@ class _Count extends StatelessWidget {
     children: [
       Icon(icon, size: 16, color: color),
       Text(
-        '$n',
+        plus > 0 ? '$n +$plus' : '$n',
         style: TextStyle(
           color: color,
           fontSize: 14,
@@ -255,17 +265,38 @@ class _Frame extends StatelessWidget {
                         const SizedBox(height: 2),
                         _Levels(place),
                         const Spacer(),
-                        Row(
-                          spacing: 12,
-                          children: [
-                            _Count(
-                              Symbols.groups_rounded,
-                              stats.residents,
-                              s.onSurface,
+                        // Счётчики не заходят под ячейку «войти» (48 dp справа):
+                        // три счётчика разом сжимаются, а не вылезают.
+                        SizedBox(
+                          width: blockSize.width - 12 - 48 - 4,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              spacing: 12,
+                              children: [
+                                _Count(
+                                  Symbols.groups_rounded,
+                                  stats.residents,
+                                  s.onSurface,
+                                ),
+                                if (stats.inner > 0)
+                                  _Count(
+                                    Symbols.stacks_rounded,
+                                    stats.inner,
+                                    hue,
+                                  ),
+                                // ⚡ — свои события места, «+N» — события мест внутри.
+                                if (stats.events + stats.eventsInside > 0)
+                                  _Count(
+                                    Symbols.bolt_rounded,
+                                    stats.events,
+                                    s.onSurface,
+                                    plus: stats.eventsInside,
+                                  ),
+                              ],
                             ),
-                            if (stats.inner > 0)
-                              _Count(Symbols.stacks_rounded, stats.inner, hue),
-                          ],
+                          ),
                         ),
                       ],
                     ),

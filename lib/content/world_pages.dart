@@ -9,6 +9,7 @@ import '../ui/parts.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
+import 'event_pages.dart';
 import 'item.dart';
 import 'location.dart';
 import 'nesting.dart';
@@ -39,7 +40,7 @@ class WorldPages {
   final ContentRepo repo;
   final WorldSnapshot c;
 
-  /// Место: путь сверху, вложенные места (1 уровень), кто здесь — по всей глубине.
+  /// Место: путь сверху, вложенные места (1 уровень), кто здесь и события — по всей глубине.
   Widget location(Location l) {
     final up = ancestorsOf(c.locations, l);
     return Builder(
@@ -60,7 +61,11 @@ class WorldPages {
           snapshot: c,
           locations: c.locations,
         ),
-        sections: [?_inner(context, l), ?_here(context, l)],
+        sections: [
+          ?_inner(context, l),
+          ?_here(context, l),
+          ?eventsSection(context, l),
+        ],
       ),
     );
   }

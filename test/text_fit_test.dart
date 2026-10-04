@@ -7,6 +7,7 @@ import 'package:rpg_builder/content/character.dart';
 
 import '../demo/question_snapshots_test.dart' show live;
 import 'assistant_fixtures.dart';
+import 'event_map_test.dart' show minesWithEvents;
 import 'fakes.dart';
 import 'open5e_test.dart' show FakeOpen5e, potion, warPick;
 import 'real_fonts.dart';
@@ -154,6 +155,26 @@ Future<void> exportTour(WidgetTester t, TextFit fit) async {
   await fit.scanScrolling(t, 'Open5e: план');
 }
 
+/// Карта и события: блок с тремя счётчиками и значком проблемы, уровень внутри,
+/// страница места с событием вложенного места (на карточке подписано место).
+Future<void> mapTour(WidgetTester t, TextFit fit) async {
+  await pumpApp(
+    t,
+    content: await minesWithEvents(slimeLevel: 9),
+    wrap: fit.frame,
+  );
+  await signUp(t, 'author@test.dev');
+  await createWorld(t, 'Пепельные копи');
+  await openWorld(t, 'Пепельные копи');
+  await tapKey(t, const Key('map-open'));
+  await fit.see(t, 'карта');
+  await tapKey(t, const Key('enter-kopi'));
+  await fit.see(t, 'карта: внутри места');
+  await back(t);
+  await tapKey(t, const Key('place-kopi'));
+  await fit.scanScrolling(t, 'страница места с событиями внутри');
+}
+
 void main() {
   for (final width in [360.0, 400.0]) {
     for (final scale in [1.0, 1.3]) {
@@ -161,6 +182,7 @@ void main() {
       for (final (name, tour) in [
         ('главный путь', mainTour),
         ('экспорт и Open5e', exportTour),
+        ('карта и события', mapTour),
       ]) {
         testWidgets('текст влезает: $variant, $name', (t) async {
           await t.runAsync(loadFont);

@@ -9,6 +9,9 @@ import '../content/nesting.dart';
 /// Размер блока места на холсте (dp при масштабе 1).
 const blockSize = Size(152, 108);
 
+/// До какого увеличения шрифта телефона растёт текст внутри блока (блок сам не растёт).
+const blockTextScaleMax = 1.15;
+
 /// Зазор между блоками автораскладки.
 const blockGap = 20.0;
 
@@ -20,25 +23,36 @@ const gridColumns = 2;
 typedef PlaceStats = ({
   int residents,
   int inner,
+  int events,
+  int eventsInside,
   int problems,
   Severity? worst,
 });
 
 /// Жители — по всей глубине, тем же правилом, что «Кто здесь» на странице места (residentsOf);
-/// вложенные — прямые;
-/// проблемы — у самого места, вложенных мест и всех их жителей.
+/// вложенные — прямые; события — свои отдельно, мест внутри отдельно (вместе — раздел
+/// «События» на странице места, eventsIn);
+/// проблемы — у самого места, вложенных мест, всех их жителей и событий.
 PlaceStats placeStats(WorldSnapshot w, Location l, List<Problem> problems) {
   final places = placeAndInside(w.locations, l.id);
   final residents = {
     for (final ch in residentsOf(w.locations, w.characters, l.id)) ch.id,
   };
+  final all = eventsIn(w.locations, w.events, l.id);
+  final events = {for (final e in all) e.id};
+  final own = all.where((e) => e.locationId == l.id).length;
   final mine = [
     for (final p in problems)
-      if (places.contains(p.objectId) || residents.contains(p.objectId)) p,
+      if (places.contains(p.objectId) ||
+          residents.contains(p.objectId) ||
+          events.contains(p.objectId))
+        p,
   ];
   return (
     residents: residents.length,
     inner: childrenOf(w.locations, l.id).length,
+    events: own,
+    eventsInside: all.length - own,
     problems: mine.length,
     worst: mine.isEmpty
         ? null
