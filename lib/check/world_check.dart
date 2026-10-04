@@ -122,6 +122,7 @@ List<Problem> _questErrors(Quest q, _Ids ids) => [
       StepKind.talk || StepKind.kill => ids.characters,
       StepKind.collect => ids.items,
       StepKind.visit => ids.locations,
+      StepKind.event => ids.events,
     }),
   for (final r in q.rewardIds)
     ?ids.link(q.id, q.title, 'награда', r, ids.items),
@@ -132,11 +133,13 @@ class _Ids {
   _Ids(WorldSnapshot w)
     : locations = {for (final l in w.locations) l.id},
       items = {for (final i in w.items) i.id},
-      characters = {for (final c in w.characters) c.id};
+      characters = {for (final c in w.characters) c.id},
+      events = {for (final e in w.events) e.id};
 
   final Set<String> locations;
   final Set<String> items;
   final Set<String> characters;
+  final Set<String> events;
 
   /// Ошибка, если [id] не найден среди [pool]; иначе null.
   Problem? link(

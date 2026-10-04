@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../test/assistant_fixtures.dart';
 import '../test/event_flow_test.dart' show choose;
 import '../test/event_map_test.dart' show minesWithEvents;
+import '../test/event_step_test.dart' show minesWithEventStep;
 import '../test/fakes.dart';
 import '../test/map_test.dart' show openMap;
 import 'shots.dart';
@@ -88,5 +89,28 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     await shot(t, 'event-5-place');
+  });
+
+  testWidgets('событие: шаг квеста «пройти событие»', (t) async {
+    await t.runAsync(loadFont);
+    t.view.physicalSize = const Size(360, 780);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+
+    final (content, _) = await minesWithEventStep();
+    await pumpApp(t, content: content, wrap: frame);
+    await signUp(t, 'author@test.dev');
+    await createWorld(t, 'Пепельные копи');
+    await openWorld(t, 'Пепельные копи');
+    await t.scrollUntilVisible(
+      find.byKey(const Key('open-obval')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tapShown(t, find.byKey(const Key('open-obval')));
+    await shot(t, 'event-8-quest');
+    await tapShown(t, find.byKey(const Key('object-edit')));
+    await t.ensureVisible(find.byKey(const Key('step-add')));
+    await shot(t, 'event-9-quest-form');
   });
 }

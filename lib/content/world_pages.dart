@@ -251,12 +251,14 @@ class WorldPages {
       for (final ch in c.characters) ch.id: () => character(ch),
       for (final i in c.items) i.id: () => item(i),
       for (final l in c.locations) l.id: () => location(l),
+      for (final e in c.events) e.id: () => event(e),
     };
     IconData iconOf(StepKind? k, bool giver) => switch (k) {
       StepKind.talk => Symbols.forum_rounded,
       StepKind.kill => Symbols.skull_rounded,
       StepKind.collect => Symbols.inventory_2_rounded,
       StepKind.visit => Symbols.location_on_rounded,
+      StepKind.event => eventIcon,
       null when giver => Symbols.person_rounded,
       null => Symbols.redeem_rounded,
     };
@@ -274,6 +276,7 @@ class WorldPages {
           locations: c.locations,
           items: c.items,
           characters: c.characters,
+          events: c.events,
           editing: q,
           snapshot: c,
         ),

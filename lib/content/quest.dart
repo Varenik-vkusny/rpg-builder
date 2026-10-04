@@ -1,11 +1,12 @@
 /// Вид шага квеста. У каждого вида ровно одна цель:
 /// поговорить — с персонажем, убить N — врагов, собрать N — предметов,
-/// прийти — в локацию.
+/// прийти — в локацию, пройти — событие (5б.3).
 enum StepKind {
   talk('Поговорить', counted: false),
   kill('Убить', counted: true),
   collect('Собрать', counted: true),
-  visit('Прийти', counted: false);
+  visit('Прийти', counted: false),
+  event('Пройти событие', counted: false);
 
   const StepKind(this.label, {required this.counted});
   final String label;
@@ -14,7 +15,7 @@ enum StepKind {
   final bool counted;
 }
 
-/// Шаг квеста. [targetId] — персонаж, предмет или локация по виду шага.
+/// Шаг квеста. [targetId] — персонаж, предмет, локация или событие по виду шага.
 class QuestStep {
   const QuestStep({required this.kind, required this.targetId, this.amount});
 
@@ -27,7 +28,10 @@ class QuestStep {
     return QuestStep(
       kind: kind,
       targetId:
-          (row['character_id'] ?? row['item_id'] ?? row['location_id'])
+          (row['character_id'] ??
+                  row['item_id'] ??
+                  row['location_id'] ??
+                  row['event_id'])
               as String,
       amount: row['amount'] as int?,
     );
@@ -39,6 +43,7 @@ class QuestStep {
       StepKind.talk || StepKind.kill => 'character_id',
       StepKind.collect => 'item_id',
       StepKind.visit => 'location_id',
+      StepKind.event => 'event_id',
     }: targetId,
     if (kind.counted) 'amount': amount,
   };

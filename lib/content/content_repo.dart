@@ -153,7 +153,8 @@ class SupabaseContentRepo implements ContentRepo {
   }
 
   static const _questColumns =
-      '*, quest_steps(position, kind, character_id, item_id, location_id, amount),'
+      '*, quest_steps(position, kind, character_id, item_id, location_id, event_id,'
+      ' amount),'
       ' quest_rewards(item_id)';
 
   @override

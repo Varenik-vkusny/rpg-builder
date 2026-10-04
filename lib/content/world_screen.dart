@@ -372,6 +372,7 @@ class _WorldScreenState extends State<WorldScreen> {
         locations: c.locations,
         items: c.items,
         characters: c.characters,
+        events: c.events,
       ),
     ),
     if (c.quests.isEmpty) const ListTile(subtitle: Text('Квестов пока нет')),

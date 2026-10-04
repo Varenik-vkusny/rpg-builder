@@ -259,6 +259,7 @@ ManualEdit editQuest(String worldId, Quest old, NewQuest now) {
           : null,
       'item_id': s.kind == StepKind.collect ? s.targetId : null,
       'location_id': s.kind == StepKind.visit ? s.targetId : null,
+      'event_id': s.kind == StepKind.event ? s.targetId : null,
       'amount': s.kind.counted ? s.amount : null,
     },
   };

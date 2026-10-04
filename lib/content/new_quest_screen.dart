@@ -6,6 +6,7 @@ import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
+import 'event.dart';
 import 'item.dart';
 import 'location.dart';
 import 'manual_edit.dart';
@@ -20,6 +21,7 @@ class NewQuestScreen extends StatefulWidget {
     required this.locations,
     required this.items,
     required this.characters,
+    this.events = const [],
     this.editing,
     this.snapshot,
   });
@@ -29,6 +31,7 @@ class NewQuestScreen extends StatefulWidget {
   final List<Location> locations;
   final List<Item> items;
   final List<Character> characters;
+  final List<Event> events;
 
   /// Не null — форма правит существующий квест, а не создаёт новый.
   final Quest? editing;
@@ -112,6 +115,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
     },
     StepKind.collect => {for (final i in widget.items) i.id: i.title},
     StepKind.visit => {for (final l in widget.locations) l.id: l.title},
+    StepKind.event => {for (final e in widget.events) e.id: e.title},
   };
 
   /// Шаги из формы или текст ошибки.

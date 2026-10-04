@@ -20,6 +20,7 @@ Map<String, Object> exportWorld(World world, WorldSnapshot w) {
     for (final i in w.items) i.id: i.slug,
     for (final c in w.characters) c.id: c.slug,
     for (final q in w.quests) q.id: q.slug,
+    for (final e in w.events) e.id: e.slug,
   };
   String ref(String? id) => slugs[id] ?? '';
   return {
