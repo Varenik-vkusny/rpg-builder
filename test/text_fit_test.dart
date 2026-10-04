@@ -13,7 +13,14 @@ import 'real_fonts.dart';
 import 'text_fit.dart';
 
 /// Нажимает по ключу; элемент за краем списка сначала докручивается в видимую часть.
+/// Список мира ленивый: строка далеко за краем ещё не построена — ищем её с начала списка.
 Future<void> tapKey(WidgetTester t, Key k) async {
+  if (find.byKey(k, skipOffstage: false).evaluate().isEmpty) {
+    final list = find.byType(Scrollable).first;
+    t.state<ScrollableState>(list).position.jumpTo(0);
+    await t.pumpAndSettle();
+    await t.scrollUntilVisible(find.byKey(k), 200, scrollable: list);
+  }
   await t.ensureVisible(find.byKey(k, skipOffstage: false));
   await t.pumpAndSettle();
   await t.tap(find.byKey(k));
@@ -46,12 +53,9 @@ Future<void> mainTour(WidgetTester t, TextFit fit) async {
     live,
     ...List.generate(3, (_) => proposal(longTitle)),
   ]);
-  await pumpApp(
-    t,
-    content: await minesContent(),
-    assistant: a,
-    wrap: fit.frame,
-  );
+  final content = await minesContent();
+  final ambush = await addAmbush(content, minesId);
+  await pumpApp(t, content: content, assistant: a, wrap: fit.frame);
   await fit.see(t, 'вход');
   await t.enterText(find.byKey(const Key('email')), 'author@test.dev');
   await t.enterText(find.byKey(const Key('password')), 'secret123');
@@ -70,6 +74,7 @@ Future<void> mainTour(WidgetTester t, TextFit fit) async {
     ('klyuch', 'предмет', 'форма предмета'),
     ('slizen', 'персонаж', 'форма персонажа'),
     ('obval', 'квест', 'форма квеста'),
+    (ambush.slug, 'событие', 'форма события'),
   ]) {
     await tapKey(t, Key('open-$slug'));
     await fit.scanScrolling(t, 'страница: $name');
@@ -78,7 +83,7 @@ Future<void> mainTour(WidgetTester t, TextFit fit) async {
     await back(t);
     await back(t);
   }
-  for (final kind in ['location', 'item', 'character', 'quest']) {
+  for (final kind in ['location', 'event', 'item', 'character', 'quest']) {
     await tapKey(t, Key('new-$kind'));
     await fit.scanScrolling(t, 'создать: $kind');
     await back(t);

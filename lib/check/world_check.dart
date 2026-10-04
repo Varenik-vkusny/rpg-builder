@@ -1,6 +1,7 @@
 // Проверка мира — чистый Dart над снимком мира в памяти, без Flutter и базы.
 // Тот же код проверит и копию мира с планом ассистента (VISION.md, правило 7).
 import '../content/character.dart';
+import '../content/event.dart';
 import '../content/item.dart';
 import '../content/location.dart';
 import '../content/quest.dart';
@@ -14,12 +15,14 @@ class WorldSnapshot {
     this.items = const [],
     this.characters = const [],
     this.quests = const [],
+    this.events = const [],
   });
 
   final List<Location> locations;
   final List<Item> items;
   final List<Character> characters;
   final List<Quest> quests;
+  final List<Event> events;
 
   /// Названия всех объектов мира по id.
   Map<String, String> get titles => {
@@ -27,6 +30,7 @@ class WorldSnapshot {
     for (final i in items) i.id: i.title,
     for (final c in characters) c.id: c.title,
     for (final q in quests) q.id: q.title,
+    for (final e in events) e.id: e.title,
   };
 }
 
@@ -61,7 +65,7 @@ List<Problem> checkWorld(WorldSnapshot w) => [
 ];
 
 /// Ошибки: ссылка на несуществующий объект, квест без шагов или выдающего,
-/// вложенность мест (место в самом себе, глубже трёх уровней).
+/// событие без места, вложенность мест (место в самом себе, глубже трёх уровней).
 List<Problem> errorRules(WorldSnapshot w) {
   final ids = _Ids(w);
   return [
@@ -76,8 +80,25 @@ List<Problem> errorRules(WorldSnapshot w) {
         ?ids.link(c.id, c.title, 'добыча', l.itemId, ids.items),
     ],
     for (final q in w.quests) ..._questErrors(q, ids),
+    for (final e in w.events) ..._eventErrors(e, ids),
   ];
 }
+
+List<Problem> _eventErrors(Event e, _Ids ids) => [
+  if (e.locationId == null)
+    Problem(
+      Severity.error,
+      'event_no_location',
+      e.id,
+      '«${e.title}»: у события нет места',
+    )
+  else
+    ?ids.link(e.id, e.title, 'место', e.locationId!, ids.locations),
+  for (final x in e.enemies)
+    ?ids.link(e.id, e.title, 'враг', x.characterId, ids.characters),
+  for (final x in e.items)
+    ?ids.link(e.id, e.title, 'предмет', x.itemId, ids.items),
+];
 
 List<Problem> _questErrors(Quest q, _Ids ids) => [
   if (q.giverId == null)

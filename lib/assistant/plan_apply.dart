@@ -2,6 +2,7 @@
 // Каждая операция даёт «было → стало» по полям или ошибку, почему её нельзя выполнить.
 import '../check/world_check.dart';
 import '../content/character.dart';
+import '../content/event.dart';
 import '../content/item.dart';
 import '../content/location.dart';
 import '../content/manual_edit.dart' show referencesTo;
@@ -48,18 +49,24 @@ class _Copy {
     : locations = [...w.locations],
       items = [...w.items],
       characters = [...w.characters],
-      quests = [...w.quests];
+      quests = [...w.quests],
+      events = w.events;
 
   final List<Location> locations;
   final List<Item> items;
   final List<Character> characters;
   final List<Quest> quests;
 
+  /// События план не трогает (ассистент их не знает), но копия их помнит:
+  /// по ним считаются ссылки и «предмет можно получить».
+  final List<Event> events;
+
   WorldSnapshot get snapshot => WorldSnapshot(
     locations: locations,
     items: items,
     characters: characters,
     quests: quests,
+    events: events,
   );
 
   late final labels = PlanLabels(() => snapshot);

@@ -124,7 +124,9 @@ void main() {
     addTearDown(t.view.reset);
 
     final a = FakeAssistant(List.generate(3, (_) => proposal(floodPlan())));
-    await pumpApp(t, content: await minesContent(), assistant: a);
+    final content = await minesContent();
+    final ambush = await addAmbush(content, minesId);
+    await pumpApp(t, content: content, assistant: a);
     await signUp(t, 'a@test.dev');
     await tapKey(t, 'new-world');
     await checkForm(t, 'новый мир');
@@ -145,8 +147,9 @@ void main() {
     await tapKey(t, 'world-save');
     await openWorld(t, 'Пепельные копи');
 
-    // Правка: поля, которые видны только у существующего объекта (добыча, шаги, награды).
-    for (final slug in ['shtolnya_3', 'klyuch', 'slizen', 'obval']) {
+    // Правка: поля, которые видны только у существующего объекта (добыча, шаги, награды,
+    // враги и предметы события).
+    for (final slug in ['shtolnya_3', 'klyuch', 'slizen', 'obval', ambush.slug]) {
       await tapKey(t, 'open-$slug');
       await tapKey(t, 'object-edit');
       await checkForm(t, 'правка $slug');
@@ -168,6 +171,12 @@ void main() {
     await tapKey(t, 'character-role-enemy');
     await tapKey(t, 'loot-add');
     await checkForm(t, 'новый враг с добычей');
+    await back(t);
+
+    await tapKey(t, 'new-event');
+    await tapKey(t, 'event-enemy-add');
+    await tapKey(t, 'event-item-add');
+    await checkForm(t, 'новое событие с врагом и предметом');
     await back(t);
 
     await tapKey(t, 'new-quest');

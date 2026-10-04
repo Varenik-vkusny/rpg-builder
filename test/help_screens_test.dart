@@ -113,6 +113,7 @@ void main() {
         locationId: 'loc-нет',
       ),
     );
+    final ambush = await addAmbush(content, minesId);
     final a = FakeAssistant(List.generate(3, (_) => proposal(floodPlan())));
     await pumpApp(
       t,
@@ -131,6 +132,7 @@ void main() {
       ('klyuch', 'page.item'),
       ('slizen', 'page.character'),
       ('obval', 'page.quest'),
+      (ambush.slug, 'page.event'),
     ]) {
       await tapKey(t, 'open-$slug');
       await checkScreen(t, page);

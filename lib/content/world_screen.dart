@@ -15,9 +15,11 @@ import '../open5e/open5e_api.dart';
 import '../open5e/open5e_screen.dart';
 import '../worlds/world.dart';
 import 'content_repo.dart';
+import 'event_pages.dart';
 import 'filter_bar.dart';
 import 'filters.dart';
 import 'new_character_screen.dart';
+import 'new_event_screen.dart';
 import 'new_item_screen.dart';
 import 'new_location_screen.dart';
 import 'new_quest_screen.dart';
@@ -25,7 +27,7 @@ import 'world_pages.dart';
 import '../ui/cover_card.dart';
 import '../ui/parts.dart';
 
-/// Мир изнутри: локации, предметы, персонажи и квесты, у каждого раздела своя кнопка «+».
+/// Мир изнутри: локации, предметы, персонажи, квесты и события, у каждого раздела своя кнопка «+».
 class WorldScreen extends StatefulWidget {
   const WorldScreen({
     super.key,
@@ -84,6 +86,9 @@ class _WorldScreenState extends State<WorldScreen> {
       });
     }
   }
+
+  WorldPages _pages(WorldSnapshot c) =>
+      WorldPages(widget.world, widget.repo, c);
 
   void _openHistory() =>
       _open(HistoryScreen(world: widget.world, repo: widget.repo));
@@ -234,6 +239,8 @@ class _WorldScreenState extends State<WorldScreen> {
               ..._characters(c),
               const Divider(),
               ..._quests(c),
+              const Divider(),
+              ..._events(c),
             ],
           );
         },
@@ -276,8 +283,7 @@ class _WorldScreenState extends State<WorldScreen> {
               c.characters.where((ch) => ch.locationId == l.id).length,
             ),
           ],
-          onTap: () =>
-              _open(WorldPages(widget.world, widget.repo, c).location(l)),
+          onTap: () => _open(_pages(c).location(l)),
         ),
       ),
   ];
@@ -320,12 +326,7 @@ class _WorldScreenState extends State<WorldScreen> {
           subtitle: Text('Под фильтр ничего не подходит'),
         ),
       for (final i in shown)
-        _row(
-          i.slug,
-          itemIcon(i),
-          i.title,
-          WorldPages(widget.world, widget.repo, c).item(i),
-        ),
+        _row(i.slug, itemIcon(i), i.title, _pages(c).item(i)),
     ];
   }
 
@@ -356,12 +357,7 @@ class _WorldScreenState extends State<WorldScreen> {
           subtitle: Text('Под фильтр ничего не подходит'),
         ),
       for (final ch in shown)
-        _row(
-          ch.slug,
-          characterIcon(ch),
-          ch.title,
-          WorldPages(widget.world, widget.repo, c).character(ch),
-        ),
+        _row(ch.slug, characterIcon(ch), ch.title, _pages(c).character(ch)),
     ];
   }
 
@@ -380,11 +376,18 @@ class _WorldScreenState extends State<WorldScreen> {
     ),
     if (c.quests.isEmpty) const ListTile(subtitle: Text('Квестов пока нет')),
     for (final q in c.quests)
-      _row(
-        q.slug,
-        Symbols.flag_rounded,
-        q.title,
-        WorldPages(widget.world, widget.repo, c).quest(q),
-      ),
+      _row(q.slug, Symbols.flag_rounded, q.title, _pages(c).quest(q)),
+  ];
+
+  List<Widget> _events(WorldSnapshot c) => [
+    _header(
+      'События',
+      const Key('new-event'),
+      'Новое событие',
+      NewEventScreen(world: widget.world, repo: widget.repo, snapshot: c),
+    ),
+    if (c.events.isEmpty) const ListTile(subtitle: Text('Событий пока нет')),
+    for (final e in c.events)
+      _row(e.slug, eventIcon, e.title, _pages(c).event(e)),
   ];
 }

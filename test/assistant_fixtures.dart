@@ -11,6 +11,7 @@ import 'package:rpg_builder/assistant/plan_cards.dart';
 import 'package:rpg_builder/ui/parts.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/character.dart';
+import 'package:rpg_builder/content/event.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/content/quest.dart';
@@ -43,6 +44,27 @@ Future<FakeContent> minesContent() async {
   final c = FakeContent();
   await fillMines(c, minesId);
   return c;
+}
+
+/// Событие из приёмки 5б: «Засада у лебёдки» в Штольне №3 — 3 слизня и ключ.
+/// Мир должен быть наполнен «Пепельными копями» (fillMines).
+Future<Event> addAmbush(ContentRepo c, String worldId) async {
+  final w = await c.snapshot(worldId);
+  return c.createEvent(
+    worldId,
+    NewEvent(
+      title: 'Засада у лебёдки',
+      description: 'слизни падают с потолка',
+      locationId: w.locations.firstWhere((l) => l.slug == 'shtolnya_3').id,
+      enemies: [
+        EventEnemy(
+          characterId: w.characters.firstWhere((x) => x.slug == 'slizen').id,
+          amount: 3,
+        ),
+      ],
+      itemIds: [w.items.firstWhere((i) => i.slug == 'klyuch').id],
+    ),
+  );
 }
 
 /// Наполняет мир [worldId] «Пепельными копями» — в подменённой или настоящей базе.

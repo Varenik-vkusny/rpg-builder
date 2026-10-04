@@ -5,13 +5,14 @@ import 'nesting_rules.dart';
 import 'world_check.dart';
 
 /// Предупреждения: предмет нельзя получить, урон выше потолка, атака врага
-/// выше потолка, враг выше уровней локации, эпический дешевле медианы редких,
-/// повтор названий, уровни места вне уровней родителя.
+/// выше потолка, враг выше уровней локации или места своего события, эпический
+/// дешевле медианы редких, повтор названий, уровни места вне уровней родителя.
 List<Problem> warningRules(WorldSnapshot w) => [
   ..._unobtainable(w),
   ..._damageOverCeiling(w),
   ..._enemyAttackOverCeiling(w),
   ..._enemyOverLocation(w),
+  ..._enemyOverEventPlace(w),
   ..._epicCheaperThanRare(w),
   ..._duplicateTitles(w),
   ...nestingWarnings(w),
@@ -37,12 +38,13 @@ Problem _warn(String rule, String id, String message) =>
 String _num(double v) =>
     v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(1);
 
-/// Предмет не выпадает ни из одного врага и не выдаётся наградой.
+/// Предмет не выпадает ни из одного врага, не выдаётся наградой и не лежит в событии.
 Iterable<Problem> _unobtainable(WorldSnapshot w) {
   final obtainable = {
     for (final c in w.characters)
       for (final l in c.loot) l.itemId,
     for (final q in w.quests) ...q.rewardIds,
+    for (final e in w.events) ...e.itemIds,
   };
   return [
     for (final i in w.items)
@@ -97,6 +99,25 @@ Iterable<Problem> _enemyOverLocation(WorldSnapshot w) {
   ];
 }
 
+/// Враг события выше верхнего уровня места, где идёт сцена. Проблема — на событии:
+/// сам враг может жить в другом месте, где он по уровню.
+Iterable<Problem> _enemyOverEventPlace(WorldSnapshot w) {
+  final places = {for (final l in w.locations) l.id: l};
+  final characters = {for (final c in w.characters) c.id: c};
+  return [
+    for (final e in w.events)
+      if (places[e.locationId] case final l?)
+        for (final x in e.enemies)
+          if (characters[x.characterId] case final c? when c.level > l.levelMax)
+            _warn(
+              'event_enemy_over_location',
+              e.id,
+              '«${e.title}»: «${c.title}» ур. ${c.level} выше уровней места '
+                  '«${l.title}» (${l.levelMin}–${l.levelMax})',
+            ),
+  ];
+}
+
 /// Эпический дешевле медианы цен редких. Редких нет — сравнивать не с чем.
 Iterable<Problem> _epicCheaperThanRare(WorldSnapshot w) {
   final rare = [
@@ -127,6 +148,7 @@ Iterable<Problem> _duplicateTitles(WorldSnapshot w) {
     'предметов': [for (final x in w.items) (x.id, x.title)],
     'персонажей': [for (final x in w.characters) (x.id, x.title)],
     'квестов': [for (final x in w.quests) (x.id, x.title)],
+    'событий': [for (final x in w.events) (x.id, x.title)],
   };
   return [
     for (final MapEntry(key: kind, value: objects) in kinds.entries)

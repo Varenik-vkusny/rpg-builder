@@ -31,7 +31,7 @@ class ManualEdit {
 }
 
 /// Мир, где объект с [id] заменён на [next] (null — удалён).
-WorldSnapshot _replace(WorldSnapshot w, String id, Object? next) {
+WorldSnapshot replaceObject(WorldSnapshot w, String id, Object? next) {
   List<T> swap<T>(List<T> list, String Function(T) idOf) => [
     for (final x in list)
       if (idOf(x) != id) x else if (next is T) next,
@@ -41,10 +41,11 @@ WorldSnapshot _replace(WorldSnapshot w, String id, Object? next) {
     items: swap(w.items, (x) => x.id),
     characters: swap(w.characters, (x) => x.id),
     quests: swap(w.quests, (x) => x.id),
+    events: swap(w.events, (x) => x.id),
   );
 }
 
-Map<String, dynamic> _op(
+Map<String, dynamic> rowOp(
   String action,
   String type,
   String label,
@@ -59,7 +60,7 @@ Map<String, dynamic> _op(
 };
 
 /// Только изменившиеся столбцы; ничего не поменяли — null.
-Map<String, dynamic>? _diff(
+Map<String, dynamic>? rowDiff(
   String worldId,
   String id,
   Map<String, Object?> was,
@@ -74,7 +75,7 @@ Map<String, dynamic>? _diff(
 }
 
 ManualEdit editLocation(String worldId, Location old, NewLocation now) {
-  final row = _diff(
+  final row = rowDiff(
     worldId,
     old.id,
     {
@@ -95,8 +96,8 @@ ManualEdit editLocation(String worldId, Location old, NewLocation now) {
   return ManualEdit(
     title: 'Правка вручную: ${now.title}',
     slug: old.slug,
-    ops: [if (row != null) _op('update', 'location', old.slug, row)],
-    applyTo: (w) => _replace(
+    ops: [if (row != null) rowOp('update', 'location', old.slug, row)],
+    applyTo: (w) => replaceObject(
       w,
       old.id,
       Location(
@@ -114,7 +115,7 @@ ManualEdit editLocation(String worldId, Location old, NewLocation now) {
 
 /// Вид предмета не меняется (как и в плане): урон и защита держатся на нём.
 ManualEdit editItem(String worldId, Item old, NewItem now) {
-  final row = _diff(
+  final row = rowDiff(
     worldId,
     old.id,
     {
@@ -137,8 +138,8 @@ ManualEdit editItem(String worldId, Item old, NewItem now) {
   return ManualEdit(
     title: 'Правка вручную: ${now.title}',
     slug: old.slug,
-    ops: [if (row != null) _op('update', 'item', old.slug, row)],
-    applyTo: (w) => _replace(
+    ops: [if (row != null) rowOp('update', 'item', old.slug, row)],
+    applyTo: (w) => replaceObject(
       w,
       old.id,
       Item(
@@ -165,7 +166,7 @@ ManualEdit editCharacter(
   NewCharacter now,
   Map<String, String> itemSlugs,
 ) {
-  final row = _diff(
+  final row = rowDiff(
     worldId,
     old.id,
     {
@@ -198,17 +199,17 @@ ManualEdit editCharacter(
     title: 'Правка вручную: ${now.title}',
     slug: old.slug,
     ops: [
-      if (row != null) _op('update', 'character', old.slug, row),
+      if (row != null) rowOp('update', 'character', old.slug, row),
       for (final id in was.keys)
         if (!will.containsKey(id))
-          _op('delete', 'loot', label(id), lootRow(id))
+          rowOp('delete', 'loot', label(id), lootRow(id))
         else if (will[id] != was[id])
-          _op('update', 'loot', label(id), lootRow(id, will[id])),
+          rowOp('update', 'loot', label(id), lootRow(id, will[id])),
       for (final id in will.keys)
         if (!was.containsKey(id))
-          _op('create', 'loot', label(id), lootRow(id, will[id])),
+          rowOp('create', 'loot', label(id), lootRow(id, will[id])),
     ],
-    applyTo: (w) => _replace(
+    applyTo: (w) => replaceObject(
       w,
       old.id,
       Character(
@@ -230,7 +231,7 @@ ManualEdit editCharacter(
 /// Шаги поменялись — старые убираются с последнего, новые пишутся по порядку.
 /// Награды — по разнице.
 ManualEdit editQuest(String worldId, Quest old, NewQuest now) {
-  final row = _diff(
+  final row = rowDiff(
     worldId,
     old.id,
     {
@@ -270,12 +271,12 @@ ManualEdit editQuest(String worldId, Quest old, NewQuest now) {
     title: 'Правка вручную: ${now.title}',
     slug: old.slug,
     ops: [
-      if (row != null) _op('update', 'quest', old.slug, row),
+      if (row != null) rowOp('update', 'quest', old.slug, row),
       if (stepsChanged) ...[
         for (var p = old.steps.length; p >= 1; p--)
-          _op('delete', 'quest_step', '${old.slug}#$p', stepRow(p)),
+          rowOp('delete', 'quest_step', '${old.slug}#$p', stepRow(p)),
         for (final (i, s) in now.steps.indexed)
-          _op(
+          rowOp(
             'create',
             'quest_step',
             '${old.slug}#${i + 1}',
@@ -284,12 +285,12 @@ ManualEdit editQuest(String worldId, Quest old, NewQuest now) {
       ],
       for (final id in old.rewardIds)
         if (!now.rewardIds.contains(id))
-          _op('delete', 'quest_reward', '${old.slug}/$id', rewardRow(id)),
+          rowOp('delete', 'quest_reward', '${old.slug}/$id', rewardRow(id)),
       for (final id in now.rewardIds)
         if (!old.rewardIds.contains(id))
-          _op('create', 'quest_reward', '${old.slug}/$id', rewardRow(id)),
+          rowOp('create', 'quest_reward', '${old.slug}/$id', rewardRow(id)),
     ],
-    applyTo: (w) => _replace(
+    applyTo: (w) => replaceObject(
       w,
       old.id,
       Quest(
@@ -306,7 +307,8 @@ ManualEdit editQuest(String worldId, Quest old, NewQuest now) {
 }
 
 /// Кто ссылается на объект [id] — словами. Непусто — удалять нельзя.
-/// Своя добыча врага и свои шаги квеста — не ссылки: уходят вместе с ним.
+/// Своя добыча врага, свои шаги квеста, свои враги и предметы события — не ссылки:
+/// уходят вместе с ним.
 List<String> referencesTo(WorldSnapshot w, String id) => [
   for (final l in w.locations)
     if (l.parentId == id) 'вложено сюда: «${l.title}»',
@@ -319,6 +321,12 @@ List<String> referencesTo(WorldSnapshot w, String id) => [
     for (final (i, s) in q.steps.indexed)
       if (s.targetId == id) 'шаг ${i + 1} квеста «${q.title}»',
     if (q.rewardIds.contains(id)) 'награда за квест «${q.title}»',
+  ],
+  for (final e in w.events) ...[
+    if (e.locationId == id) 'здесь идёт событие «${e.title}»',
+    if (e.enemies.any((x) => x.characterId == id))
+      'стоит в событии «${e.title}»',
+    if (e.itemIds.contains(id)) 'лежит в событии «${e.title}»',
   ],
 ];
 
@@ -334,7 +342,7 @@ ManualEdit deleteObject(
   title: 'Удаление вручную: $title',
   slug: slug,
   ops: [
-    _op('delete', type, slug, {'id': id, 'project_id': worldId}, slug: slug),
+    rowOp('delete', type, slug, {'id': id, 'project_id': worldId}, slug: slug),
   ],
-  applyTo: (w) => _replace(w, id, null),
+  applyTo: (w) => replaceObject(w, id, null),
 );

@@ -4,6 +4,7 @@ import '../assistant/change_set.dart';
 import '../assistant/history.dart';
 import '../check/world_check.dart';
 import 'character.dart';
+import 'event.dart';
 import 'item.dart';
 import 'location.dart';
 import 'manual_edit.dart';
@@ -27,6 +28,10 @@ abstract class ContentRepo {
 
   /// Квест, его шаги и награды записываются одной транзакцией.
   Future<Quest> createQuest(String worldId, NewQuest quest);
+  Future<List<Event>> events(String worldId);
+
+  /// Событие, его враги и предметы записываются одной транзакцией.
+  Future<Event> createEvent(String worldId, NewEvent event);
 
   /// План ассистента — одной транзакцией или ничего; набор уходит в журнал.
   Future<void> applyChangeSet(String worldId, ChangeSetDraft draft);
@@ -57,17 +62,19 @@ abstract class ContentRepo {
 extension WorldSnapshotLoad on ContentRepo {
   /// Всё содержимое мира разом — снимок для экрана мира и проверки.
   Future<WorldSnapshot> snapshot(String worldId) async {
-    final (locations, items, characters, quests) = await (
+    final (locations, items, characters, quests, events) = await (
       this.locations(worldId),
       this.items(worldId),
       this.characters(worldId),
       this.quests(worldId),
+      this.events(worldId),
     ).wait;
     return WorldSnapshot(
       locations: locations,
       items: items,
       characters: characters,
       quests: quests,
+      events: events,
     );
   }
 }
@@ -167,6 +174,36 @@ class SupabaseContentRepo implements ContentRepo {
         .select(_questColumns)
         .single();
     return Quest.fromRow(created);
+  }
+
+  static const _eventColumns =
+      '*, event_enemies(id, character_id, amount), event_items(id, item_id)';
+
+  @override
+  Future<List<Event>> events(String worldId) async {
+    final rows = await _client
+        .from('events')
+        .select(_eventColumns)
+        .eq('project_id', worldId)
+        .order('created_at');
+    return rows.map(Event.fromRow).toList();
+  }
+
+  @override
+  Future<Event> createEvent(String worldId, NewEvent event) async {
+    final slug = uniqueSlug(event.title, await _slugs('events', worldId));
+    final created = await _client
+        .rpc('create_event', params: event.toParams(worldId, slug))
+        .select('id')
+        .single();
+    // Отдельным запросом: в ответе самой функции её связей ещё не видно,
+    // а правке и откату нужны их id.
+    final row = await _client
+        .from('events')
+        .select(_eventColumns)
+        .eq('id', created['id'] as String)
+        .single();
+    return Event.fromRow(row);
   }
 
   @override

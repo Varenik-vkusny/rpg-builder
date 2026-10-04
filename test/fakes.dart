@@ -14,6 +14,7 @@ import 'package:rpg_builder/auth/auth_service.dart';
 import 'package:rpg_builder/check/world_check.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/character.dart';
+import 'package:rpg_builder/content/event.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/content/manual_edit.dart';
@@ -167,6 +168,37 @@ class FakeContent implements ContentRepo {
     return quest;
   }
 
+  final _events = <String, List<Event>>{};
+
+  @override
+  Future<List<Event>> events(String worldId) async =>
+      List.of(_events[worldId] ?? const []);
+
+  @override
+  Future<Event> createEvent(String worldId, NewEvent e) async {
+    final list = _events.putIfAbsent(worldId, () => []);
+    final p = e.toParams(worldId, uniqueSlug(e.title, list.map((x) => x.slug)));
+    final n = list.length;
+    // Через те же строки, что шлёт и читает настоящая база: у связей свои id.
+    final event = Event.fromRow({
+      'id': 'event-$n',
+      'slug': p['p_slug'],
+      'title': p['p_title'],
+      'description': p['p_description'],
+      'location_id': p['p_location_id'],
+      'event_enemies': [
+        for (final (i, x) in (p['p_enemies'] as List).indexed)
+          {...x as Map<String, dynamic>, 'id': 'event-$n-enemy-$i'},
+      ],
+      'event_items': [
+        for (final (i, id) in (p['p_items'] as List).indexed)
+          {'id': 'event-$n-item-$i', 'item_id': id},
+      ],
+    });
+    list.add(event);
+    return event;
+  }
+
   final changeSets = <FakeChangeSet>[];
 
   /// Журнал наборов: мир до и после набора. Откат возвращает «до», если мир
@@ -211,6 +243,7 @@ class FakeContent implements ContentRepo {
     _items[worldId] = [...w.items];
     _characters[worldId] = [...w.characters];
     _quests[worldId] = [...w.quests];
+    _events[worldId] = [...w.events];
     version++;
   }
 
@@ -344,6 +377,7 @@ class FakeContent implements ContentRepo {
     items: await items(worldId),
     characters: await characters(worldId),
     quests: await quests(worldId),
+    events: await events(worldId),
   );
 }
 
