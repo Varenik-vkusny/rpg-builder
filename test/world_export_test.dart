@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/content_repo.dart';
+import 'package:rpg_builder/content/event.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/export/json_utility.dart';
 import 'package:rpg_builder/export/world_export.dart';
@@ -14,6 +15,7 @@ import 'package:share_plus_platform_interface/share_plus_platform_interface.dart
 
 import 'apply_flow_test.dart' show tapButton;
 import 'assistant_fixtures.dart';
+import 'event_step_test.dart' show minesWithEventStep;
 import 'fakes.dart';
 
 /// «Поделиться» без телефона: запоминает, что отдали.
@@ -91,6 +93,53 @@ void main() {
       expect(exportFileName(mines), 'pepelnye_kopi.json');
     },
   );
+
+  test('экспорт: события — массивом, ссылки через slug, без словарей; шаг '
+      'квеста ведёт на событие', () async {
+    final (c, _) = await minesWithEventStep();
+    // Второе событие — пустая сцена: у всех событий в файле один набор полей.
+    final w0 = await c.snapshot(minesId);
+    await c.createEvent(
+      minesId,
+      NewEvent(
+        title: 'Тишина',
+        description: '',
+        locationId: w0.locations.firstWhere((l) => l.slug == 'rynok').id,
+      ),
+    );
+    final w = await c.snapshot(minesId);
+    final json = exportWorld(mines, w);
+    expect(json['events'], [
+      {
+        'slug': 'zasada_u_lebedki',
+        'name': 'Засада у лебёдки',
+        'description': 'слизни падают с потолка',
+        'location': 'shtolnya_3',
+        'enemies': [
+          {'enemy': 'slizen', 'amount': 3},
+        ],
+        'items': [
+          {'item': 'klyuch', 'amount': 1},
+        ],
+      },
+      {
+        'slug': 'tishina',
+        'name': 'Тишина',
+        'description': '',
+        'location': 'rynok',
+        'enemies': <Object>[],
+        'items': <Object>[],
+      },
+    ]);
+    final step = ((json['quests'] as List).single as Map)['steps'] as List;
+    expect(step.last, {'kind': 'event', 'target': 'zasada_u_lebedki', 'amount': 1});
+    // Файл целиком читается JsonUtility: без null, словарей и вложенных массивов.
+    expect(jsonUtilityProblems(jsonDecode(exportJson(mines, w))), isEmpty);
+    // События есть и в мире без событий — пустым массивом, а не пропуском поля.
+    final empty = exportWorld(mines, await (await minesContent()).snapshot(minesId));
+    expect(empty['events'], isEmpty);
+    expect(empty.keys, contains('events'));
+  });
 
   test('экспорт: у места родитель по slug; место верхнего уровня — «»', () async {
     final c = await minesContent();
@@ -182,6 +231,21 @@ void main() {
       expect((json['items'] as List).length, 2);
     },
   );
+
+  testWidgets('экспорт: файл из «Поделиться» содержит событие мира', (t) async {
+    final content = await minesContent();
+    await addAmbush(content, minesId);
+    final share = await openMinesWith(t, content);
+    await tapButton(t, 'world-export');
+    // Мир с событием — без ошибок проверки: окна ошибок нет, файл ушёл сразу.
+    expect(find.byKey(const Key('export-errors')), findsNothing);
+    final event = ((await sharedJson(share))['events'] as List).single as Map;
+    expect(event['name'], 'Засада у лебёдки');
+    expect(event['location'], 'shtolnya_3');
+    expect(event['enemies'], [
+      {'enemy': 'slizen', 'amount': 3},
+    ]);
+  });
 
   testWidgets(
     'экспорт: в мире ошибка — предупреждение; отмена не отправляет, «всё равно» отправляет',

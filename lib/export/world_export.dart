@@ -78,6 +78,24 @@ Map<String, Object> exportWorld(World world, WorldSnapshot w) {
           ],
         },
     ],
+    // События (5б.5): сцена в месте — враги с числом и предметы. Условий запуска нет:
+    // когда сцена случается, решает игра (VISION.md, §7).
+    'events': [
+      for (final e in w.events)
+        {
+          'slug': e.slug,
+          'name': e.title,
+          'description': e.description,
+          'location': ref(e.locationId),
+          'enemies': [
+            for (final x in e.enemies)
+              {'enemy': ref(x.characterId), 'amount': x.amount},
+          ],
+          'items': [
+            for (final id in e.itemIds) {'item': ref(id), 'amount': 1},
+          ],
+        },
+    ],
     'quests': [
       for (final q in w.quests)
         {
