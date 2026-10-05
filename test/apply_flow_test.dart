@@ -34,6 +34,12 @@ void main() {
 
     // Снова в мире — и утопленник уже в списке.
     expect(find.byKey(const Key('assistant-open')), findsOneWidget);
+    // Список мира ленивый: персонажи теперь ниже раздела «События» — докручиваем до строки.
+    await t.scrollUntilVisible(
+      find.text('Утопленник'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Утопленник'), findsOneWidget);
     final set = content.changeSets.single;
     expect(set.status, 'applied');

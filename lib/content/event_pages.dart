@@ -1,9 +1,10 @@
 // Страница события (5б.1): место сцены путём, враги с числом, предметы;
-// раздел «События» на странице места (5б.2).
+// раздел «События» на странице места (5б.2); строка события в списке мира.
 // Правка — форма NewEventScreen по кнопке ✏.
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../check/world_check.dart';
 import '../ui/object_page.dart';
 import 'event.dart';
 import 'location.dart';
@@ -13,17 +14,65 @@ import 'world_pages.dart';
 
 const eventIcon = Symbols.bolt_rounded;
 
+/// Что такое событие — одной фразой там, где событий ещё нет.
+const eventsHint =
+    'Событие — сцена в месте: кто нападает, сколько их и что там лежит. '
+    'Например, засада у лебёдки: 3 слизня и ключ.';
+
+/// События мира по местам: сначала по пути места («Копи › Штольня №3»), потом по названию.
+List<Event> eventsByPlace(WorldSnapshot c) {
+  final places = {for (final l in c.locations) l.id: pathOf(c.locations, l)};
+  String key(Event e) => '${places[e.locationId] ?? ''}\n${e.title}';
+  return [...c.events]..sort((a, b) => key(a).compareTo(key(b)));
+}
+
+/// «Копи › Штольня №3 · Слизень × 3 · Ключ» — где сцена и что в ней.
+String eventLine(WorldSnapshot c, Event e) {
+  final place = c.locations.where((l) => l.id == e.locationId).firstOrNull;
+  final t = c.titles;
+  return [
+    place == null ? '?' : pathOf(c.locations, place),
+    // Неразрывные пробелы: «Слизень × 3» не рвётся между строками.
+    for (final x in e.enemies)
+      '${t[x.characterId] ?? '?'} × ${x.amount}',
+    for (final id in e.itemIds) t[id] ?? '?',
+  ].join(' · ');
+}
+
 extension EventPages on WorldPages {
   /// «События»: сцены этого места и всех вложенных в него; нажатие открывает событие.
-  /// У сцены вложенного места на карточке подписано, где она идёт.
-  ObjectSection? eventsSection(BuildContext context, Location l) {
+  /// У сцены вложенного места на карточке подписано, где она идёт. Раздел есть и у места
+  /// без сцен: отсюда сцену создают сразу в этом месте.
+  ObjectSection eventsSection(BuildContext context, Location l) {
     final here = eventsIn(c.locations, c.events, l.id);
-    if (here.isEmpty) return null;
     final places = {for (final p in c.locations) p.id: p.title};
+    void add() => openDeeper(
+      context,
+      NewEventScreen(world: world, repo: repo, snapshot: c, locationId: l.id),
+    );
+    // Кнопка — слева под сценами: справа внизу страницы стоит плавающая «править».
+    final addButton = TextButton.icon(
+      key: const Key('event-add'),
+      onPressed: add,
+      icon: const Icon(Symbols.add_rounded),
+      label: const Text('Добавить событие'),
+    );
+    Widget block(Widget top) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [top, addButton],
+    );
+    if (here.isEmpty) {
+      return (
+        icon: eventIcon,
+        title: 'События',
+        child: block(const Text(eventsHint)),
+      );
+    }
     return (
       icon: eventIcon,
       title: 'События · ${here.length}',
-      child: Rail([
+      child: block(
+        Rail([
         for (final e in here)
           PortraitCard(
             key: Key('event-${e.slug}'),
@@ -40,7 +89,8 @@ extension EventPages on WorldPages {
             ],
             onTap: () => openDeeper(context, event(e)),
           ),
-      ]),
+        ]),
+      ),
     );
   }
 

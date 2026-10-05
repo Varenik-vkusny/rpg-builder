@@ -173,6 +173,10 @@ Future<void> mapTour(WidgetTester t, TextFit fit) async {
   await back(t);
   await tapKey(t, const Key('place-kopi'));
   await fit.scanScrolling(t, 'страница места с событиями внутри');
+  await back(t);
+  // Место без сцен: объяснение, что такое событие, и «Добавить событие».
+  await tapKey(t, const Key('place-rynok'));
+  await fit.scanScrolling(t, 'страница места без событий');
 }
 
 void main() {

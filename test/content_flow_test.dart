@@ -5,6 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes.dart';
 
+/// Раздел «Предметы» стоит ниже мест и событий и на экран теста не попадает:
+/// экран повыше — и ленивый список мира построен целиком.
+Future<void> toItems(WidgetTester t) async {
+  t.view.physicalSize = const Size(800, 1600);
+  t.view.devicePixelRatio = 1;
+  addTearDown(t.view.reset);
+  await t.pumpAndSettle();
+}
+
 void main() {
   testWidgets('автор создаёт локацию и видит её в мире', (t) async {
     await pumpApp(t);
@@ -47,6 +56,7 @@ void main() {
     await signUp(t, 'a@test.dev');
     await createWorld(t, 'Пепельные копи');
     await openWorld(t, 'Пепельные копи');
+    await toItems(t);
     expect(find.text('Предметов пока нет'), findsOneWidget);
 
     await t.tap(find.byKey(const Key('new-item')));
@@ -73,6 +83,7 @@ void main() {
     await createWorld(t, 'Пепельные копи');
     await openWorld(t, 'Пепельные копи');
 
+    await toItems(t);
     await t.tap(find.byKey(const Key('new-item')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const Key('item-title')), 'Кирка');
@@ -96,6 +107,7 @@ void main() {
     await createWorld(t, 'Пепельные копи');
     await openWorld(t, 'Пепельные копи');
 
+    await toItems(t);
     await t.tap(find.byKey(const Key('new-item')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const Key('item-title')), 'Кирка');

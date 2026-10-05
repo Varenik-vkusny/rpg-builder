@@ -23,11 +23,12 @@ import 'new_event_screen.dart';
 import 'new_item_screen.dart';
 import 'new_location_screen.dart';
 import 'new_quest_screen.dart';
+import 'world_actions.dart';
 import 'world_pages.dart';
 import '../ui/cover_card.dart';
 import '../ui/parts.dart';
 
-/// Мир изнутри: локации, предметы, персонажи, квесты и события, у каждого раздела своя кнопка «+».
+/// Мир изнутри: локации, события в них, предметы, персонажи и квесты, у каждого раздела своя кнопка «+».
 class WorldScreen extends StatefulWidget {
   const WorldScreen({
     super.key,
@@ -146,7 +147,13 @@ class _WorldScreenState extends State<WorldScreen> {
   );
 
   /// Строка объекта в списке: значок и имя, подробности — на его странице.
-  Widget _row(String slug, IconData icon, String title, Widget page) =>
+  Widget _row(
+    String slug,
+    IconData icon,
+    String title,
+    Widget page, {
+    String? subtitle,
+  }) =>
       ListTile(
         key: Key('open-$slug'),
         leading: CircleAvatar(
@@ -159,31 +166,10 @@ class _WorldScreenState extends State<WorldScreen> {
           ),
         ),
         title: Text(title),
+        subtitle: subtitle == null ? null : Text(subtitle),
         trailing: const Icon(Symbols.chevron_right_rounded),
         onTap: () => _open(page),
       );
-
-  /// История, проверка и экспорт — значками в шапке мира.
-  List<Widget> _actions() => [
-    IconButton(
-      key: const Key('history-open'),
-      tooltip: 'История изменений',
-      icon: const Icon(Symbols.history_rounded),
-      onPressed: _openHistory,
-    ),
-    IconButton(
-      key: const Key('check-world'),
-      tooltip: 'Проверка мира',
-      icon: const Icon(Symbols.fact_check_rounded),
-      onPressed: _openCheck,
-    ),
-    IconButton(
-      key: const Key('world-export'),
-      tooltip: 'Экспорт в JSON',
-      icon: const Icon(Symbols.ios_share_rounded),
-      onPressed: _export,
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -197,7 +183,11 @@ class _WorldScreenState extends State<WorldScreen> {
           maxLines: 2,
           style: const TextStyle(fontSize: 17, height: 1.15),
         ),
-        actions: _actions(),
+        actions: worldActions(
+          onHistory: _openHistory,
+          onCheck: _openCheck,
+          onExport: _export,
+        ),
       ),
       // Полоса внизу, а не плавающая кнопка: плавающая закрывала строки списка.
       // Список уходит под полосу, как под край экрана; в конце — отступ под неё.
@@ -234,13 +224,13 @@ class _WorldScreenState extends State<WorldScreen> {
               ),
               ..._locations(c),
               const Divider(),
+              ..._events(c),
+              const Divider(),
               ..._items(c),
               const Divider(),
               ..._characters(c),
               const Divider(),
               ..._quests(c),
-              const Divider(),
-              ..._events(c),
             ],
           );
         },
@@ -282,6 +272,9 @@ class _WorldScreenState extends State<WorldScreen> {
               Symbols.groups_rounded,
               c.characters.where((ch) => ch.locationId == l.id).length,
             ),
+            // Молния — сцены прямо в этом месте; нет сцен — нет значка.
+            if (c.events.any((e) => e.locationId == l.id))
+              (eventIcon, c.events.where((e) => e.locationId == l.id).length),
           ],
           onTap: () => _open(_pages(c).location(l)),
         ),
@@ -387,8 +380,17 @@ class _WorldScreenState extends State<WorldScreen> {
       'Новое событие',
       NewEventScreen(world: widget.world, repo: widget.repo, snapshot: c),
     ),
-    if (c.events.isEmpty) const ListTile(subtitle: Text('Событий пока нет')),
-    for (final e in c.events)
-      _row(e.slug, eventIcon, e.title, _pages(c).event(e)),
+    // Пустой раздел объясняет, что такое событие: без этого слово ничего не говорит.
+    if (c.events.isEmpty)
+      const ListTile(key: Key('events-empty'), subtitle: Text(eventsHint)),
+    // Сцены идут по местам: под названием — где сцена и что в ней.
+    for (final e in eventsByPlace(c))
+      _row(
+        e.slug,
+        eventIcon,
+        e.title,
+        _pages(c).event(e),
+        subtitle: eventLine(c, e),
+      ),
   ];
 }

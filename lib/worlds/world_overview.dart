@@ -68,6 +68,12 @@ class WorldOverview extends StatelessWidget {
                   'Квесты',
                   w.quests.length,
                 ),
+                _Count(
+                  'events',
+                  Symbols.bolt_rounded,
+                  'События',
+                  w.events.length,
+                ),
               ],
             ),
           ),
@@ -135,11 +141,17 @@ class _Count extends StatelessWidget {
           children: [
             Icon(icon, size: 20, color: s.onSurfaceVariant),
             Text('$n', style: const TextStyle(fontSize: 20)),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: s.onSurfaceVariant),
+            // Пять плиток в ряд узкие: длинная подпись сжимается, а не обрезается.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(fontSize: 11, color: s.onSurfaceVariant),
+                ),
+              ),
             ),
           ],
         ),

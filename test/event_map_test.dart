@@ -183,10 +183,17 @@ void main() {
     expect(find.byKey(const Key('enemy-slizen')), findsOneWidget);
   });
 
-  testWidgets('страница места без событий — раздела «События» нет', (t) async {
+  // Раздел у места без сцен есть (без числа): отсюда сцену создают — test/event_find_test.dart.
+  testWidgets('страница места без событий — раздел «События» без числа', (
+    t,
+  ) async {
+    t.view.physicalSize = const Size(800, 1600);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
     await openWorldOf(t, await minesWithEvents());
     await open(t, 'rynok');
-    expect(find.textContaining('События'), findsNothing);
+    expect(find.text('События'), findsOneWidget);
+    expect(find.textContaining('События ·'), findsNothing);
     expect(find.text('Кто здесь · 1'), findsOneWidget);
   });
 }

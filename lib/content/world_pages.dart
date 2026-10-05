@@ -64,7 +64,7 @@ class WorldPages {
         sections: [
           ?_inner(context, l),
           ?_here(context, l),
-          ?eventsSection(context, l),
+          eventsSection(context, l),
         ],
       ),
     );

@@ -18,6 +18,12 @@ Future<FakeContent> flooded(WidgetTester t) async {
   );
   await ask(t);
   await tapButton(t, 'plan-apply');
+  // Список мира ленивый: персонажи теперь ниже раздела «События» — докручиваем до строки.
+  await t.scrollUntilVisible(
+    find.text('Утопленник'),
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
   expect(find.text('Утопленник'), findsOneWidget);
   return content;
 }

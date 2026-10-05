@@ -36,7 +36,7 @@ void main() {
   ) async {
     final content = await openMines(t);
     final before = checkWorld(await content.snapshotOf(minesId));
-    expect(find.text('Событий пока нет'), findsOneWidget);
+    expect(find.byKey(const Key('events-empty')), findsOneWidget);
     await tapButton(t, 'new-event');
     expect(find.text('Новое событие'), findsOneWidget);
     await fillAmbush(t);
