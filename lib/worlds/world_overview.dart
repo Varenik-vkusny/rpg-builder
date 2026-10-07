@@ -142,7 +142,10 @@ class _Count extends StatelessWidget {
             Icon(icon, size: 20, color: s.onSurfaceVariant),
             Text('$n', style: const TextStyle(fontSize: 20)),
             // Пять плиток в ряд узкие: длинная подпись сжимается, а не обрезается.
-            Padding(
+            // Высота строки одна у всех плиток — сжатая подпись не делает плитку ниже.
+            Container(
+              height: MediaQuery.textScalerOf(context).scale(11) * 1.5,
+              alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: FittedBox(
                 fit: BoxFit.scaleDown,

@@ -72,6 +72,24 @@ void main() {
     );
   });
 
+  testWidgets('обзор мира: пять плиток одной высоты, подписи не обрезаны', (
+    t,
+  ) async {
+    // Ширина телефона: «Предметы» и «Персонажи» в плитку целиком не влезают и сжимаются.
+    t.view.physicalSize = const Size(360, 780);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await openWorldOf(t, await minesWithEvents());
+    final kinds = ['locations', 'items', 'characters', 'quests', 'events'];
+    final heights = {
+      for (final k in kinds) t.getSize(find.byKey(Key('count-$k'))).height,
+    };
+    expect(heights, hasLength(1), reason: 'плитки разной высоты: $heights');
+    for (final label in ['Места', 'Предметы', 'Персонажи', 'Квесты', 'События']) {
+      expect(find.text(label), findsOneWidget);
+    }
+  });
+
   testWidgets('раздел «События» — сразу под местами, выше предметов; в строке '
       '— где сцена и что в ней', (t) async {
     await openTall(t, await minesWithEvents());
