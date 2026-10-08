@@ -8,7 +8,7 @@ import '../content/slug.dart';
 import '../worlds/world.dart';
 
 /// Версия формата файла. Меняется, когда меняются поля.
-const schemaVersion = 1;
+const schemaVersion = 2;
 
 /// Имя файла: «Пепельные копи» → `pepelnye_kopi.json`.
 String exportFileName(World world) => '${slugify(world.title)}.json';

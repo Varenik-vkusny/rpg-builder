@@ -65,7 +65,7 @@ void main() {
     () async {
       final c = await minesContent();
       final json = exportWorld(mines, await c.snapshot(minesId));
-      expect(json['schemaVersion'], 1);
+      expect(json['schemaVersion'], 2);
       expect((json['world'] as Map)['slug'], 'pepelnye_kopi');
       final slime = (json['characters'] as List).cast<Map>().firstWhere(
         (x) => x['slug'] == 'slizen',
@@ -227,7 +227,7 @@ void main() {
       expect(find.byKey(const Key('export-errors')), findsNothing);
       expect(share.shared.single.fileNameOverrides, ['pepelnye_kopi.json']);
       final json = await sharedJson(share);
-      expect(json['schemaVersion'], 1);
+      expect(json['schemaVersion'], 2);
       expect((json['items'] as List).length, 2);
     },
   );
