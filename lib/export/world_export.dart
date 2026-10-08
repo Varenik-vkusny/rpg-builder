@@ -33,91 +33,101 @@ Map<String, Object> exportWorld(World world, WorldSnapshot w) {
       'levelMin': world.levelMin,
       'levelMax': world.levelMax,
     },
-    'locations': [
-      for (final l in w.locations)
-        {
-          'slug': l.slug,
-          'name': l.title,
-          'description': l.description,
-          'levelMin': l.levelMin,
-          'levelMax': l.levelMax,
-          // Родитель места (5а): «» — верхний уровень. Положение на карте — раскладка
-          // автора, в игру не идёт (VISION.md, §10).
-          'parent': ref(l.parentId),
-        },
-    ],
-    'items': [
-      for (final i in w.items)
-        {
-          'slug': i.slug,
-          'name': i.title,
-          'type': i.kind.name,
-          'rarity': i.rarity.name,
-          'level': i.level,
-          'damage': i.damage ?? 0,
-          'defense': i.defense ?? 0,
-          'price': i.price,
-          // Атрибуция образца (Open5e, CC BY 4.0); у своих предметов — "".
-          'source': i.source ?? '',
-          'sourceRef': i.sourceRef ?? '',
-        },
-    ],
-    'characters': [
-      for (final c in w.characters)
-        {
-          'slug': c.slug,
-          'name': c.title,
-          'description': c.description,
-          'role': c.role.name,
-          'level': c.level,
-          'hp': c.hp,
-          'attack': c.attack,
-          'location': ref(c.locationId),
-          'loot': [
-            for (final l in c.loot) {'item': ref(l.itemId), 'chance': l.chance},
-          ],
-        },
-    ],
-    // События (5б.5): сцена в месте — враги с числом и предметы. Условий запуска нет:
-    // когда сцена случается, решает игра (VISION.md, §7).
-    'events': [
-      for (final e in w.events)
-        {
-          'slug': e.slug,
-          'name': e.title,
-          'description': e.description,
-          'location': ref(e.locationId),
-          'enemies': [
-            for (final x in e.enemies)
-              {'enemy': ref(x.characterId), 'amount': x.amount},
-          ],
-          'items': [
-            for (final id in e.itemIds) {'item': ref(id), 'amount': 1},
-          ],
-        },
-    ],
-    'quests': [
-      for (final q in w.quests)
-        {
-          'slug': q.slug,
-          'title': q.title,
-          'description': q.description,
-          'giver': ref(q.giverId),
-          'steps': [
-            for (final s in q.steps)
-              {
-                'kind': s.kind.name,
-                'target': ref(s.targetId),
-                'amount': s.amount ?? 1,
-              },
-          ],
-          'rewards': [
-            for (final r in q.rewardIds) {'item': ref(r), 'amount': 1},
-          ],
-        },
-    ],
+    'locations': _locations(w, ref),
+    'items': _items(w),
+    'characters': _characters(w, ref),
+    'events': _events(w, ref),
+    'quests': _quests(w, ref),
   };
 }
+
+List<Object> _locations(WorldSnapshot w, String Function(String?) ref) => [
+  for (final l in w.locations)
+    {
+      'slug': l.slug,
+      'name': l.title,
+      'description': l.description,
+      'levelMin': l.levelMin,
+      'levelMax': l.levelMax,
+      // Родитель места (5а): «» — верхний уровень. Положение на карте — раскладка
+      // автора, в игру не идёт (VISION.md, §10).
+      'parent': ref(l.parentId),
+    },
+];
+
+List<Object> _items(WorldSnapshot w) => [
+  for (final i in w.items)
+    {
+      'slug': i.slug,
+      'name': i.title,
+      'type': i.kind.name,
+      'rarity': i.rarity.name,
+      'level': i.level,
+      'damage': i.damage ?? 0,
+      'defense': i.defense ?? 0,
+      'price': i.price,
+      // Атрибуция образца (Open5e, CC BY 4.0); у своих предметов — "".
+      'source': i.source ?? '',
+      'sourceRef': i.sourceRef ?? '',
+    },
+];
+
+List<Object> _characters(WorldSnapshot w, String Function(String?) ref) => [
+  for (final c in w.characters)
+    {
+      'slug': c.slug,
+      'name': c.title,
+      'description': c.description,
+      'role': c.role.name,
+      'level': c.level,
+      'hp': c.hp,
+      'attack': c.attack,
+      'location': ref(c.locationId),
+      'loot': [
+        for (final l in c.loot) {'item': ref(l.itemId), 'chance': l.chance},
+      ],
+    },
+];
+
+// События (5б.5): сцена в месте — враги с числом и предметы. Условий запуска нет:
+// когда сцена случается, решает игра (VISION.md, §7).
+List<Object> _events(WorldSnapshot w, String Function(String?) ref) => [
+  for (final e in w.events)
+    {
+      'slug': e.slug,
+      'name': e.title,
+      'description': e.description,
+      'location': ref(e.locationId),
+      'enemies': [
+        for (final x in e.enemies)
+          {'enemy': ref(x.characterId), 'amount': x.amount},
+      ],
+      'items': [
+        for (final id in e.itemIds) {'item': ref(id), 'amount': 1},
+      ],
+    },
+];
+
+List<Object> _quests(WorldSnapshot w, String Function(String?) ref) => [
+  for (final q in w.quests)
+    {
+      'slug': q.slug,
+      'title': q.title,
+      'description': q.description,
+      'giver': ref(q.giverId),
+      'steps': [
+        for (final s in q.steps)
+          {
+            'kind': s.kind.name,
+            'target': ref(s.targetId),
+            'amount': s.amount ?? 1,
+          },
+      ],
+      'rewards': [
+        for (final r in q.rewardIds) {'item': ref(r), 'amount': 1},
+      ],
+    },
+];
 
 /// Файл целиком — с отступами, чтобы автор мог прочитать его глазами.
 String exportJson(World world, WorldSnapshot w) =>

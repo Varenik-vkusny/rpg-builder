@@ -200,21 +200,7 @@ class _Frame extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        for (var i = layers; i >= 1; i--)
-          Positioned.fill(
-            left: 6.0 * i,
-            top: -6.0 * i,
-            right: -6.0 * i,
-            bottom: 6.0 * i,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: s.surface,
-                border: Border.all(
-                  color: hue.withValues(alpha: i == 1 ? .6 : .3),
-                ),
-              ),
-            ),
-          ),
+        for (var i = layers; i >= 1; i--) _floor(s, i),
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -239,69 +225,7 @@ class _Frame extends StatelessWidget {
                   top: 0,
                   child: Container(width: 14, height: 3, color: hue),
                 ),
-                ExcludeSemantics(
-                  child: Padding(
-                    // Справа место под ячейку проблемы — название под неё не заходит.
-                    padding: EdgeInsets.fromLTRB(
-                      12,
-                      12,
-                      stats.worst == null ? 10 : 48,
-                      10,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          place.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: s.onSurface,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            height: 1.15,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        _Levels(place),
-                        const Spacer(),
-                        // Счётчики не заходят под ячейку «войти» (48 dp справа):
-                        // три счётчика разом сжимаются, а не вылезают.
-                        SizedBox(
-                          width: blockSize.width - 12 - 48 - 4,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              spacing: 12,
-                              children: [
-                                _Count(
-                                  Symbols.groups_rounded,
-                                  stats.residents,
-                                  s.onSurface,
-                                ),
-                                if (stats.inner > 0)
-                                  _Count(
-                                    Symbols.stacks_rounded,
-                                    stats.inner,
-                                    hue,
-                                  ),
-                                // ⚡ — свои события места, «+N» — события мест внутри.
-                                if (stats.events + stats.eventsInside > 0)
-                                  _Count(
-                                    Symbols.bolt_rounded,
-                                    stats.events,
-                                    s.onSurface,
-                                    plus: stats.eventsInside,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                ExcludeSemantics(child: _content(s)),
                 if (stats.worst != null)
                   Positioned(
                     top: 0,
@@ -315,6 +239,71 @@ class _Frame extends StatelessWidget {
       ],
     );
   }
+
+  /// Рамка «этажа» позади блока: i-я сдвинута вверх-вправо.
+  Widget _floor(ColorScheme s, int i) => Positioned.fill(
+    left: 6.0 * i,
+    top: -6.0 * i,
+    right: -6.0 * i,
+    bottom: 6.0 * i,
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: s.surface,
+        border: Border.all(color: hue.withValues(alpha: i == 1 ? .6 : .3)),
+      ),
+    ),
+  );
+
+  /// Название, уровни и счётчики внутри рамки.
+  Widget _content(ColorScheme s) => Padding(
+    // Справа место под ячейку проблемы — название под неё не заходит.
+    padding: EdgeInsets.fromLTRB(12, 12, stats.worst == null ? 10 : 48, 10),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          place.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: s.onSurface,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            height: 1.15,
+          ),
+        ),
+        const SizedBox(height: 2),
+        _Levels(place),
+        const Spacer(),
+        // Счётчики не заходят под ячейку «войти» (48 dp справа):
+        // три счётчика разом сжимаются, а не вылезают.
+        SizedBox(
+          width: blockSize.width - 12 - 48 - 4,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: _counts(s),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _counts(ColorScheme s) => Row(
+    spacing: 12,
+    children: [
+      _Count(Symbols.groups_rounded, stats.residents, s.onSurface),
+      if (stats.inner > 0) _Count(Symbols.stacks_rounded, stats.inner, hue),
+      // ⚡ — свои события места, «+N» — события мест внутри.
+      if (stats.events + stats.eventsInside > 0)
+        _Count(
+          Symbols.bolt_rounded,
+          stats.events,
+          s.onSurface,
+          plus: stats.eventsInside,
+        ),
+    ],
+  );
 }
 
 /// Кнопка «войти» в углу блока: зона нажатия 48×48. Внутри есть места — ячейка залита цветом
