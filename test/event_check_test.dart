@@ -163,18 +163,21 @@ void main() {
       ]);
     });
 
-    test('само событие удаляется: его враги и предметы — не ссылки на него', () {
-      expect(referencesTo(w, 'event-ambush'), isEmpty);
-      final after = deleteObject(
-        'w',
-        type: 'event',
-        id: 'event-ambush',
-        slug: 'zasada_u_lebyodki',
-        title: 'Засада у лебёдки',
-      ).applyTo(w);
-      expect(after.events, isEmpty);
-      expect(after.quests, hasLength(1));
-    });
+    test(
+      'само событие удаляется: его враги и предметы — не ссылки на него',
+      () {
+        expect(referencesTo(w, 'event-ambush'), isEmpty);
+        final after = deleteObject(
+          'w',
+          type: 'event',
+          id: 'event-ambush',
+          slug: 'zasada_u_lebyodki',
+          title: 'Засада у лебёдки',
+        ).applyTo(w);
+        expect(after.events, isEmpty);
+        expect(after.quests, hasLength(1));
+      },
+    );
 
     test('план ассистента не теряет события и не удаляет предмет события', () {
       final (copy, results) = applyToCopy(
@@ -189,7 +192,8 @@ void main() {
       expect(copy.events.single.title, 'Засада у лебёдки');
       expect(
         results.single.error,
-        contains('лежит в событии «Засада у лебёдки»'),
+        // Формулировка ошибки копии сменена решением владельца 08.10 (5б.4, Ступень 1).
+        contains('на «Ключ от лебёдки» стоит событие «Засада у лебёдки»'),
       );
       expect(copy.items.map((i) => i.slug), contains('klyuch'));
     });

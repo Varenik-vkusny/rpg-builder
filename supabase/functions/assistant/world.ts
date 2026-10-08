@@ -46,6 +46,16 @@ export interface WorldQuest {
   rewards: string[];
 }
 
+/// Событие — сцена в месте (VISION §7). Ассистент его видит, но не меняет (Ступень 1).
+/// Описание модели не отдаём: ссылки — slug, остальное ей не нужно.
+export interface WorldEvent {
+  slug: string;
+  title: string;
+  location: string;
+  enemies: { enemy: string; amount: number }[];
+  items: string[];
+}
+
 export interface World {
   title: string;
   setting: string;
@@ -56,15 +66,18 @@ export interface World {
   items: WorldItem[];
   characters: WorldCharacter[];
   quests: WorldQuest[];
+  events: WorldEvent[];
 }
 
 /// Ключ объекта в области: `character:ash_slime`.
 export const key = (type: string, slug: string) => `${type}:${slug}`;
 
-/// Вид цели шага квеста: поговорить и убить — персонаж, собрать — предмет, прийти — локация.
-export function stepTargetType(kind: string): ObjectType {
+/// Вид цели шага квеста: поговорить и убить — персонаж, собрать — предмет, прийти — локация,
+/// пройти событие — событие (оно не объект области: в `ObjectType` его нет).
+export function stepTargetType(kind: string): ObjectType | "event" {
   if (kind === "collect") return "item";
   if (kind === "visit") return "location";
+  if (kind === "event") return "event";
   return "character";
 }
 
@@ -80,6 +93,8 @@ function edges(w: World): [string, string][] {
     const me = key("quest", q.slug);
     if (q.giver) out.push([me, key("character", q.giver)]);
     for (const s of q.steps) {
+      // Событие — не объект области (Ступень 1): ключа event:* в области быть не должно.
+      if (s.kind === "event") continue;
       out.push([me, key(stepTargetType(s.kind), s.target)]);
     }
     for (const r of q.rewards) out.push([me, key("item", r)]);

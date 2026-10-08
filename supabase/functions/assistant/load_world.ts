@@ -17,14 +17,15 @@ export async function loadWorld(db: Db, projectId: string): Promise<World | null
   const { data: p, error } = await db.from("projects").select().eq("id", projectId).maybeSingle();
   if (error) throw new Error(`projects: ${error.message}`);
   if (!p) return null;
-  const [locations, items, characters, quests] = await Promise.all([
+  const [locations, items, characters, quests, events] = await Promise.all([
     rows(db, "locations", "*", projectId),
     rows(db, "items", "*", projectId),
     rows(db, "characters", "*, loot(item_id, chance)", projectId),
-    rows(db, "quests", "*, quest_steps(position, kind, character_id, item_id, location_id, amount), quest_rewards(item_id)", projectId),
+    rows(db, "quests", "*, quest_steps(position, kind, character_id, item_id, location_id, event_id, amount), quest_rewards(item_id)", projectId),
+    rows(db, "events", "*, event_enemies(character_id, amount), event_items(item_id)", projectId),
   ]);
   const slug = new Map<unknown, string>();
-  for (const r of [...locations, ...items, ...characters]) slug.set(r.id, r.slug as string);
+  for (const r of [...locations, ...items, ...characters, ...events]) slug.set(r.id, r.slug as string);
   const s = (id: unknown) => (id == null ? null : slug.get(id) ?? String(id));
 
   return {
@@ -52,10 +53,15 @@ export async function loadWorld(db: Db, projectId: string): Promise<World | null
         .sort((a, b) => (a.position as number) - (b.position as number))
         .map((st) => ({
           kind: st.kind as string,
-          target: s(st.character_id ?? st.item_id ?? st.location_id)!,
+          target: s(st.character_id ?? st.item_id ?? st.location_id ?? st.event_id)!,
           amount: st.amount as number | null,
         })),
       rewards: (q.quest_rewards as Row[]).map((r) => s(r.item_id)!),
+    })),
+    events: events.map((e) => ({
+      slug: e.slug as string, title: e.title as string, location: s(e.location_id)!,
+      enemies: (e.event_enemies as Row[]).map((x) => ({ enemy: s(x.character_id)!, amount: Number(x.amount) })),
+      items: (e.event_items as Row[]).map((x) => s(x.item_id)!),
     })),
   };
 }

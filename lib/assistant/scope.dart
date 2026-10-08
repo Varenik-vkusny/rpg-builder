@@ -15,6 +15,7 @@ String scopeKey(String type, String slug) => '$type:$slug';
 String stepTargetType(String stepKind) => switch (stepKind) {
   'collect' => 'item',
   'visit' => 'location',
+  'event' => 'event',
   _ => 'character',
 };
 

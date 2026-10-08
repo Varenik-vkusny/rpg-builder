@@ -1,6 +1,7 @@
 // Тексты для модели: правила мира и просьба автора.
 import type { AssistantRequest } from "./handler.ts";
 import type { World } from "./world.ts";
+import type { WorldEvent } from "./world.ts";
 import { key, objectsByKey } from "./world.ts";
 import { toShort } from "./ops.ts";
 
@@ -11,7 +12,7 @@ export function systemPrompt(w: World, scope: Set<string>): string {
     .join("\n");
   // Все поля объектов области сразу: модели не нужно читать их по одному (1 вызов на попытку).
   const data = [...scope].map((k) => `${k}: ${JSON.stringify(all.get(k)!.data)}`).join("\n");
-  const nested = nestedHint(w, scope);
+  const nested = nestedHint(w, scope) + eventsHint(w, scope);
   return `Ты — ассистент правок мира RPG. Автор описывает изменение одной фразой, ты составляешь план изменений.
 В базу ты не пишешь: план увидит автор, код проверит его на копии мира, и только автор решит, применять ли.
 
@@ -61,6 +62,35 @@ function nestedHint(w: World, scope: Set<string>): string {
   return `
 ${inner.join("\n")}
 Просьба про место относится и к местам внутри него: каждое вложенное место, которого она касается, меняй своей операцией update с новым description — изменить одно верхнее место мало.`;
+}
+
+/// Событие касается области: его место, враг или предмет в ней, либо на него ссылается шаг квеста области.
+function touchesScope(w: World, scope: Set<string>, e: WorldEvent): boolean {
+  return scope.has(key("location", e.location))
+    || e.enemies.some((x) => scope.has(key("character", x.enemy)))
+    || e.items.some((i) => scope.has(key("item", i)))
+    || w.quests.some((q) => scope.has(key("quest", q.slug)) && q.steps.some((s) => s.kind === "event" && s.target === e.slug));
+}
+
+/// События области (Ступень 1: ассистент их видит, но не меняет). Ссылки на объекты вне области
+/// не печатаются — остальной мир модели не виден. Нет событий для показа — пусто.
+function eventsHint(w: World, scope: Set<string>): string {
+  const lines = w.events.filter((e) => touchesScope(w, scope, e)).map((e) => {
+    const where = scope.has(key("location", e.location)) ? ` в location:${e.location}` : "";
+    const enemies = e.enemies.filter((x) => scope.has(key("character", x.enemy)))
+      .map((x) => `character:${x.enemy} × ${x.amount}`);
+    const items = e.items.filter((i) => scope.has(key("item", i))).map((i) => `item:${i}`);
+    const parts = [
+      ...(enemies.length ? [`враги ${enemies.join(", ")}`] : []),
+      ...(items.length ? [`предметы ${items.join(", ")}`] : []),
+    ];
+    return `- «${e.title}» (${e.slug})${where}${parts.length ? `: ${parts.join("; ")}` : ""}`;
+  });
+  if (lines.length === 0) return "";
+  return `
+События (сцены в местах) — план их не меняет:
+${lines.join("\n")}
+Врага, предмет и место, которые стоят в событии, удалять нельзя — переселяй или меняй. Шаг квеста вида event («пройти событие») не меняй.`;
 }
 
 export function userPrompt(req: AssistantRequest): string {

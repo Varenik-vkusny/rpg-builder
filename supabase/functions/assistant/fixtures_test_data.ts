@@ -38,6 +38,7 @@ export const mines: World = {
       rewards: ["kirka"],
     },
   ],
+  events: [],
 };
 
 const NO_FIELDS: PlanFields = {

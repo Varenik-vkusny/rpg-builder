@@ -57,6 +57,13 @@ void main() {
     );
     addTearDown(() => a.from('projects').delete().eq('id', world.id));
     await fillMines(repo, world.id);
+    // RPGB_WITH_EVENT=1 — мир с событием «Засада у лебёдки» (5б.4): модель должна не ломать его.
+    // Маркер мира читает scripts/compare_models.sh: прогон не на тот мир не засчитывается.
+    final withEvent = Platform.environment['RPGB_WITH_EVENT'] == '1';
+    if (withEvent) await addAmbush(repo, world.id);
+    debugPrint(
+      withEvent ? 'МИР: с событием «Засада у лебёдки»' : 'МИР: чистый',
+    );
     // RPGB_MODEL — «провайдер:модель» из providers.ts для сравнения (scripts/compare_models.sh).
     final model = Platform.environment['RPGB_MODEL'];
     final assistant = Recording(SupabaseAssistantService(a, model: model));
@@ -124,5 +131,15 @@ void main() {
     final reverted = await repo.snapshot(world.id);
     debugPrint('МИР ПОСЛЕ «ОТКАТИТЬ»:\n${show(reverted)}');
     expect(show(reverted), show(before), reason: 'откат вернул мир как был');
+    expect(
+      reverted.events.map((e) => e.title),
+      before.events.map((e) => e.title),
+      reason: 'событие осталось на месте',
+    );
+    expect(
+      before.events.length,
+      withEvent ? 1 : 0,
+      reason: 'мир тот, что просили',
+    );
   });
 }

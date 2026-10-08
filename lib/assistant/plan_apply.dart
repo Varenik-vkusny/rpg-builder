@@ -5,7 +5,7 @@ import '../content/character.dart';
 import '../content/event.dart';
 import '../content/item.dart';
 import '../content/location.dart';
-import '../content/manual_edit.dart' show referencesTo;
+import '../content/manual_edit.dart' show eventsOn, referencesWithoutEvents;
 import '../content/quest.dart';
 import 'plan.dart';
 import 'plan_labels.dart';
@@ -121,11 +121,20 @@ class _Copy {
 
   /// Удалить можно, только если на объект уже ничего не ссылается — как в базе
   /// (внешние ключи): иначе копия пропустит план, который база отвергнет.
-  void _removeUnreferenced<T>(List<T> list, int i, String id) {
-    final refs = referencesTo(snapshot, id);
-    if (refs.isNotEmpty) {
+  /// Событие называется отдельно: эту строку читают и автор, и модель (проблема на исправление).
+  void _removeUnreferenced<T>(List<T> list, int i, String id, String title) {
+    final onEvents = [
+      for (final e in eventsOn(snapshot, id))
+        'на «$title» стоит событие «${e.title}»',
+    ];
+    final refs = referencesWithoutEvents(snapshot, id);
+    if (onEvents.isNotEmpty || refs.isNotEmpty) {
       throw _OpError(
-        'на него ещё ссылаются (${refs.join('; ')}) — сначала убери ссылки',
+        [
+          ...onEvents,
+          if (refs.isNotEmpty)
+            'на него ещё ссылаются (${refs.join('; ')}) — сначала убери ссылки',
+        ].join('; '),
       );
     }
     list.removeAt(i);
@@ -159,7 +168,7 @@ class _Copy {
     final i = _slot(op, locations, (x) => x.slug, 'локации');
     final old = i < 0 ? null : locations[i];
     if (op.action == OpAction.delete) {
-      _removeUnreferenced(locations, i, old!.id);
+      _removeUnreferenced(locations, i, old!.id, old.title);
       return const [];
     }
     final min = _int(
@@ -204,7 +213,7 @@ class _Copy {
     final i = _slot(op, items, (x) => x.slug, 'предмета');
     final old = i < 0 ? null : items[i];
     if (op.action == OpAction.delete) {
-      _removeUnreferenced(items, i, old!.id);
+      _removeUnreferenced(items, i, old!.id, old.title);
       return const [];
     }
     if (old != null &&
@@ -273,7 +282,7 @@ class _Copy {
     final i = _slot(op, characters, (x) => x.slug, 'персонажа');
     final old = i < 0 ? null : characters[i];
     if (op.action == OpAction.delete) {
-      _removeUnreferenced(characters, i, old!.id);
+      _removeUnreferenced(characters, i, old!.id, old.title);
       return const [];
     }
     if (old != null &&
@@ -310,7 +319,7 @@ class _Copy {
     final i = _slot(op, quests, (x) => x.slug, 'квеста');
     final old = i < 0 ? null : quests[i];
     if (op.action == OpAction.delete) {
-      _removeUnreferenced(quests, i, old!.id);
+      _removeUnreferenced(quests, i, old!.id, old.title);
       return const [];
     }
     final giver = op.str('giver');
