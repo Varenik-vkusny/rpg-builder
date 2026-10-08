@@ -7,6 +7,7 @@ import '../content/content_repo.dart';
 import '../content/quest.dart';
 import '../worlds/world.dart';
 import 'history.dart';
+import '../ui/messages.dart';
 import '../ui/parts.dart';
 import '../ui/theme.dart';
 import 'plan_cards.dart';
@@ -54,6 +55,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         setState(() => _conflicts[set.id] = conflicts);
         return;
       }
+      if (!mounted || !await _confirmRevert()) return;
       await widget.repo.revertChangeSet(widget.world.id, set.id);
       _changed = true;
       setState(() {
@@ -65,6 +67,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (mounted) setState(() => _busy = null);
     }
   }
+
+  Future<bool> _confirmRevert() => confirmAction(
+    context,
+    title: 'Откатить набор?',
+    text: 'Мир вернётся к состоянию до этого набора изменений.',
+    action: 'Откатить',
+  );
 
   @override
   Widget build(BuildContext context) => PopScope(

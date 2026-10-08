@@ -18,6 +18,7 @@ void main() {
     await tapButton(t, 'open-rynok');
     await tapButton(t, 'object-edit');
     await tapButton(t, 'object-delete');
+    await tapButton(t, 'confirm-yes');
     expectCounts({'locations': 1, 'items': 2, 'characters': 2, 'quests': 1});
     expect(find.text('Применён: Удаление вручную: Рынок'), findsOneWidget);
     expect(content.journal, hasLength(1));

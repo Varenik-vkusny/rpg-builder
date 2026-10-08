@@ -6,6 +6,7 @@ import '../help/help.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
+import 'delete_confirm.dart';
 import 'event.dart';
 import 'event_edit.dart';
 import 'manual_save.dart';
@@ -163,6 +164,8 @@ class _NewEventScreenState extends State<NewEventScreen> {
 
   Future<void> _delete() async {
     final e = widget.editing!;
+    if (!await confirmDelete(context, _w, e.id, e.title)) return;
+    if (!mounted) return;
     setState(() => _busy = true);
     _done(
       await deleteManually(

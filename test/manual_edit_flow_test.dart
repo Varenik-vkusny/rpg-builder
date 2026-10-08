@@ -108,6 +108,7 @@ void main() {
       final content = await openMines(t);
       await open(t, 'obval');
       await tapButton(t, 'object-delete');
+      await tapButton(t, 'confirm-yes');
       expect(find.text('Изменить квест'), findsNothing);
       expect(await content.quests(minesId), isEmpty);
       expect(find.text('Обвал'), findsNothing);
@@ -117,6 +118,7 @@ void main() {
       await t.tap(find.text('Удаление вручную: Обвал'));
       await t.pumpAndSettle();
       await tapButton(t, 'revert-set-0');
+      await tapButton(t, 'confirm-yes');
       await t.pageBack();
       await t.pumpAndSettle();
       expect(find.text('Обвал'), findsOneWidget);

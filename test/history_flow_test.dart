@@ -46,6 +46,7 @@ void main() {
     expect(find.textContaining('Изменить · Локация'), findsOneWidget);
 
     await tapButton(t, 'revert-set-0');
+    await tapButton(t, 'confirm-yes');
     expect(
       find.byKey(const Key('revert-error-set-0'), skipOffstage: false),
       findsNothing,

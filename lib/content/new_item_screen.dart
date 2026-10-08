@@ -5,6 +5,7 @@ import '../help/help.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'content_repo.dart';
+import 'delete_confirm.dart';
 import 'item.dart';
 import 'manual_edit.dart';
 import 'manual_save.dart';
@@ -145,6 +146,8 @@ class _NewItemScreenState extends State<NewItemScreen> {
 
   Future<void> _delete() async {
     final e = widget.editing!;
+    if (!await confirmDelete(context, widget.snapshot!, e.id, e.title)) return;
+    if (!mounted) return;
     setState(() => _busy = true);
     final error = await deleteManually(
       widget.repo,

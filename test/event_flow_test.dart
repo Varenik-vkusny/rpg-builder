@@ -136,6 +136,7 @@ void main() {
     expect(find.text('× 5'), findsOneWidget);
     await tapButton(t, 'object-edit');
     await tapButton(t, 'object-delete');
+    await tapButton(t, 'confirm-yes');
     expect(await content.events(minesId), isEmpty);
     expect(
       content.journal.last.entry.request,
@@ -204,9 +205,11 @@ void main() {
     await tapButton(t, 'open-$slug');
     await tapButton(t, 'object-edit');
     await tapButton(t, 'object-delete');
+    await tapButton(t, 'confirm-yes');
     await tapButton(t, 'open-krysa');
     await tapButton(t, 'object-edit');
     await tapButton(t, 'object-delete');
+    await tapButton(t, 'confirm-yes');
     expect(
       (await content.characters(minesId)).map((c) => c.slug),
       isNot(contains('krysa')),

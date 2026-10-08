@@ -6,6 +6,7 @@ import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
+import 'delete_confirm.dart';
 import 'event.dart';
 import 'item.dart';
 import 'location.dart';
@@ -201,6 +202,8 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
 
   Future<void> _delete() async {
     final e = widget.editing!;
+    if (!await confirmDelete(context, widget.snapshot!, e.id, e.title)) return;
+    if (!mounted) return;
     setState(() => _busy = true);
     final error = await deleteManually(
       widget.repo,
