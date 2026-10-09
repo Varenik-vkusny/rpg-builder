@@ -1,4 +1,4 @@
-// ПОКАЗ, а не проверка: вопрос перед удалением и перед откатом. В check.sh не входит.
+// ПОКАЗ, а не проверка: вопрос перед удалением и перед откатом, сообщение «сделано». В check.sh не входит.
 // Запуск: flutter test --no-pub demo/messages_snapshots_test.dart → build/snapshots/msg-*.png
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +29,7 @@ void main() {
     await tapButton(t, 'object-delete');
     await shot(t, 'msg-1-delete-question');
     await tapButton(t, 'confirm-yes');
+    await shot(t, 'msg-3-done');
 
     await tapButton(t, 'history-open');
     await t.tap(find.text('Удаление вручную: Рынок'));

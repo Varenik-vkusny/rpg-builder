@@ -6,7 +6,7 @@ import '../help/help.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
-import 'delete_confirm.dart';
+import 'form_kit.dart';
 import 'event.dart';
 import 'event_edit.dart';
 import 'manual_save.dart';
@@ -159,7 +159,7 @@ class _NewEventScreenState extends State<NewEventScreen> {
         error = 'Не удалось сохранить: $e';
       }
     }
-    _done(error);
+    _done(error, _editing ? 'Сохранено: $title' : 'Создано: $title');
   }
 
   Future<void> _delete() async {
@@ -177,14 +177,15 @@ class _NewEventScreenState extends State<NewEventScreen> {
         slug: e.slug,
         title: e.title,
       ),
+      'Удалено: ${e.title}',
     );
   }
 
-  /// Нет ошибки — назад с «мир изменился»; есть — показать и остаться.
-  void _done(String? error) {
+  /// Нет ошибки — назад с «мир изменился» и словом, что сделано; есть — показать и остаться.
+  void _done(String? error, String done) {
     if (!mounted) return;
     if (error == null) {
-      Navigator.of(context).pop(true);
+      closeDone(context, done);
     } else {
       setState(() {
         _busy = false;

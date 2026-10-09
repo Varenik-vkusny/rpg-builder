@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../help/help.dart';
+import '../ui/messages.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
 
@@ -51,7 +52,7 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
           levelMax: _levels.end.round(),
         ),
       );
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) closeDone(context, 'Мир создан: $title');
     } catch (e) {
       if (mounted) {
         setState(() {

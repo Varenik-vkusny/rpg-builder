@@ -6,7 +6,7 @@ import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'character.dart';
 import 'content_repo.dart';
-import 'delete_confirm.dart';
+import 'form_kit.dart';
 import 'event.dart';
 import 'item.dart';
 import 'location.dart';
@@ -178,7 +178,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
       );
       if (!mounted) return;
       if (error == null) {
-        Navigator.of(context).pop(true);
+        closeDone(context, 'Сохранено: $title');
       } else {
         setState(() {
           _busy = false;
@@ -189,7 +189,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
     }
     try {
       await widget.repo.createQuest(widget.world.id, now);
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) closeDone(context, 'Создано: $title');
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -216,7 +216,7 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
     );
     if (!mounted) return;
     if (error == null) {
-      Navigator.of(context).pop(true);
+      closeDone(context, 'Удалено: ${e.title}');
     } else {
       setState(() {
         _busy = false;

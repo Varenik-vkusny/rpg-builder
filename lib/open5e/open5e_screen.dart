@@ -9,6 +9,7 @@ import '../assistant/plan_preview.dart';
 import '../assistant/plan_view.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
+import '../ui/messages.dart';
 import '../ui/parts.dart';
 import '../worlds/world.dart';
 import 'open5e_api.dart';
@@ -83,7 +84,7 @@ class _Open5eScreenState extends State<Open5eScreen> {
           slug: plan.ops.single.slug!,
         ),
       );
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) closeDone(context, 'Импортировано: ${_picked!.name}');
     } catch (e) {
       if (mounted) {
         setState(() {

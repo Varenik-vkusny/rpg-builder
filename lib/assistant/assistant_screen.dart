@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../help/help.dart';
+import '../ui/messages.dart';
 import '../worlds/world.dart';
 import 'assistant_service.dart';
 import 'change_set.dart';
@@ -274,7 +275,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
       apply
           ? await widget.repo.applyChangeSet(widget.world.id, draft)
           : await widget.repo.rejectChangeSet(widget.world.id, draft);
-      if (mounted) Navigator.of(context).pop(apply);
+      if (!mounted) return;
+      showDone(context, apply ? 'План применён' : 'План отклонён');
+      Navigator.of(context).pop(apply);
     } catch (e) {
       if (mounted) {
         setState(() {

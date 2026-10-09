@@ -5,7 +5,7 @@ import '../help/help.dart';
 import '../check/world_check.dart';
 import '../worlds/world.dart';
 import 'content_repo.dart';
-import 'delete_confirm.dart';
+import 'form_kit.dart';
 import 'item.dart';
 import 'manual_edit.dart';
 import 'manual_save.dart';
@@ -122,7 +122,7 @@ class _NewItemScreenState extends State<NewItemScreen> {
       );
       if (!mounted) return;
       if (error == null) {
-        Navigator.of(context).pop(true);
+        closeDone(context, 'Сохранено: $title');
       } else {
         setState(() {
           _busy = false;
@@ -133,7 +133,7 @@ class _NewItemScreenState extends State<NewItemScreen> {
     }
     try {
       await widget.repo.createItem(widget.world.id, now);
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) closeDone(context, 'Создано: $title');
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -160,7 +160,7 @@ class _NewItemScreenState extends State<NewItemScreen> {
     );
     if (!mounted) return;
     if (error == null) {
-      Navigator.of(context).pop(true);
+      closeDone(context, 'Удалено: ${e.title}');
     } else {
       setState(() {
         _busy = false;
