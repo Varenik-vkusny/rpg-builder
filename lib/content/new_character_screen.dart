@@ -124,9 +124,8 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
     final title = _title.text.trim();
     final (loot, lootError) = _readLoot();
     final (stats, statsError) = _readStats();
-    final problem = title.isEmpty
-        ? 'Нужно имя персонажа'
-        : statsError ?? lootError;
+    final problem =
+        titleError(title, 'Нужно имя персонажа') ?? statsError ?? lootError;
     if (problem != null) {
       setState(() => _error = problem);
       return;

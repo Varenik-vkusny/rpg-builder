@@ -120,11 +120,11 @@ class _NewEventScreenState extends State<NewEventScreen> {
     final title = _title.text.trim();
     final (enemies, enemiesError) = _readEnemies();
     final (itemIds, itemsError) = _readItems();
-    final problem = title.isEmpty
-        ? 'Нужно название события'
-        : _locationId == null
-        ? 'Выбери место — событие всегда идёт в месте'
-        : enemiesError ?? itemsError;
+    final problem =
+        titleError(title, 'Нужно название события') ??
+        (_locationId == null
+            ? 'Выбери место — событие всегда идёт в месте'
+            : enemiesError ?? itemsError);
     if (problem != null) {
       setState(() => _error = problem);
       return;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:supabase/supabase.dart';
 
+import '../ui/input_rules.dart';
 import 'auth_service.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -31,6 +32,12 @@ class _AuthScreenState extends State<AuthScreen> {
     final password = _password.text;
     if (email.isEmpty || password.length < 6) {
       setState(() => _error = 'Укажи почту и пароль не короче 6 символов');
+      return;
+    }
+    if (!looksLikeEmail(email)) {
+      setState(
+        () => _error = 'Почта выглядит неверно — нужен вид name@example.com',
+      );
       return;
     }
     setState(() {

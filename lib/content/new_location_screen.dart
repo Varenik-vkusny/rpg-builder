@@ -71,8 +71,9 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
 
   Future<void> _save() async {
     final title = _title.text.trim();
-    if (title.isEmpty) {
-      setState(() => _error = 'Нужно название локации');
+    final problem = titleError(title, 'Нужно название локации');
+    if (problem != null) {
+      setState(() => _error = problem);
       return;
     }
     setState(() {

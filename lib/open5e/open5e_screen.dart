@@ -44,7 +44,10 @@ class _Open5eScreenState extends State<Open5eScreen> {
 
   Future<void> _search() async {
     final q = _query.text.trim();
-    if (q.isEmpty) return;
+    if (q.isEmpty) {
+      setState(() => _error = 'Напиши, что искать, — название по-английски');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;

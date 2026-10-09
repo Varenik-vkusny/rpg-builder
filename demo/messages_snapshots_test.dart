@@ -1,4 +1,4 @@
-// ПОКАЗ, а не проверка: вопрос перед удалением и перед откатом, сообщение «сделано». В check.sh не входит.
+// ПОКАЗ, а не проверка: вопрос перед удалением и перед откатом, сообщение «сделано», почта неверного вида. В check.sh не входит.
 // Запуск: flutter test --no-pub demo/messages_snapshots_test.dart → build/snapshots/msg-*.png
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +22,16 @@ Future<FakeContent> openMines(WidgetTester t) async {
 }
 
 void main() {
+  testWidgets('почта неверного вида на входе', (t) async {
+    await t.runAsync(loadFont);
+    t.view.physicalSize = const Size(360, 780);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await pumpApp(t, wrap: frame);
+    await signUp(t, 'timur.mail.kz');
+    await shot(t, 'msg-4-email');
+  });
+
   testWidgets('вопрос перед удалением места и перед откатом', (t) async {
     await openMines(t);
     await tapButton(t, 'open-rynok');

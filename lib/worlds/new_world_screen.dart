@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../help/help.dart';
+import '../ui/input_rules.dart';
 import '../ui/messages.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
@@ -34,8 +35,9 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
 
   Future<void> _save() async {
     final title = _title.text.trim();
-    if (title.isEmpty) {
-      setState(() => _error = 'Нужно название мира');
+    final problem = titleError(title, 'Нужно название мира');
+    if (problem != null) {
+      setState(() => _error = problem);
       return;
     }
     setState(() {

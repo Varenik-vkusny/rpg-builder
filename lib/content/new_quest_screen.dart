@@ -149,11 +149,11 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
   Future<void> _save() async {
     final title = _title.text.trim();
     final (steps, stepsError) = _readSteps();
-    final problem = title.isEmpty
-        ? 'Нужно название квеста'
-        : _giverId == null
-        ? 'Выбери, кто выдаёт квест'
-        : stepsError ?? _rewardsError();
+    final problem =
+        titleError(title, 'Нужно название квеста') ??
+        (_giverId == null
+            ? 'Выбери, кто выдаёт квест'
+            : stepsError ?? _rewardsError());
     if (problem != null) {
       setState(() => _error = problem);
       return;

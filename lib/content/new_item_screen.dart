@@ -87,15 +87,15 @@ class _NewItemScreenState extends State<NewItemScreen> {
     final level = _int(_level, 1);
     final price = _int(_price, 0);
     final stat = _hasStat ? _int(_stat, 0) : null;
-    final problem = title.isEmpty
-        ? 'Нужно название предмета'
-        : level == null
-        ? 'Уровень — целое число от 1'
-        : price == null
-        ? 'Цена — целое число от 0'
-        : _hasStat && stat == null
-        ? '$_statLabel — целое число от 0'
-        : null;
+    final problem =
+        titleError(title, 'Нужно название предмета') ??
+        (level == null
+            ? 'Уровень — целое число от 1'
+            : price == null
+            ? 'Цена — целое число от 0'
+            : _hasStat && stat == null
+            ? '$_statLabel — целое число от 0'
+            : null);
     if (problem != null) {
       setState(() => _error = problem);
       return;
