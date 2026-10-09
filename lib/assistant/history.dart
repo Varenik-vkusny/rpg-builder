@@ -66,7 +66,8 @@ class ChangeSetEntry {
     status: SetStatus.values.byName(r['status'] as String),
     request: r['request'] as String,
     summary: r['summary'] as String,
-    createdAt: DateTime.parse(r['created_at'] as String),
+    // База отдаёт время по Гринвичу; автору показываем часы его телефона.
+    createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
     revertsId: r['reverts_id'] as String?,
     ops: [
       for (final o
