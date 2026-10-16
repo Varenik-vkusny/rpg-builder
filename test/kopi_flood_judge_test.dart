@@ -109,4 +109,19 @@ void main() {
     ]);
     expect(judge(ok, const []), isEmpty);
   });
+
+  test('запасная приёмка: третий ответ автора — провал, два — ещё нет', () {
+    final ok = withOps([
+      ...old.plan.ops.where((o) => o.type != OpType.character),
+      shaft,
+    ]);
+    // Как в прогоне 16.10 №4: про жителя, про места внутри, про квест.
+    const three = [
+      'Удалить жителя «Слизень»?',
+      'Места внутри «Копи» — «Штольня №3» — план не меняет. Изменить и их?',
+      'Квест «Обвал» содержит шаги со Слизнем. Как поступить?',
+    ];
+    expect(judge(ok, three), [contains('ответить 3 раза — больше 2')]);
+    expect(judge(ok, three.take(2).toList()), isEmpty);
+  });
 }
