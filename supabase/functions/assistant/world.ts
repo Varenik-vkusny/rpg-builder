@@ -46,11 +46,12 @@ export interface WorldQuest {
   rewards: string[];
 }
 
-/// Событие — сцена в месте (VISION §7). Ассистент его видит, но не меняет (Ступень 1).
-/// Описание модели не отдаём: ссылки — slug, остальное ей не нужно.
+/// Событие — сцена в месте (VISION §7). Ассистент его видит (Ступень 1) и меняет (Ступень 2).
+/// В подсказку модели описание не идёт (ссылки — slug); оно нужно серверу и «было → стало».
 export interface WorldEvent {
   slug: string;
   title: string;
+  description?: string;
   location: string;
   enemies: { enemy: string; amount: number }[];
   items: string[];
@@ -110,6 +111,26 @@ export function objectsByKey(w: World): Map<string, { type: ObjectType; title: s
   for (const x of w.characters) m.set(key("character", x.slug), { type: "character", title: x.title, data: x });
   for (const x of w.quests) m.set(key("quest", x.slug), { type: "quest", title: x.title, data: x });
   return m;
+}
+
+/// События, которых касается область: место, враг или предмет события в области, либо на событие
+/// ссылается шаг квеста области. Ключи `event:<slug>`. Область (scopeOf) от них не меняется:
+/// это отдельное правило допуска для плана (outOfScope, repair) и для подсказки.
+export function eventKeysInScope(w: World, scope: Set<string>): Set<string> {
+  const out = new Set<string>();
+  for (const e of w.events) {
+    const touches = scope.has(key("location", e.location))
+      || e.enemies.some((x) => scope.has(key("character", x.enemy)))
+      || e.items.some((i) => scope.has(key("item", i)))
+      || w.quests.some((q) => scope.has(key("quest", q.slug)) && q.steps.some((s) => s.kind === "event" && s.target === e.slug));
+    if (touches) out.add(key("event", e.slug));
+  }
+  return out;
+}
+
+/// Все ключи мира: объекты и события.
+export function worldKeys(w: World): Set<string> {
+  return new Set([...objectsByKey(w).keys(), ...w.events.map((e) => key("event", e.slug))]);
 }
 
 /// Сколько связей от корня области до объекта включаем.

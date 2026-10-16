@@ -13,7 +13,7 @@ import { objectsByKey, scopeOf, stepTargetType } from "./world.ts";
 
 const SLUG = "zasada_u_lebedki";
 const ambush = (o: Partial<WorldEvent> = {}): WorldEvent => ({
-  slug: SLUG, title: "Засада у лебёдки", location: "shtolnya_3",
+  slug: SLUG, title: "Засада у лебёдки", description: "", location: "shtolnya_3",
   enemies: [{ enemy: "slizen", amount: 3 }], items: ["klyuch"], ...o,
 });
 const withEvents = (...events: WorldEvent[]): World => ({ ...mines, events });
@@ -32,12 +32,12 @@ test("событие: мир без событий — подсказка пре
 
 test("событие: в месте области — строка с врагом × числом и предметом", () => {
   const text = prompt(withEvents(ambush()));
-  assert.match(text, /События \(сцены в местах\) — план их не меняет:/);
+  assert.match(text, /События \(сцены в местах\):/);
   assert.match(
     text,
     /\n- «Засада у лебёдки» \(zasada_u_lebedki\) в location:shtolnya_3: враги character:slizen × 3; предметы item:klyuch\n/,
   );
-  assert.match(text, /удалять нельзя/);
+  assert.match(text, /удалять можно только после удаления события/);
 });
 
 test("событие: место вне области, но враг из области — показано без места и без чужого", () => {
@@ -123,7 +123,7 @@ const rows = {
     quest_steps: [{ position: 1, kind: "event", character_id: null, item_id: null, location_id: null, event_id: "E1", amount: null }],
   }],
   events: [{
-    id: "E1", slug: SLUG, title: "Засада у лебёдки", location_id: "L1",
+    id: "E1", slug: SLUG, title: "Засада у лебёдки", description: "Слизни у лебёдки", location_id: "L1",
     event_enemies: [{ character_id: "C1", amount: 3 }], event_items: [{ item_id: "I1" }],
   }],
 };
@@ -131,7 +131,7 @@ const rows = {
 test("событие: загрузка мира — строки базы со связями и шагом превращаются в вид со slug", async () => {
   const w = await loadWorld(fakeDb(rows), "w1");
   assert.deepEqual(w!.events, [{
-    slug: SLUG, title: "Засада у лебёдки", location: "shtolnya_3",
+    slug: SLUG, title: "Засада у лебёдки", description: "Слизни у лебёдки", location: "shtolnya_3",
     enemies: [{ enemy: "slizen", amount: 3 }], items: ["klyuch"],
   }]);
   assert.deepEqual(w!.quests[0].steps, [{ kind: "event", target: SLUG, amount: null }]);

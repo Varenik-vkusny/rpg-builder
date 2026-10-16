@@ -3,7 +3,18 @@
 
 enum OpAction { create, update, delete }
 
-enum OpType { location, item, character, quest, loot, questStep, questReward }
+enum OpType {
+  location,
+  item,
+  character,
+  quest,
+  loot,
+  questStep,
+  questReward,
+  event,
+  eventEnemy,
+  eventItem,
+}
 
 const _typeNames = {
   'location': OpType.location,
@@ -13,6 +24,9 @@ const _typeNames = {
   'loot': OpType.loot,
   'quest_step': OpType.questStep,
   'quest_reward': OpType.questReward,
+  'event': OpType.event,
+  'event_enemy': OpType.eventEnemy,
+  'event_item': OpType.eventItem,
 };
 
 /// Вид операции по имени из журнала или функции («quest_step»); неизвестное — null.
@@ -27,6 +41,7 @@ class PlanOp {
     this.character,
     this.item,
     this.quest,
+    this.event,
     this.position,
     this.fields = const {},
     this.repairs = const [],
@@ -38,6 +53,7 @@ class PlanOp {
   final String? character;
   final String? item;
   final String? quest;
+  final String? event;
   final int? position;
   final Map<String, Object> fields;
 
@@ -60,6 +76,7 @@ class PlanOp {
       character: j['character'] as String?,
       item: j['item'] as String?,
       quest: j['quest'] as String?,
+      event: j['event'] as String?,
       position: (j['position'] as num?)?.toInt(),
       fields: {
         for (final MapEntry(:key, :value)
@@ -80,6 +97,7 @@ class PlanOp {
     'character': character,
     'item': item,
     'quest': quest,
+    'event': event,
     'position': position,
     'fields': {
       for (final f in planFieldNames) f: fields[f],

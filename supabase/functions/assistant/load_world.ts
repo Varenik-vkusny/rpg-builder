@@ -59,7 +59,8 @@ export async function loadWorld(db: Db, projectId: string): Promise<World | null
       rewards: (q.quest_rewards as Row[]).map((r) => s(r.item_id)!),
     })),
     events: events.map((e) => ({
-      slug: e.slug as string, title: e.title as string, location: s(e.location_id)!,
+      slug: e.slug as string, title: e.title as string, description: (e.description as string) ?? "",
+      location: s(e.location_id)!,
       enemies: (e.event_enemies as Row[]).map((x) => ({ enemy: s(x.character_id)!, amount: Number(x.amount) })),
       items: (e.event_items as Row[]).map((x) => s(x.item_id)!),
     })),

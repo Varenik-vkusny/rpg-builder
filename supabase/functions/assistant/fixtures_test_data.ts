@@ -51,7 +51,7 @@ const NO_FIELDS: PlanFields = {
 export function op(o: Partial<Omit<PlanOp, "fields">> & { fields?: Partial<PlanFields> }): PlanOp {
   return {
     action: "update", type: "location", slug: null, character: null, item: null,
-    quest: null, position: null, ...o, fields: { ...NO_FIELDS, ...o.fields },
+    quest: null, event: null, position: null, ...o, fields: { ...NO_FIELDS, ...o.fields },
   };
 }
 

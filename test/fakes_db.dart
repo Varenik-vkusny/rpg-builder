@@ -248,6 +248,8 @@ class FakeContent implements ContentRepo {
     OpType.loot => '${op.character}/${op.item}',
     OpType.questReward => '${op.quest}/${op.item}',
     OpType.questStep => '${op.quest}#${op.position}',
+    OpType.eventEnemy => '${op.event}/${op.character}',
+    OpType.eventItem => '${op.event}/${op.item}',
     _ => op.slug ?? '',
   };
 

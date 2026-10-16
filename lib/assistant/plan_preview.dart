@@ -42,9 +42,10 @@ String _id(Problem p) => '${p.rule}|${p.objectId}|${p.message}';
 /// [scope] null — у плана нет области (импорт образца: только создаёт, ни на что не ссылается).
 PlanPreview previewPlan(WorldSnapshot world, Plan plan, Scope? scope) {
   final (copy, ops) = applyToCopy(world, plan);
+  final keys = scope == null ? const <String>{} : scopeOf(world, scope);
   final outside = scope == null
       ? const <int, List<String>>{}
-      : outOfScope(plan, scopeOf(world, scope));
+      : outOfScope(plan, keys, eventKeysInScope(world, keys));
   final problems = [
     for (final (i, r) in ops.indexed)
       if (r.error != null)

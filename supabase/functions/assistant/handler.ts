@@ -4,7 +4,7 @@ import type { AuthorQuestion, Plan } from "./plan.ts";
 import { authorCheck, isServerQuestion, SERVER_QUESTIONS } from "./inner_places.ts";
 import { outOfScope, TOOLS } from "./plan.ts";
 import type { ScopeType, World } from "./world.ts";
-import { key, objectsByKey, scopeOf } from "./world.ts";
+import { eventKeysInScope, key, objectsByKey, scopeOf, worldKeys as allWorldKeys } from "./world.ts";
 import { systemPrompt, userPrompt } from "./prompt.ts";
 import { checkSchema } from "./schema_check.ts";
 import { toPlan } from "./ops.ts";
@@ -275,7 +275,9 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
   const mayAsk = req.attempt === 0 && modelAsked < MAX_QUESTIONS;
   const now = deps.now ?? Date.now;
   const call = firstCall(req, world, scope, mayAsk, now() + TOTAL_MS);
-  const worldKeys = new Set(objectsByKey(world).keys());
+  // Допуск плана: область плюс события, которых она касается (область событиями не растёт).
+  const allowed = new Set([...scope, ...eventKeysInScope(world, scope)]);
+  const worldKeys = allWorldKeys(world);
   const usage = { input_tokens: 0, output_tokens: 0 };
   let outside = 0, schemaFails = 0;
   // Что модель делала по ходам — уходит в ответ, если плана так и не будет.
@@ -301,7 +303,7 @@ export async function handle(body: unknown, deps: Deps): Promise<Reply> {
     }
     const proposed = uses.find((b) => b.name === "propose_plan");
     if (proposed) {
-      const r = planReply(proposed.input, scope, worldKeys, usage);
+      const r = planReply(proposed.input, allowed, worldKeys, usage);
       if ("status" in r) {
         // Места внутри места и удаление жителя — с согласия автора (inner_places.ts).
         const check = authorCheck(r.body.plan as Plan, world, scope, req.answers, req.attempt === 0);

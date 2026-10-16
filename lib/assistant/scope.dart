@@ -71,6 +71,33 @@ Set<String> scopeOf(WorldSnapshot w, Scope scope) {
   return seen;
 }
 
+/// События, которых касается область: место, враг или предмет события в области
+/// либо на событие ведёт шаг квеста области. Ключи `event:<slug>`. Область (scopeOf)
+/// от них не меняется — это отдельное правило допуска плана; то же, что
+/// eventKeysInScope на сервере (supabase/functions/assistant/world.ts).
+Set<String> eventKeysInScope(WorldSnapshot w, Set<String> scope) {
+  final slugOfId = {
+    for (final l in w.locations) l.id: scopeKey('location', l.slug),
+    for (final i in w.items) i.id: scopeKey('item', i.slug),
+    for (final c in w.characters) c.id: scopeKey('character', c.slug),
+  };
+  bool inScope(String? id) => scope.contains(slugOfId[id]);
+  final questTargets = {
+    for (final q in w.quests)
+      if (scope.contains(scopeKey('quest', q.slug)))
+        for (final s in q.steps)
+          if (s.kind == StepKind.event) s.targetId,
+  };
+  return {
+    for (final e in w.events)
+      if (inScope(e.locationId) ||
+          e.enemies.any((x) => inScope(x.characterId)) ||
+          e.items.any((x) => inScope(x.itemId)) ||
+          questTargets.contains(e.id))
+        scopeKey('event', e.slug),
+  };
+}
+
 /// Что операция меняет, создаёт и на что ссылается — ключами.
 ({List<String> changes, String? creates, List<String> refs}) _touched(
   PlanOp op,
@@ -96,6 +123,18 @@ Set<String> scopeOf(WorldSnapshot w, Scope scope) {
         creates: null,
         refs: [...refs, scopeKey('item', op.item ?? '')],
       );
+    case OpType.eventEnemy || OpType.eventItem:
+      return (
+        changes: [scopeKey('event', op.event ?? '')],
+        creates: null,
+        refs: [
+          ...refs,
+          if (op.type == OpType.eventEnemy)
+            scopeKey('character', op.character ?? '')
+          else
+            scopeKey('item', op.item ?? ''),
+        ],
+      );
     case OpType.questStep || OpType.questReward:
       return (
         changes: [scopeKey('quest', op.quest ?? '')],
@@ -114,15 +153,24 @@ Set<String> scopeOf(WorldSnapshot w, Scope scope) {
 }
 
 /// Номера операций (с 0) вне области и что именно вне её.
-/// Менять, удалять и упоминать можно область и созданное самим планом.
-Map<int, List<String>> outOfScope(Plan plan, Set<String> scope) {
+/// Менять, удалять и упоминать можно область, события, которых она касается
+/// ([events], см. eventKeysInScope), и созданное самим планом.
+Map<int, List<String>> outOfScope(
+  Plan plan,
+  Set<String> scope, [
+  Set<String> events = const {},
+]) {
   final created = {for (final op in plan.ops) ?_touched(op).creates};
   return {
     for (final (i, op) in plan.ops.indexed)
-      if ([
-            ..._touched(op).changes,
-            ..._touched(op).refs,
-          ].where((k) => !scope.contains(k) && !created.contains(k)).toList()
+      if ([..._touched(op).changes, ..._touched(op).refs]
+              .where(
+                (k) =>
+                    !scope.contains(k) &&
+                    !events.contains(k) &&
+                    !created.contains(k),
+              )
+              .toList()
           case final bad when bad.isNotEmpty)
         i: bad,
   };

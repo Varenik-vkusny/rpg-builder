@@ -8,6 +8,7 @@
       "character": null,
       "item": null,
       "quest": null,
+      "event": null,
       "position": null,
       "fields": {
         "title": null,
@@ -39,6 +40,7 @@
       "character": null,
       "item": null,
       "quest": null,
+      "event": null,
       "position": null,
       "fields": {
         "title": "Утопленник",
@@ -70,6 +72,7 @@
       "character": "slizen",
       "item": "klyuch",
       "quest": null,
+      "event": null,
       "position": null,
       "fields": {
         "title": null,
@@ -101,6 +104,7 @@
       "character": "utoplennik",
       "item": "klyuch",
       "quest": null,
+      "event": null,
       "position": null,
       "fields": {
         "title": null,
@@ -132,6 +136,7 @@
       "character": null,
       "item": null,
       "quest": "obval",
+      "event": null,
       "position": 2,
       "fields": {
         "title": null,

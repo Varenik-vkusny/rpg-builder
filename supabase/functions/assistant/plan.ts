@@ -28,11 +28,13 @@ export interface PlanFields {
 
 export interface PlanOp {
   action: "create" | "update" | "delete";
-  type: "location" | "item" | "character" | "quest" | "loot" | "quest_step" | "quest_reward";
+  type: "location" | "item" | "character" | "quest" | "loot" | "quest_step" | "quest_reward" | "event" | "event_enemy" | "event_item";
   slug: string | null;
   character: string | null;
   item: string | null;
   quest: string | null;
+  /// slug события (event_enemy, event_item).
+  event: string | null;
   position: number | null;
   fields: PlanFields;
   /// Что сервер поправил в операции (repair.ts) — автор видит пометкой в «было → стало».
@@ -127,6 +129,10 @@ export function refSlots(op: PlanOp): RefSlot[] {
   const out: RefSlot[] = [];
   const f = op.fields;
   if (OBJECTS.includes(op.type) && op.action !== "create") out.push({ type: op.type, get: () => op.slug, set: (v) => (op.slug = v) });
+  if (op.type === "event" && op.action !== "create") out.push({ type: "event", get: () => op.slug, set: (v) => (op.slug = v) });
+  if (op.type === "event_enemy" || op.type === "event_item") out.push({ type: "event", get: () => op.event, set: (v) => (op.event = v) });
+  if (op.type === "event_enemy") out.push({ type: "character", get: () => op.character, set: (v) => (op.character = v) });
+  if (op.type === "event_item") out.push({ type: "item", get: () => op.item, set: (v) => (op.item = v) });
   if (op.type === "loot") out.push({ type: "character", get: () => op.character, set: (v) => (op.character = v) });
   if (op.type === "loot" || op.type === "quest_reward") out.push({ type: "item", get: () => op.item, set: (v) => (op.item = v) });
   if (op.type === "quest_step" || op.type === "quest_reward") out.push({ type: "quest", get: () => op.quest, set: (v) => (op.quest = v) });
@@ -147,7 +153,7 @@ export const refKeys = (op: PlanOp) => refSlots(op).map((s) => key(s.type, s.get
 
 /// Ключ объекта, который операция создаёт; null — не создаёт.
 export const createdKey = (op: PlanOp) =>
-  op.action === "create" && OBJECTS.includes(op.type) ? key(op.type, op.slug ?? "") : null;
+  op.action === "create" && (OBJECTS.includes(op.type) || op.type === "event") ? key(op.type, op.slug ?? "") : null;
 
 /// Операции вне области — человеческими строками. Пусто — план в границах.
 /// Меняет, удаляет или ссылается на объект вне области — нельзя; созданное планом — можно.

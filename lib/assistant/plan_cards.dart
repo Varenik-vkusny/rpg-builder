@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../content/event_pages.dart' show eventIcon;
 import '../ui/parts.dart';
 import 'plan.dart';
 import 'plan_apply.dart';
@@ -27,6 +28,9 @@ const fieldIcons = <String, IconData>{
   'Шанс': Symbols.percent_rounded,
   'Количество': Symbols.tag_rounded,
   'Шаг': Symbols.flag_rounded,
+  'Враг': Symbols.skull_rounded,
+  'Предмет': Symbols.deployed_code_rounded,
+  'Событие': eventIcon,
 };
 
 IconData opIcon(PlanOp op) => switch (op.type) {
@@ -37,6 +41,9 @@ IconData opIcon(PlanOp op) => switch (op.type) {
   OpType.quest || OpType.questStep => Symbols.flag_rounded,
   OpType.loot => Symbols.inventory_2_rounded,
   OpType.questReward => Symbols.redeem_rounded,
+  OpType.event => eventIcon,
+  OpType.eventEnemy => Symbols.skull_rounded,
+  OpType.eventItem => Symbols.deployed_code_rounded,
 };
 
 Change changeOf(OpAction a) => switch (a) {

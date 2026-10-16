@@ -11,6 +11,7 @@ import 'plan.dart';
 import 'plan_labels.dart';
 import 'scope.dart';
 
+part 'plan_apply_events.dart';
 part 'plan_apply_links.dart';
 
 /// Одно изменённое поле: подпись, было, стало (null — значения нет).
@@ -50,15 +51,15 @@ class _Copy {
       items = [...w.items],
       characters = [...w.characters],
       quests = [...w.quests],
-      events = w.events;
+      events = [...w.events];
 
   final List<Location> locations;
   final List<Item> items;
   final List<Character> characters;
   final List<Quest> quests;
 
-  /// События план не трогает (ассистент их не знает), но копия их помнит:
-  /// по ним считаются ссылки и «предмет можно получить».
+  /// События: план их меняет (event, event_enemy, event_item), по ним же
+  /// считаются ссылки и «предмет можно получить».
   final List<Event> events;
 
   WorldSnapshot get snapshot => WorldSnapshot(
@@ -82,6 +83,9 @@ class _Copy {
         OpType.loot => _loot(op),
         OpType.questStep => _step(op),
         OpType.questReward => _reward(op),
+        OpType.event => _event(op),
+        OpType.eventEnemy => _eventEnemy(op),
+        OpType.eventItem => _eventItem(op),
       });
     } on _OpError catch (e) {
       return OpResult(op, title, const [], e.message);
@@ -104,6 +108,7 @@ class _Copy {
   String _idOf(String type, String slug) => switch (type) {
     'location' => locations[_at(locations, (x) => x.slug, slug, 'локации')].id,
     'item' => items[_at(items, (x) => x.slug, slug, 'предмета')].id,
+    'event' => events[_at(events, (x) => x.slug, slug, 'события')].id,
     _ => characters[_at(characters, (x) => x.slug, slug, 'персонажа')].id,
   };
 

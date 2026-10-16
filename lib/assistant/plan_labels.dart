@@ -26,6 +26,11 @@ const _fieldLabels = {
   'giver': 'Выдаёт',
   'chance': 'Шанс',
   'amount': 'Количество',
+  // Журнал называет связи по колонкам («character_id» без «_id»): слова вместо ключей.
+  'character': 'Враг',
+  'item': 'Предмет',
+  'event': 'Событие',
+  'quest': 'Квест',
 };
 
 String fieldLabel(String f) => _fieldLabels[f] ?? f;
@@ -44,6 +49,9 @@ const _types = {
   OpType.loot: 'Добыча',
   OpType.questStep: 'Шаг квеста',
   OpType.questReward: 'Награда',
+  OpType.event: 'Событие',
+  OpType.eventEnemy: 'Враг в событии',
+  OpType.eventItem: 'Предмет в событии',
 };
 
 /// Заголовок операции из журнала: «Изменить · Локация «Штольня №3»».
@@ -77,6 +85,7 @@ class PlanLabels {
       'location' =>
         w.locations.where((x) => x.slug == slug).map((x) => x.title),
       'item' => w.items.where((x) => x.slug == slug).map((x) => x.title),
+      'event' => w.events.where((x) => x.slug == slug).map((x) => x.title),
       'character' =>
         w.characters.where((x) => x.slug == slug).map((x) => x.title),
       _ => w.quests.where((x) => x.slug == slug).map((x) => x.title),
@@ -89,6 +98,10 @@ class PlanLabels {
     final what = switch (op.type) {
       OpType.loot =>
         '${titleOf('character', op.character)} → ${titleOf('item', op.item)}',
+      OpType.eventEnemy =>
+        '${titleOf('event', op.event)} → ${titleOf('character', op.character)}',
+      OpType.eventItem =>
+        '${titleOf('event', op.event)} → ${titleOf('item', op.item)}',
       OpType.questStep => '${titleOf('quest', op.quest)}, шаг ${op.position}',
       OpType.questReward =>
         '${titleOf('quest', op.quest)} → ${titleOf('item', op.item)}',

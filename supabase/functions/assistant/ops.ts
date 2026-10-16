@@ -33,7 +33,7 @@ function fieldSchema(f: string) {
 }
 
 type OpType = PlanOp["type"];
-type IdName = "slug" | "character" | "item" | "quest" | "position";
+type IdName = "slug" | "character" | "item" | "quest" | "position" | "event";
 
 /// Вид операции: чем она указывает на объект и какие поля у неё есть.
 const KINDS: Record<OpType, { about: string; ids: IdName[]; fields: (keyof PlanFields)[] }> = {
@@ -56,6 +56,17 @@ const KINDS: Record<OpType, { about: string; ids: IdName[]; fields: (keyof PlanF
     fields: ["step_kind", "target", "amount"],
   },
   quest_reward: { about: "Награда квеста: quest — slug квеста, item — slug предмета", ids: ["quest", "item"], fields: [] },
+  event: {
+    about: "Событие (сцена в месте) по slug; при создании нужны title и location — slug места",
+    ids: ["slug"],
+    fields: ["title", "description", "location"],
+  },
+  event_enemy: {
+    about: "Враг в событии: event — slug события, character — slug врага (role enemy); amount — сколько, от 1",
+    ids: ["event", "character"],
+    fields: ["amount"],
+  },
+  event_item: { about: "Предмет в событии: event — slug события, item — slug предмета", ids: ["event", "item"], fields: [] },
 };
 
 export const OP_TYPES = Object.keys(KINDS) as OpType[];
@@ -121,6 +132,7 @@ export function toPlan(input: unknown): { plan: Plan | null; errors: string[] } 
       character: id("character") as string | null,
       item: id("item") as string | null,
       quest: id("quest") as string | null,
+      event: id("event") as string | null,
       position: id("position") as number | null,
       fields,
     });

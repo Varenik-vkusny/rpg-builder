@@ -50,28 +50,67 @@ function fixTypos(ops: PlanOp[], scope: Set<string>, world: Set<string>) {
 }
 
 const own = (op: PlanOp) => key(op.type, op.slug ?? "");
-const isObj = (op: PlanOp) => OBJECTS.includes(op.type);
+/// Объекты с собственным slug; событие — тоже (создаётся раньше своих врагов и предметов).
+const ORDER: string[] = [...OBJECTS, "event"];
+const isObj = (op: PlanOp) => ORDER.includes(op.type);
+
+/// Порядок удалений вокруг событий: сначала враг/предмет события, потом само событие,
+/// потом место, персонаж и предмет, на которые оно ссылалось. Ниже — ранг: меньший идёт раньше.
+function deleteRank(op: PlanOp): number | null {
+  if (op.action !== "delete") return null;
+  if (op.type === "event_enemy" || op.type === "event_item") return 0;
+  if (op.type === "event") return 1;
+  return isObj(op) ? 2 : null;
+}
+
+function mustPrecede(a: PlanOp, b: PlanOp): boolean {
+  const ra = deleteRank(a), rb = deleteRank(b);
+  return ra !== null && rb !== null && ra < rb;
+}
 
 /// Сначала создать, потом переписать ссылки, потом удалить. Создание двигаем вперёд, только если
 /// на объект ссылаются раньше; удаление объекта — в конец, если после него есть правки.
 /// Остальные операции — в порядке модели. Объект и создаётся, и удаляется — не трогаем.
 function fixOrder(ops: PlanOp[]): PlanOp[] {
   const made = new Set(ops.filter((o) => isObj(o) && o.action === "create").map(own));
-  if (ops.some((o) => isObj(o) && o.action === "delete" && made.has(own(o)))) return ops;
-  const early = ops.filter((o, i) =>
-    isObj(o) && o.action === "create" && ops.slice(0, i).some((x) => refKeys(x).includes(own(o)))
-  );
-  // Удаление — всегда после правок: шаг квеста, переписанный с удаляемого врага на нового,
-  // в самой операции удаляемого не упоминает (живой прогон 26.09, gpt-oss-120b).
-  const late = ops.filter((o, i) =>
-    isObj(o) && o.action === "delete" && ops.slice(i + 1).some((x) => !(isObj(x) && x.action === "delete"))
-  );
-  const rank = (o: PlanOp) => OBJECTS.indexOf(o.type);
-  early.sort((a, b) => rank(a) - rank(b));
-  late.sort((a, b) => rank(b) - rank(a));
-  const out = [...early, ...ops.filter((o) => !early.includes(o) && !late.includes(o)), ...late];
-  for (const o of [...early, ...late]) {
-    note(o, `порядок: была операция ${ops.indexOf(o) + 1}, стала ${out.indexOf(o) + 1}`);
+  let out = ops;
+  const moved = new Set<PlanOp>();
+  if (!ops.some((o) => isObj(o) && o.action === "delete" && made.has(own(o)))) {
+    const creates = ops.filter((o) => isObj(o) && o.action === "create");
+    const early = new Set(creates.filter((o) => ops.slice(0, ops.indexOf(o)).some((x) => refKeys(x).includes(own(o)))));
+    // Переносимое создание тянет за собой создания, на которые оно само ссылается:
+    // событие с новым местом не должно оказаться раньше места.
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const o of creates) {
+        if (early.has(o)) continue;
+        if ([...early].some((e) => refKeys(e).includes(own(o)))) early.add(o), grew = true;
+      }
+    }
+    // Удаление — всегда после правок: шаг квеста, переписанный с удаляемого врага на нового,
+    // в самой операции удаляемого не упоминает (живой прогон 26.09, gpt-oss-120b).
+    const late = ops.filter((o, i) =>
+      isObj(o) && o.action === "delete" && ops.slice(i + 1).some((x) => !(isObj(x) && x.action === "delete"))
+    );
+    const rank = (o: PlanOp) => ORDER.indexOf(o.type);
+    const earlyList = ops.filter((o) => early.has(o)).sort((a, b) => rank(a) - rank(b));
+    late.sort((a, b) => rank(b) - rank(a));
+    out = [...earlyList, ...ops.filter((o) => !early.has(o) && !late.includes(o)), ...late];
+    for (const o of [...earlyList, ...late]) moved.add(o);
+  }
+  // Удаления вокруг событий: переносим вперёд то, что должно идти раньше.
+  for (let n = 0; n < out.length * out.length; n++) {
+    const j = out.findIndex((b, jj) => out.slice(0, jj).some((a) => mustPrecede(b, a)));
+    if (j < 0) break;
+    const i = out.findIndex((a) => mustPrecede(out[j], a));
+    const [o] = out.splice(j, 1);
+    out.splice(i, 0, o);
+    moved.add(o);
+  }
+  for (const o of out) {
+    if (moved.has(o) && ops.indexOf(o) !== out.indexOf(o)) {
+      note(o, `порядок: была операция ${ops.indexOf(o) + 1}, стала ${out.indexOf(o) + 1}`);
+    }
   }
   return out;
 }
