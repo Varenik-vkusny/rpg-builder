@@ -1,0 +1,922 @@
+<title>Холст мира</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=add,arrow_back,auto_awesome,bolt,check,close,delete,error,flag,forum,gesture,hardware,help,key,location_on,menu_book,pan_tool,person,pinch,skull,south_east,swords,touch_app,undo,visibility,warning,zoom_in,zoom_out&display=block">
+<style>
+/* Раскладка: экран телефона — полоса прототипа (вид А/Б, мир), шапка с путём, холст мира с полкой
+   у нижнего края, снизу всё главное: палитра/фраза/сведения и переключатель режимов.
+   Стиль «Телетекст на графите» из lib/ui/palettes.dart: углы 0, рамки, каждый цвет — один смысл. */
+:root{
+  --surface:#15161A; --lowest:#101114; --low:#1C1D22; --cont:#222329; --high:#2A2C33; --highest:#33353D;
+  --on:#F1F1F3; --onv:#B4B6BE; --outline:#8A8D96; --outv:#3A3C44; --thread:#5A5D66;
+  --primary:#00E0E0; --onprimary:#001E1E;
+  --change:#F07CF0; --ok:#4CEB86; --okcont:#0E3B1E;
+  --warn:#FFE14D; --wcont:#3B3500; --onwcont:#FFF3A0;
+  --error:#FF5C5C; --econt:#4A1111; --onecont:#FFD6D6;
+  --ink-on-hue:#101114;
+  --text:"Golos Text",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:Unbounded,"Golos Text",system-ui,sans-serif;
+  --inv:1;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--lowest);color:var(--on);font:15px/1.35 var(--text);overflow:hidden;-webkit-tap-highlight-color:transparent}
+::selection{background:var(--outline);color:var(--on)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--on);outline-offset:-2px}
+.ms{font-family:"Material Symbols Sharp";font-weight:400;font-style:normal;font-size:22px;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-feature-settings:"liga";font-feature-settings:"liga";-webkit-font-smoothing:antialiased;user-select:none;font-variation-settings:"FILL" 0,"opsz" 24}
+.ms.f{font-variation-settings:"FILL" 1,"opsz" 24}
+
+.app{height:100%;max-width:420px;margin:0 auto;display:flex;flex-direction:column;background:var(--surface);position:relative;overflow:hidden;border-inline:1px solid var(--outv)}
+
+/* Полоса прототипа — не часть приложения: пунктир и свой фон */
+.proto{flex:none;display:flex;align-items:center;gap:10px;min-height:48px;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));background:var(--lowest);border-bottom:1px dashed var(--outline);font-size:12px;color:var(--onv)}
+.proto .lab{letter-spacing:.08em;text-transform:uppercase}
+.seg{display:flex;border:1px solid var(--outv)}
+.seg button{min-width:48px;min-height:40px;padding:0 9px;font-size:12px;white-space:nowrap;font-weight:600;color:var(--onv);border-right:1px solid var(--outv)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--highest);color:var(--on)}
+.proto .sp{flex:1}
+
+/* Шапка */
+.top{flex:none;display:flex;align-items:center;gap:4px;min-height:56px;padding-inline:max(4px,env(safe-area-inset-left,0px)) max(4px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--outv);background:var(--surface)}
+.ib{width:48px;height:48px;display:grid;place-items:center;flex:none}
+.ib:disabled{opacity:.3;cursor:default}
+.path{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.path small{font-size:12px;color:var(--onv)}
+.path b{font-weight:600;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.path b i{font-style:normal;color:var(--onv);font-weight:500}
+
+/* Холст */
+.cv{flex:1;min-height:0;position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background-color:var(--surface);
+  background-image:radial-gradient(circle,color-mix(in srgb,var(--outv) 55%,transparent) 1px,transparent 1.2px)}
+.layer{position:absolute;left:0;top:0;transform-origin:0 0;width:0;height:0}
+#plL{z-index:1} #objL{z-index:3} svg.lb{z-index:5}
+.far svg.lb{display:none}
+svg.th-svg{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;overflow:visible}
+svg.fx{position:absolute;inset:0;width:100%;height:100%;z-index:7;pointer-events:none}
+.far #objL,.far svg.th-svg{display:none}
+
+/* Места — вариант А «рамка» */
+.place{position:absolute;--hue:#7084B4;border:1.5px solid color-mix(in srgb,var(--hue) 80%,transparent);background:color-mix(in srgb,var(--hue) 5%,transparent);transition:opacity .2s}
+.ph{height:32px;display:flex;align-items:center;gap:8px;padding:0 8px;white-space:nowrap;overflow:hidden}
+.pn{font-weight:600;font-size:14px;color:var(--hue)}
+.lv{font-size:12px;color:var(--onv);font-variant-numeric:tabular-nums}
+.ptag{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border:1px solid currentColor}
+.place.changed{border-color:var(--change);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--change) 12%,transparent) 0 6px,transparent 6px 14px)}
+.place.changed .pn,.place.changed .ptag{color:var(--change)}
+.place.isnew{border-color:var(--ok)} .place.isnew .pn,.place.isnew .ptag{color:var(--ok)}
+.place.drop{outline:2px dashed var(--on);outline-offset:3px}
+.place.dim{opacity:.45}
+/* вариант Б «плашка»: заливка места и полоса-шапка цвета места, как заголовок страницы телетекста */
+.vB .place{border:0;background:color-mix(in srgb,var(--hue) 13%,var(--surface))}
+.vB .ph{background:var(--hue)}
+.vB .pn{color:var(--ink-on-hue)} .vB .lv{color:color-mix(in srgb,var(--ink-on-hue) 75%,transparent)}
+.vB .place.changed{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--change) 16%,var(--surface)) 0 6px,color-mix(in srgb,var(--hue) 10%,var(--surface)) 6px 14px)}
+.vB .place.changed .ph{background:var(--change)} .vB .place.changed .pn,.vB .place.changed .ptag{color:var(--ink-on-hue)}
+.vB .place.isnew .ph{background:var(--ok)} .vB .place.isnew .pn,.vB .place.isnew .ptag{color:var(--ink-on-hue)}
+/* издалека: место — крупное название и числа */
+.pstats{display:none;gap:calc(12px*var(--inv));padding:calc(6px*var(--inv)) 8px;flex-wrap:wrap;align-items:center}
+.far .pstats{display:flex}
+.far .ph{height:auto;min-height:32px;padding-block:calc(4px*var(--inv))}
+.far .pn{font-size:calc(15px*var(--inv))}
+.far .lv{display:none}
+.pstats span{display:inline-flex;align-items:center;gap:calc(3px*var(--inv));font-size:calc(16px*var(--inv));font-weight:600;font-variant-numeric:tabular-nums}
+.pstats .ms{font-size:calc(19px*var(--inv));color:var(--onv)}
+.pstats .wcell{background:var(--warn);color:var(--ink-on-hue);padding:0 calc(4px*var(--inv))}
+.pstats .wcell .ms{color:var(--ink-on-hue)}
+.pstats .chg{color:var(--change)}
+
+/* Объекты — вариант А: ячейка с рамкой */
+.obj{position:absolute;width:148px;height:48px;display:flex;align-items:center;gap:8px;padding:0 8px;background:var(--cont);border:1px solid var(--outv);font-size:14px;font-weight:500;transition:opacity .2s;--hue:#7084B4;cursor:pointer}
+.obj .ms{font-size:20px;color:var(--onv);flex:none}
+.obj .nm{flex:1;min-width:0;line-height:1.15;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.obj .ct{font-variant-numeric:tabular-nums;color:var(--onv);font-weight:600;flex:none}
+.obj.sel{outline:2px solid var(--on);outline-offset:2px}
+.obj.dim,.door.dim,.sh.dim,.ovf.dim{opacity:.28}
+.obj.isnew{border:2px solid var(--ok)}
+.obj.changed{border:2px solid var(--change)}
+.obj.lifted{z-index:20;outline:2px solid var(--on);outline-offset:2px;transform:scale(1.05);transition:none;background:var(--highest)}
+.obj.target,.sh.target{outline:2px dashed var(--on);outline-offset:3px}
+.obj.back{transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1)}
+/* вариант Б: жетон без рамки, значок в квадрате цвета места */
+.vB .obj{border:0;background:var(--high);padding:0 8px 0 0}
+.vB .obj .ic{position:relative;flex:none;width:40px;height:48px;display:grid;place-items:center;background:color-mix(in srgb,var(--hue) 34%,var(--cont))}
+.vB .obj .ic .ms{color:var(--on)}
+.obj .ic b{position:absolute;right:1px;bottom:1px;font-size:11px;font-weight:600;line-height:1;padding:2px 3px;background:var(--surface);color:var(--on);font-variant-numeric:tabular-nums}
+.vB .obj.isnew{box-shadow:inset 0 0 0 2px var(--ok)} .vB .obj.isnew .ic{background:var(--okcont)}
+.vB .obj.changed{box-shadow:inset 0 0 0 2px var(--change)} .vB .obj.changed .ic{background:color-mix(in srgb,var(--change) 30%,var(--cont))}
+/* метка предупреждения на объекте — кнопка с увеличенной зоной касания */
+.mark{position:absolute;top:-9px;right:-9px;width:22px;height:22px;display:grid;place-items:center;background:var(--warn);color:var(--ink-on-hue);z-index:2}
+.mark .ms{font-size:16px;color:var(--ink-on-hue)!important;width:auto!important;height:auto!important;background:none!important}
+.mark::after{content:"";position:absolute;inset:-13px}
+.pulse{animation:pulse 1.1s ease-out 2}
+@keyframes pulse{0%{outline:3px solid var(--change);outline-offset:2px}100%{outline:3px solid transparent;outline-offset:12px}}
+.appear{animation:appear .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes appear{from{opacity:0;transform:scale(.85)}}
+
+/* Дверь — место внутри места */
+.door{position:absolute;width:148px;height:104px;display:flex;flex-direction:column;justify-content:space-between;padding:8px;background:var(--low);border:1.5px solid color-mix(in srgb,var(--hue) 80%,transparent);--hue:#93949A;cursor:pointer}
+.door::before,.door::after{content:"";position:absolute;inset:0;border:1px solid color-mix(in srgb,var(--hue) 50%,transparent);z-index:-1}
+.door::before{transform:translate(5px,5px)} .door::after{transform:translate(10px,10px);opacity:.6}
+.door .dn{font-weight:600;font-size:14px;color:var(--hue);display:flex;gap:6px;align-items:center}
+.door .di{font-size:12px;color:var(--onv);line-height:1.3}
+.door .enter{position:absolute;right:0;bottom:0;width:48px;height:48px;display:grid;place-items:center;color:var(--on)}
+.door .dmark{font-size:11px;font-weight:600;color:var(--change);border:1px solid var(--change);padding:1px 5px;align-self:flex-start}
+.door.drop{outline:2px dashed var(--on);outline-offset:3px}
+.vB .door{border:0;background:color-mix(in srgb,var(--hue) 22%,var(--surface))}
+.vB .door::before,.vB .door::after{border:0;background:color-mix(in srgb,var(--hue) 12%,var(--surface))}
+.vB .door .dn{color:var(--on)}
+.obj.flying{z-index:20;outline:2px solid var(--on);outline-offset:2px}
+.ovf{position:absolute;width:148px;height:48px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px dashed var(--outline);color:var(--onv);font-size:13px;font-weight:600}
+
+/* Нити */
+.th{fill:none;stroke:var(--thread);stroke-width:1.5}
+.vB .th{stroke-width:2}
+.th.loot{stroke-dasharray:6 4}
+.th.dim{opacity:.18}
+.th.hot{stroke:var(--on);stroke-width:2.2}
+.th.new{stroke:var(--ok);stroke-width:2.4}
+.th.changed{stroke:var(--change);stroke-width:2.4}
+.th.err{stroke:var(--error);stroke-width:2.6}
+.tend{fill:var(--thread)} .tend.hot{fill:var(--on)} .tend.new{fill:var(--ok)} .tend.changed{fill:var(--change)} .tend.err{fill:var(--error)} .tend.dim{opacity:.18}
+.tl-bg{fill:var(--surface);stroke:var(--outv)}
+.tl{font:600 13px var(--text);fill:var(--on)}
+.tl.new{fill:var(--ok)} .tl.changed{fill:var(--change)} .tl.err{fill:var(--error)}
+.vB .tl-bg{stroke:none;fill:var(--on)} .vB .tl-bg.new{fill:var(--ok)} .vB .tl-bg.changed{fill:var(--change)} .vB .tl-bg.err{fill:var(--error)}
+.vB .tl{fill:var(--ink-on-hue)}
+.tmp{stroke:var(--on);stroke-width:2;stroke-dasharray:5 4;fill:none}
+
+/* Полка у нижнего края холста */
+.shelf{position:absolute;left:0;right:0;bottom:0;height:64px;z-index:4;display:flex;align-items:center;gap:8px;padding:0 12px 0 0;background:color-mix(in srgb,var(--lowest) 94%,transparent);border-top:1px solid var(--outv);overflow-x:auto;scrollbar-width:none}
+.shelf::-webkit-scrollbar{display:none}
+.shl{flex:none;align-self:stretch;width:28px;display:grid;place-items:center;border-right:1px solid var(--outv);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--onv)}
+.shl span{writing-mode:vertical-rl;transform:rotate(180deg)}
+.sh{flex:none;height:48px;display:flex;align-items:center;gap:6px;padding:0 10px;background:var(--cont);border:1px solid var(--outv);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
+.sh .ms{font-size:20px;color:var(--onv)}
+.sh.q{border-color:var(--outline)}
+.sh.sel{outline:2px solid var(--on);outline-offset:-4px}
+.sh.isnew{border:2px solid var(--ok)} .sh.changed{border:2px solid var(--change)}
+.vB .sh{border:0;background:var(--high);padding:0 10px 0 0}
+.vB .sh .ms{width:48px;height:48px;display:grid;place-items:center;background:var(--highest);color:var(--on)}
+.vB .sh.isnew{box-shadow:inset 0 0 0 2px var(--ok)} .vB .sh.changed{box-shadow:inset 0 0 0 2px var(--change)}
+.shempty{font-size:13px;color:var(--onv);padding-left:4px}
+
+.zoom{flex:none;height:48px;min-width:48px;padding:0 10px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--onv)}
+
+/* Сообщение после жеста */
+.snack{position:absolute;left:8px;right:8px;bottom:72px;z-index:9;display:flex;align-items:stretch;background:var(--highest);border:1px solid var(--outline);min-height:56px;transform:translateY(10px);opacity:0;pointer-events:none;transition:opacity .18s,transform .22s cubic-bezier(.2,.8,.2,1)}
+.snack.on{opacity:1;transform:none;pointer-events:auto}
+.sn-ic{flex:none;width:40px;display:grid;place-items:center}
+.sn-m{flex:1;min-width:0;padding:8px 12px 10px 14px;display:flex;flex-direction:column;gap:2px;justify-content:center}
+.sn-t{font-weight:600;font-size:14px}
+.sn-s{font-size:12px;color:var(--onv);display:flex;gap:4px;align-items:center}
+.sn-s .ms{font-size:14px}
+.sn-a{flex:none;min-width:48px;padding:0 14px;font-weight:600;font-size:14px;border-left:1px solid var(--outline)}
+.sn-bar{position:absolute;left:0;bottom:0;height:3px;background:var(--on);width:100%;transform-origin:left}
+.snack.warn{border-color:var(--warn)} .snack.warn .sn-ic{background:var(--warn);color:var(--ink-on-hue)}
+.snack.err{background:var(--econt);border-color:var(--error)} .snack.err .sn-ic{background:var(--error);color:var(--ink-on-hue)} .snack.err .sn-s{color:var(--onecont)}
+.snack.ok .sn-ic{color:var(--onv)}
+
+/* Колёсико, меню, окно метки */
+.pop{position:absolute;z-index:10;background:var(--high);border:1px solid var(--outline)}
+.wheel{width:150px}
+.wheel .wh{font-size:12px;color:var(--onv);padding:8px 10px 4px}
+.drum{height:144px;overflow-y:auto;scroll-snap-type:y mandatory;position:relative;scrollbar-width:none;padding-block:48px;touch-action:pan-y;-webkit-mask-image:linear-gradient(transparent,#000 35%,#000 65%,transparent);mask-image:linear-gradient(transparent,#000 35%,#000 65%,transparent)}
+.drum::-webkit-scrollbar{display:none}
+.drum div{height:48px;display:grid;place-items:center;scroll-snap-align:center;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--onv)}
+.drum div.cur{color:var(--on)}
+.wsel{position:absolute;left:0;right:0;top:calc(24px + 48px);height:48px;border-block:1px solid var(--outline);pointer-events:none}
+.wheel .wb{display:block;width:100%;height:48px;font-weight:600;background:var(--primary);color:var(--onprimary)}
+.menu{width:200px}
+.menu .mh{font-size:12px;color:var(--onv);padding:10px 12px 6px}
+.menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:0 12px;font-weight:600;border-top:1px solid var(--outv)}
+.menu button .ms{color:var(--onv)}
+
+/* Низ: сведения, палитра, фраза, режимы, план */
+.bottom{flex:none;background:var(--surface);border-top:1px solid var(--outv);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tray{padding:8px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px));display:flex;gap:8px;align-items:center}
+.tray:empty{display:none}
+.info{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.info .ms{color:var(--onv)}
+.info div{min-width:0}
+.info b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info small{color:var(--onv);font-size:12px}
+.info .lk{display:block;font-size:13px;color:var(--on);margin-top:2px;line-height:1.3}
+.info .lk i{font-style:normal;color:var(--outline);margin:0 6px}
+.qb{min-height:48px;padding:0 14px;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--outline);flex:none}
+.qb.text{border-color:transparent}
+.mb{min-height:48px;padding:0 16px;font-weight:600;font-size:14px;background:var(--primary);color:var(--onprimary);display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none}
+.mb:disabled{background:var(--high);color:var(--onv);cursor:default}
+.pal{flex:1 1 0;min-width:0;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px dashed var(--outline);font-size:12px;font-weight:600;color:var(--on);touch-action:none;cursor:grab}
+.pal .ms{font-size:20px;color:var(--onv)}
+.phrase{flex:1;min-width:0;min-height:48px;display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--cont);border-bottom:1px solid var(--outv);font-size:14px;line-height:1.25}
+.phrase .ms{color:var(--onv);font-size:18px}
+.tray.col{flex-direction:column;align-items:stretch}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.modes{display:flex;border-top:1px solid var(--outv)}
+.modes button{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:600;color:var(--onv);border-right:1px solid var(--outv);position:relative}
+.modes button:last-child{border-right:0}
+.modes button[aria-pressed="true"]{color:var(--on);background:var(--high)}
+.modes button[aria-pressed="true"]::before{content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:var(--on)}
+
+.sheet{display:flex;flex-direction:column;max-height:46vh;border-top:1px solid var(--outline);background:var(--low)}
+.sheet.big{max-height:72vh}
+.sheet:not(.big) .plist{max-height:112px}
+[hidden]{display:none!important}
+.sheet.peek .plist,.sheet.peek .pnote{display:none}
+.shd{display:flex;align-items:center;gap:8px;padding:10px max(12px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px))}
+.shd h2{margin:0;font:600 16px/1.2 var(--display);flex:1}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--onv);padding:0 16px 8px}
+.chk .ms{font-size:18px}
+.chk.wait .ms{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pnote{font-size:12px;color:var(--onv);padding:0 16px 8px}
+.plist{overflow-y:auto;border-top:1px solid var(--outv);flex:1;min-height:0}
+.prow{display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 4px 6px 16px;border-bottom:1px solid var(--outv);cursor:pointer}
+.prow .ms{color:var(--onv);font-size:20px;flex:none}
+.prow .pt{flex:1;min-width:0;font-size:13px;color:var(--onv)}
+.prow .pt b{color:var(--on);font-weight:600;font-size:14px}
+.ba{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;margin-top:2px;font-size:13px}
+.ba .was{color:var(--onv)}
+.ba .arr{color:var(--outline)}
+.ba .now{color:var(--change);font-weight:600}
+.ba .now.new{color:var(--ok)}
+.prow .lvl{font-size:11px;color:var(--change);border:1px solid var(--change);padding:0 4px;margin-left:4px}
+.prow.appear{animation:rowin .35s ease-out}
+@keyframes rowin{from{opacity:0;transform:translateY(6px)}}
+.sacts{display:flex;gap:8px;padding:8px max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));border-top:1px solid var(--outv)}
+.sacts>*{flex:1}
+
+/* Пустой мир */
+.empty{position:absolute;inset:0 0 64px 0;z-index:6;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));pointer-events:none}
+.empty>*{pointer-events:auto}
+.empty h2{margin:0;font:600 22px/1.2 var(--display)}
+.empty p{margin:0 0 4px;color:var(--onv);font-size:14px}
+.start{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 14px;text-align:left;border:1px solid var(--outline);background:var(--low)}
+.start b{display:block;font-weight:600}
+.start small{color:inherit;opacity:.75;font-size:12px}
+.start.main{background:var(--primary);color:var(--onprimary);border-color:var(--primary)}
+.start:disabled{opacity:.45;cursor:default;border-style:dashed}
+
+/* Подсказка первого входа и справка */
+.scrim{position:absolute;inset:0;z-index:30;background:color-mix(in srgb,var(--lowest) 72%,transparent);display:flex;flex-direction:column;justify-content:flex-end}
+.card{background:var(--high);border-top:1px solid var(--outline);padding:16px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px;max-height:86%;overflow-y:auto}
+.card h2{margin:0;font:600 18px/1.25 var(--display);text-wrap:balance}
+.card h3{margin:8px 0 0;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--onv)}
+.tip{display:flex;gap:12px;align-items:flex-start;font-size:14px}
+.tip .ms{color:var(--onv);flex:none;width:24px}
+.tip b{font-weight:600}
+.lg{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:center;font-size:14px}
+.sw{height:24px}
+.lg small{display:block;color:var(--onv);font-size:12px}
+.cardh{display:flex;align-items:center;gap:8px}
+.cardh h2{flex:1}
+.note{font-size:12px;color:var(--onv);border:1px dashed var(--outline);padding:8px 10px}
+.ghost{position:absolute;z-index:40;pointer-events:none;width:148px;height:48px;display:flex;align-items:center;gap:8px;padding:0 8px;background:var(--highest);border:2px dashed var(--on);font-size:14px;font-weight:600;transform:translate(-50%,-70%)}
+.ghost .ms{color:var(--onv)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app" id="app">
+  <div class="proto" aria-label="Переключатели прототипа">
+    <span class="lab">Прототип · мир</span>
+    <span class="sp"></span>
+    <div class="seg" id="segW"><button type="button" data-w="ash" aria-pressed="true">Копи</button><button type="button" data-w="empty" aria-pressed="false">Пустой</button></div>
+  </div>
+
+  <div class="top">
+    <button class="ib" type="button" id="back" aria-label="На уровень выше"><span class="ms">arrow_back</span></button>
+    <div class="path"><small id="wname">Пепельные копи</small><b id="crumb">Копи</b></div>
+    <button class="zoom" type="button" id="zoom"></button>
+    <button class="ib" type="button" id="help" aria-label="Легенда: цвета, нити и жесты"><span class="ms">help</span></button>
+  </div>
+
+  <div class="cv" id="cv" aria-label="Холст мира">
+    <div class="layer" id="plL"></div>
+    <svg class="th-svg" id="thS" aria-hidden="true"></svg>
+    <svg class="th-svg lb" id="lbS" aria-hidden="true"></svg>
+    <div class="layer" id="objL"></div>
+    <svg class="fx" id="fx" aria-hidden="true"></svg>
+    <div class="empty" id="empty" hidden></div>
+    <div class="shelf" id="shelf" aria-label="Полка: предметы и квесты"></div>
+    <div class="snack" id="snack" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="bottom" id="bottom"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const NS="http://www.w3.org/2000/svg";
+const RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const HUES=["#7084B4","#8680BC","#9E86BA","#7A8FB0","#93949A"];
+const KIC={enemy:"skull",npc:"person",event:"bolt",item:"key",quest:"flag",place:"location_on"};
+const KNAME={enemy:"враг",npc:"житель",event:"событие",item:"предмет",quest:"квест"};
+const OW=148,OH=48,GAP=8,HEAD=36,FAR=.72;
+const cv=$("#cv"),plL=$("#plL"),objL=$("#objL"),thS=$("#thS"),lbS=$("#lbS"),fx=$("#fx");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clone=o=>structuredClone(o);
+const wait=ms=>new Promise(r=>setTimeout(r,RM?0:ms));
+
+/* ---------- Данные: демо-мир «Пепельные копи», уровень «Копи» ---------- */
+function ashWorld(){return{
+  places:[
+    {id:"shaft",level:"root",name:"Штольня №3",lv:[3,5],hue:0,x:0,y:0,w:344,h:212,desc:"сухая выработка"},
+    {id:"barracks",level:"root",name:"Бараки",lv:[1,3],hue:1,x:0,y:228,w:164,h:148},
+    {id:"market",level:"root",name:"Рынок",lv:[1,2],hue:3,x:180,y:228,w:164,h:148},
+    {id:"winch",level:"root",name:"Лебёдка",lv:[2,4],hue:2,x:0,y:392,w:344,h:96},
+    {id:"zab",level:"zaboy",name:"Забой",lv:[4,6],hue:4,x:0,y:0,w:344,h:148}
+  ],
+  doors:[{id:"zaboy",in:"shaft",to:"zab",name:"Забой"}],
+  objs:[
+    {id:"slime",kind:"enemy",name:"Слизень",n:3,lv:4,place:"shaft"},
+    {id:"ambush",kind:"event",name:"Засада",place:"shaft"},
+    {id:"brig",kind:"npc",name:"Бригадир",place:"barracks"},
+    {id:"iva",kind:"npc",name:"Торговка Ива",place:"market"},
+    {id:"guard",kind:"npc",name:"Сторож",place:"winch"},
+    {id:"stone",kind:"enemy",name:"Камнеед",n:1,lv:6,place:"zab"}
+  ],
+  shelf:[
+    {id:"obval",kind:"quest",name:"Обвал",ic:"flag"},
+    {id:"key",kind:"item",name:"Ключ от лебёдки",ic:"key"},
+    {id:"pick",kind:"item",name:"Кирка",ic:"hardware"}
+  ],
+  links:[
+    {a:"obval",b:"brig",t:"выдаёт"},
+    {a:"obval",b:"slime",t:"убить ×3"},
+    {a:"obval",b:"ambush",t:"пройти"},
+    {a:"obval",b:"key",t:"собрать"},
+    {a:"obval",b:"pick",t:"награда"},
+    {a:"slime",b:"key",t:"роняет 35%",loot:1},
+    {a:"ambush",b:"slime",t:"враги ×3"},
+    {a:"iva",b:"pick",t:"продаёт"}
+  ]
+}}
+const emptyWorld=()=>({places:[],doors:[],objs:[],shelf:[],links:[]});
+
+let W=ashWorld();
+const S={v:"B",mode:"look",world:"ash",level:"root",sel:null,s:1,tx:8,ty:12,far:false,plan:null,hist:[],uid:0};
+
+const place=id=>W.places.find(p=>p.id===id);
+const obj=id=>W.objs.find(o=>o.id===id)||W.shelf.find(o=>o.id===id);
+const visPlaces=()=>W.places.filter(p=>p.level===S.level);
+const nameOf=id=>{const o=obj(id);return o?o.name:id};
+const lvTxt=p=>`ур. ${p.lv[0]}–${p.lv[1]}`;
+
+function slots(p){
+  const cols=Math.max(1,Math.floor((p.w-GAP)/(OW+GAP))),rows=Math.max(1,Math.floor((p.h-HEAD)/(OH+GAP)));
+  const door=W.doors.find(d=>d.in===p.id);let doorR=null;const out=[];
+  if(door&&cols>1)doorR={x:p.x+GAP+(cols-1)*(OW+GAP),y:p.y+HEAD,w:OW,h:OH*2+GAP,door};
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){if(doorR&&c===cols-1&&r<2)continue;out.push({x:p.x+GAP+c*(OW+GAP),y:p.y+HEAD+r*(OH+GAP)})}
+  return{out,doorR};
+}
+
+/* ---------- Отрисовка ---------- */
+function render(){
+  const old=new Map(),lvl=S.shownLevel;objL.querySelectorAll(".obj[data-id]").forEach(el=>old.set(el.dataset.id,{x:parseFloat(el.style.left),y:parseFloat(el.style.top),place:el.dataset.place}));S.shownLevel=S.level;
+  const app=$("#app");app.className="app v"+S.v+(S.far?" far":"");
+  renderTop();renderPlaces();renderObjs();renderShelf();renderEmpty();renderBottom();
+  applyView();flip(old,lvl);
+}
+function renderTop(){
+  $("#wname").textContent=S.world==="ash"?"Пепельные копи":"Новый мир";
+  $("#crumb").innerHTML=S.world==="empty"?"Мир":S.level==="root"?"Копи":"Копи <i>›</i> Штольня №3 <i>›</i> Забой";
+  $("#back").disabled=S.level==="root";
+  document.querySelectorAll("#segW button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.w===S.world));
+  const z=$("#zoom");z.hidden=!visPlaces().length;
+  z.innerHTML=S.far?'<span class="ms">zoom_in</span><span>издалека</span>':'<span class="ms">zoom_out</span><span>вблизи</span>';
+  z.setAttribute("aria-label",S.far?"Сейчас издалека. Приблизить":"Сейчас вблизи. Отдалить");
+}
+function neigh(){const n=new Set();if(!S.sel)return n;n.add(S.sel);W.links.forEach(l=>{if(l.a===S.sel)n.add(l.b);if(l.b===S.sel)n.add(l.a)});return n}
+function renderPlaces(){
+  const nb=neigh();
+  plL.innerHTML=visPlaces().map(p=>{
+    const inP=W.objs.filter(o=>o.place===p.id);
+    const res=inP.filter(o=>o.kind==="npc").length,en=inP.filter(o=>o.kind==="enemy").reduce((s,o)=>s+(o.n||1),0),ev=inP.filter(o=>o.kind==="event").length;
+    const door=W.doors.find(d=>d.in===p.id),inner=door?W.objs.filter(o=>o.place===door.to).length:0;
+    const warns=inP.filter(o=>o.mark).length,chg=inP.filter(o=>o.st).length+(p.st?1:0);
+    const dim=S.sel&&!S.far&&![...nb].some(id=>{const o=W.objs.find(x=>x.id===id);return o&&o.place===p.id});
+    const cls="place"+(p.st==="changed"?" changed":p.st==="new"?" isnew":"")+(dim?" dim":"");
+    const tag=p.st==="changed"?`<span class="ptag">изменено</span>`:p.st==="new"?`<span class="ptag">новое</span>`:"";
+    return `<div class="${cls}" data-pid="${p.id}" style="left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px;--hue:${HUES[p.hue]}">
+      <div class="ph"><span class="pn">${esc(p.name)}</span><span class="lv">${lvTxt(p)}</span>${tag}</div>
+      <div class="pstats">
+        ${res?`<span title="жителей"><i class="ms">person</i>${res}</span>`:""}
+        ${en?`<span title="врагов"><i class="ms">skull</i>${en}</span>`:""}
+        ${ev?`<span title="событий"><i class="ms f">bolt</i>${ev}</span>`:""}
+        ${door?`<span title="внутри"><i class="ms">south_east</i>${inner}</span>`:""}
+        ${!res&&!en&&!ev&&!door?`<span style="color:var(--onv);font-weight:500">пусто</span>`:""}
+        ${warns?`<span class="wcell"><i class="ms f">warning</i>${warns}</span>`:""}
+        ${chg?`<span class="chg">±${chg}</span>`:""}
+      </div></div>`}).join("");
+}
+function objHTML(o,x,y,hue,nb){
+  const cls=["obj","k-"+o.kind];
+  if(o.id===S.sel)cls.push("sel");else if(S.sel&&!nb.has(o.id))cls.push("dim");
+  if(o.st==="new")cls.push("isnew");if(o.st==="changed")cls.push("changed");
+  if(o.anim){cls.push("appear");delete o.anim}
+  const ct=o.n>1?`<b>×${o.n}</b>`:"";
+  const mk=o.mark?`<button class="mark" type="button" data-mark="${o.id}" aria-label="Предупреждение: ${esc(o.mark.text)}"><span class="ms f">warning</span></button>`:"";
+  return `<div class="${cls.join(" ")}" data-id="${o.id}" data-place="${o.place}" role="button" tabindex="0" aria-label="${KNAME[o.kind]} ${esc(o.name)}" style="left:${x}px;top:${y}px;--hue:${hue}"><span class="ic"><span class="ms${o.kind==="event"?" f":""}">${KIC[o.kind]}</span>${ct}</span><span class="nm">${esc(o.name)}</span>${mk}</div>`;
+}
+function renderObjs(){
+  const nb=neigh();let h="";
+  visPlaces().forEach(p=>{
+    const {out,doorR}=slots(p),hue=HUES[p.hue];
+    const list=W.objs.filter(o=>o.place===p.id);
+    const fit=list.length>out.length?out.length-1:list.length;
+    list.slice(0,fit).forEach((o,i)=>h+=objHTML(o,out[i].x,out[i].y,hue,nb));
+    if(list.length>out.length){const rest=list.slice(fit),s=out[out.length-1];
+      h+=`<button class="ovf${S.sel?" dim":""}" type="button" data-ovf="${p.id}" style="left:${s.x}px;top:${s.y}px"><span class="ms">add</span>ещё ${rest.length}</button>`}
+    if(doorR){const d=doorR.door,tp=place(d.to),inside=W.objs.filter(o=>o.place===d.to);
+      const mark=d.plan?`<span class="dmark">внутри ${d.plan} изменения</span>`:"";
+      h+=`<div class="door${S.sel?" dim":""}" data-door="${d.id}" style="left:${doorR.x}px;top:${doorR.y}px;--hue:${HUES[tp.hue]}">
+        <span class="dn"><span class="ms">location_on</span>${esc(d.name)}</span>
+        ${mark||`<span class="di">внутри: ${inside.length?esc(inside.map(o=>o.name).join(", ")):"пусто"}</span>`}
+        <button class="enter" type="button" data-enter="${d.id}" aria-label="Войти в место ${esc(d.name)}"><span class="ms">south_east</span></button></div>`}
+  });
+  objL.innerHTML=h;
+}
+function renderShelf(){
+  const nb=neigh(),sh=$("#shelf");
+  sh.innerHTML=`<div class="shl"><span>полка</span></div>`+(W.shelf.length?W.shelf.map(o=>{
+    const c=["sh",o.kind==="quest"?"q":""];if(o.id===S.sel)c.push("sel");else if(S.sel&&!nb.has(o.id))c.push("dim");
+    if(o.st==="new")c.push("isnew");if(o.st==="changed")c.push("changed");
+    return `<div class="${c.join(" ")}" data-id="${o.id}" role="button" tabindex="0" aria-label="${KNAME[o.kind]} ${esc(o.name)}"><span class="ms">${o.ic||KIC[o.kind]}</span>${esc(o.name)}</div>`}).join("")
+    :`<span class="shempty">Пусто</span>`);
+}
+function renderEmpty(){
+  const e=$("#empty"),show=!visPlaces().length&&!S.plan;e.hidden=!show;if(!show)return;
+  e.innerHTML=`<h2>Пустой мир</h2>
+    <button class="start main" type="button" data-start="place"><span class="ms">add</span><span><b>Первое место</b></span></button>
+    <button class="start" type="button" data-start="ask"><span class="ms">auto_awesome</span><span><b>Попросить ассистента</b></span></button>
+    <button class="start" type="button" disabled><span class="ms">menu_book</span><span><b>Из справочника</b><small>позже</small></span></button>`;
+}
+function renderBottom(){
+  const b=$("#bottom");
+  if(S.plan){b.innerHTML=planHTML();return}
+  let tray="";
+  if(S.mode==="look"&&S.sel){const o=obj(S.sel),n=W.links.filter(l=>l.a===S.sel||l.b===S.sel).length,p=o.place?place(o.place):null;
+    tray=`<div class="tray"><div class="info"><span class="ms">${o.ic||KIC[o.kind]}</span><div><b>${esc(o.name)}</b><small>${KNAME[o.kind]}${p?" · "+esc(p.name):" · на полке"}</small><span class="lk">${W.links.filter(l=>l.a===S.sel||l.b===S.sel).map(l=>`${esc(l.t)} · ${esc(nameOf(l.a===S.sel?l.b:l.a))}`).join("<i>/</i>")||"связей нет"}</span></div></div>
+      <button class="qb" type="button" data-act="page">Страница</button></div>`}
+  if(S.mode==="build")tray=`<div class="tray">${[["enemy","Враг"],["npc","Житель"],["event","Событие"],["item","Предмет"],["place","Место"]].map(([k,n])=>`<div class="pal" data-new="${k}" role="button" tabindex="0" aria-label="Перетащить на холст: ${n}"><span class="ms${k==="event"?" f":""}">${KIC[k]}</span>${n}</div>`).join("")}</div>`;
+  if(S.mode==="change"){const ph=S.world==="ash"?"Штольня затоплена — слизни уходят":"Шахтёрский посёлок под вулканом: 3 места и жители";
+    tray=`<div class="tray col"><div class="phrase"><span class="ms">forum</span><span>«${ph}»</span></div>
+      <div class="row">${S.world==="ash"?`<button class="qb" type="button" data-act="plan20">План из 20</button>`:""}<button class="mb" type="button" data-act="plan">Показать план</button></div></div>`}
+  b.innerHTML=tray+`<div class="modes" role="group" aria-label="Режим">${[["look","Смотреть","visibility"],["build","Строить","pan_tool"],["change","Менять","auto_awesome"]].map(([m,n,i])=>`<button type="button" data-mode="${m}" aria-pressed="${S.mode===m}"><span class="ms">${i}</span>${n}</button>`).join("")}</div>`;
+}
+
+/* ---------- Вид: сдвиг и масштаб ---------- */
+function bounds(){const ps=visPlaces();if(!ps.length)return{x:0,y:0,w:344,h:200};
+  const x=Math.min(...ps.map(p=>p.x)),y=Math.min(...ps.map(p=>p.y));return{x,y,w:Math.max(...ps.map(p=>p.x+p.w))-x,h:Math.max(...ps.map(p=>p.y+p.h))-y}}
+function clampView(){const r=cv.getBoundingClientRect(),b=bounds();
+  S.tx=Math.min(r.width-80-b.x*S.s,Math.max(80-(b.x+b.w)*S.s,S.tx));
+  S.ty=Math.min(r.height-140-b.y*S.s,Math.max(80-(b.y+b.h)*S.s,S.ty))}
+function applyView(){
+  const t=`translate(${S.tx}px,${S.ty}px) scale(${S.s})`;plL.style.transform=objL.style.transform=t;
+  cv.style.setProperty("--inv",(1/S.s).toFixed(3));
+  const g=24*S.s;cv.style.backgroundSize=`${g}px ${g}px`;cv.style.backgroundPosition=`${S.tx}px ${S.ty}px`;
+  const far=S.s<FAR;if(far!==S.far){S.far=far;if(far)S.sel=null;render();return}
+  drawThreads();
+}
+function homeView(){const r=cv.getBoundingClientRect();S.s=1;S.tx=Math.round((r.width-344)/2);S.ty=12;S.far=false}
+function animView(s,tx,ty,ms=340){
+  if(RM){S.s=s;S.tx=tx;S.ty=ty;applyView();return Promise.resolve()}
+  const s0=S.s,x0=S.tx,y0=S.ty,t0=performance.now();
+  return new Promise(res=>{const step=t=>{const k=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-k,3);
+    S.s=s0+(s-s0)*e;S.tx=x0+(tx-x0)*e;S.ty=y0+(ty-y0)*e;applyView();k<1?requestAnimationFrame(step):res()};requestAnimationFrame(step)})
+}
+function zoomAround(s,cx,cy){s=Math.max(.42,Math.min(1.7,s));const wx=(cx-S.tx)/S.s,wy=(cy-S.ty)/S.s;S.s=s;S.tx=cx-wx*s;S.ty=cy-wy*s;clampView();applyView()}
+function centerOn(wx,wy,ww,wh,s=S.s){const r=cv.getBoundingClientRect(),visH=r.height-64;
+  return animView(s,r.width/2-(wx+ww/2)*s,Math.max(8,visH/2-(wy+wh/2)*s))}
+// Перелёт блока считается в координатах мира (left/top), а не экрана: сдвиг холста, смена
+// высоты низа и зум не искажают точку вылета. Сменил место — летит из старой клетки и оставляет
+// поверх остальных, с обводкой; просто сдвинулся в своём месте — короткий сдвиг.
+function flip(old,lvl){
+  if(RM||!old.size||lvl!==S.level)return;let any=false;
+  objL.querySelectorAll("[data-id]").forEach(el=>{const o=old.get(el.dataset.id);if(!o)return;
+    const dx=o.x-parseFloat(el.style.left),dy=o.y-parseFloat(el.style.top);if(Math.abs(dx)<1&&Math.abs(dy)<1)return;any=true;
+    const moved=o.place!==el.dataset.place;
+    if(moved)el.classList.add("flying");
+    el.style.transition="none";el.style.transform=`translate(${dx}px,${dy}px)`;el.getBoundingClientRect();
+    el.style.transition=`transform ${moved?".7s cubic-bezier(.65,0,.35,1)":".3s cubic-bezier(.2,.8,.2,1)"}`;el.style.transform="";
+    el.addEventListener("transitionend",()=>{el.style.transition="";el.classList.remove("flying")},{once:true})});
+  if(any){const t0=performance.now();const loop=t=>{drawThreads();if(t-t0<760)requestAnimationFrame(loop)};requestAnimationFrame(loop)}
+}
+/* ---------- Нити: два вида ---------- */
+function elOf(id){return objL.querySelector(`[data-id="${id}"]`)||$("#shelf").querySelector(`[data-id="${id}"]`)}
+function relRect(el){const c=cv.getBoundingClientRect(),r=el.getBoundingClientRect();return{x:r.left-c.left,y:r.top-c.top,w:r.width,h:r.height,cx:r.left-c.left+r.width/2,cy:r.top-c.top+r.height/2,shelf:!!el.closest(".shelf")}}
+function edge(r,qx,qy){const dx=qx-r.cx,dy=qy-r.cy;if(!dx&&!dy)return{x:r.cx,y:r.cy};
+  const t=Math.min(dx?Math.abs(r.w/2/dx):1e9,dy?Math.abs(r.h/2/dy):1e9);return{x:r.cx+dx*t,y:r.cy+dy*t}}
+const mids={};
+function pathA(a,b){
+  if(a.shelf&&b.shelf){const p={x:a.cx,y:a.y},q={x:b.cx,y:b.y},c={x:(p.x+q.x)/2,y:p.y-46};return{d:`M${p.x},${p.y} Q${c.x},${c.y} ${q.x},${q.y}`,m:{x:c.x,y:p.y-23},p,q}}
+  const p=edge(a,b.cx,b.cy),q=edge(b,a.cx,a.cy),dx=q.x-p.x,dy=q.y-p.y,len=Math.hypot(dx,dy)||1,k=Math.min(.18*len,40);
+  const c={x:(p.x+q.x)/2-dy/len*k,y:(p.y+q.y)/2+dx/len*k};
+  return{d:`M${p.x},${p.y} Q${c.x},${c.y} ${q.x},${q.y}`,m:{x:.25*p.x+.5*c.x+.25*q.x,y:.25*p.y+.5*c.y+.25*q.y},p,q}
+}
+function pathB(a,b){
+  let pts;const dx=b.cx-a.cx,dy=b.cy-a.cy;
+  if(a.shelf&&b.shelf){const my=Math.min(a.y,b.y)-22;pts=[{x:a.cx,y:a.y},{x:a.cx,y:my},{x:b.cx,y:my},{x:b.cx,y:b.y}]}
+  else if(Math.abs(dx)>=Math.abs(dy)&&!a.shelf&&!b.shelf){const p={x:dx>0?a.x+a.w:a.x,y:a.cy},q={x:dx>0?b.x:b.x+b.w,y:b.cy},mx=(p.x+q.x)/2;pts=[p,{x:mx,y:p.y},{x:mx,y:q.y},q]}
+  else{const p={x:a.cx,y:dy>0?a.y+a.h:a.y},q={x:b.cx,y:dy>0?b.y:b.y+b.h},my=(p.y+q.y)/2;pts=[p,{x:p.x,y:my},{x:q.x,y:my},q]}
+  let d=`M${pts[0].x},${pts[0].y}`;
+  for(let i=1;i<pts.length-1;i++){const A=pts[i-1],B=pts[i],C=pts[i+1],l1=Math.hypot(B.x-A.x,B.y-A.y),l2=Math.hypot(C.x-B.x,C.y-B.y),r=Math.min(9,l1/2,l2/2);
+    if(r<1){d+=` L${B.x},${B.y}`;continue}
+    d+=` L${B.x+(A.x-B.x)/l1*r},${B.y+(A.y-B.y)/l1*r} L${B.x+(C.x-B.x)/l2*r},${B.y+(C.y-B.y)/l2*r}`}
+  const L=pts[pts.length-1];d+=` L${L.x},${L.y}`;
+  return{d,m:{x:(pts[1].x+pts[2].x)/2,y:(pts[1].y+pts[2].y)/2},p:pts[0],q:L}
+}
+function drawThreads(){
+  if(S.far){thS.innerHTML=lbS.innerHTML="";return}
+  let h="",lab="";
+  // подписи не ложатся на блоки и друг на друга: препятствия — все видимые блоки
+  const boxes=[...objL.querySelectorAll(".obj,.door"),...$("#shelf").querySelectorAll(".sh")].map(e=>{const r=relRect(e);return{x:r.x,y:r.y,w:r.w,h:r.h}});
+  W.links.forEach((l,i)=>{
+    const hot0=S.sel&&(l.a===S.sel||l.b===S.sel);
+    // нити по требованию: в покое не видны, только выбранного объекта и изменённые
+    if(!hot0&&!l.st&&!l.err)return;
+    const ea=elOf(l.a),eb=elOf(l.b);if(!ea||!eb)return;
+    const a=relRect(ea),b=relRect(eb),g=S.v==="A"?pathA(a,b):pathB(a,b);mids[i]=g.m;
+    const hot=S.sel&&(l.a===S.sel||l.b===S.sel);
+    let st=l.st||(hot?"hot":"");if(l.err)st="err";
+    const dim=S.sel&&!hot&&!l.st&&!l.err;
+    const cls=`th${l.loot?" loot":""}${st?" "+st:""}${dim?" dim":""}`;
+    h+=`<path class="${cls}" d="${g.d}"/>`;
+    if(S.v==="B")for(const e of[g.p,g.q])h+=`<rect class="tend ${st}${dim?" dim":""}" x="${e.x-3.5}" y="${e.y-3.5}" width="7" height="7"/>`;
+    if(st&&!l.hideLabel){const w=l.t.length*7+16,H=22,cw=cv.clientWidth;
+      const hit=(x,y)=>x<4||x+w>cw-4||boxes.some(b=>x<b.x+b.w+3&&x+w+3>b.x&&y<b.y+b.h+2&&y+H+2>b.y);
+      const cands=[[0,0],[w/2+10,0],[-w/2-10,0],[0,-28],[0,28],[w/2+10,-28],[w/2+10,28],[-w/2-10,-28],[-w/2-10,28],[0,-56],[0,56]];
+      let x=null,y=null;
+      for(const [dx,dy] of cands){const cx=g.m.x-w/2+dx,cy=g.m.y-H/2+dy;if(!hit(cx,cy)){x=cx;y=cy;break}}
+      // места нет — подпись не рисуем поверх блоков: она есть внизу, в строке связей
+      if(x!==null){boxes.push({x,y,w,h:H});
+      lab+=`<rect class="tl-bg ${st}" x="${x}" y="${y}" width="${w}" height="${H}"/><text class="tl ${st}" x="${x+w/2}" y="${y+15.5}" text-anchor="middle">${esc(l.t)}</text>`}}
+  });
+  thS.innerHTML=h;lbS.innerHTML=lab;
+}
+
+/* ---------- Сообщение после жеста ---------- */
+let snT;
+function snack({t,s="проверено · в истории",tone="ok",act=null,ms=5000,bar=true}){
+  const el=$("#snack");clearTimeout(snT);
+  const ic=tone==="warn"?"warning":tone==="err"?"error":"check";
+  el.className="snack "+tone;
+  el.innerHTML=`<span class="sn-ic"><span class="ms f">${ic}</span></span><div class="sn-m"><div class="sn-t">${esc(t)}</div>${s?`<div class="sn-s">${esc(s)}</div>`:""}</div>${act?`<button class="sn-a" type="button">${esc(act.label)}</button>`:""}${bar&&act?`<i class="sn-bar"></i>`:""}`;
+  if(act)el.querySelector(".sn-a").onclick=()=>{hideSnack();act.fn()};
+  const b=el.querySelector(".sn-bar");
+  if(b&&!RM)b.animate([{transform:"scaleX(1)"},{transform:"scaleX(0)"}],{duration:ms,easing:"linear",fill:"forwards"});
+  requestAnimationFrame(()=>el.classList.add("on"));snT=setTimeout(hideSnack,ms);
+}
+function hideSnack(){$("#snack").classList.remove("on")}
+
+/* ---------- История: каждый жест — снимок, «Отменить» 5 секунд ---------- */
+function clearFlags(){W.objs.forEach(o=>{delete o.st});W.shelf.forEach(o=>{delete o.st});W.places.forEach(p=>{delete p.st});W.links.forEach(l=>{delete l.st;delete l.err})}
+function commit(){clearFlags();S.hist.push(clone(W));if(S.hist.length>40)S.hist.shift()}
+function undo(){if(!S.hist.length)return;W=S.hist.pop();closePops();render();snack({t:"Отменено",s:"",ms:2000})}
+const undoAct=()=>({label:"Отменить",fn:undo});
+
+/* ---------- Жесты на холсте ---------- */
+const ptrs=new Map();let G=null,pinch=null;
+cv.addEventListener("pointerdown",e=>{
+  if(e.target.closest("button,.pop,.empty,.snack"))return;
+  closePops();
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  try{cv.setPointerCapture(e.pointerId)}catch(_){}
+  if(ptrs.size===2){cancelG();const [p1,p2]=[...ptrs.values()],r=cv.getBoundingClientRect();
+    pinch={d0:Math.hypot(p1.x-p2.x,p1.y-p2.y),s0:S.s};return}
+  const t=e.target.closest("[data-id]"),pl=e.target.closest("[data-pid]"),door=e.target.closest("[data-door]");
+  G={id:e.pointerId,sx:e.clientX,sy:e.clientY,tx0:S.tx,ty0:S.ty,tgt:t?.dataset.id,pid:pl?.dataset.pid,door:door?.dataset.door,type:"pending"};
+  if(S.mode==="build"&&t&&!S.far&&!S.plan&&W.objs.some(o=>o.id===t.dataset.id))G.timer=setTimeout(()=>startLift(e),380);
+});
+cv.addEventListener("pointermove",e=>{
+  if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&ptrs.size===2){const [p1,p2]=[...ptrs.values()],r=cv.getBoundingClientRect();
+    zoomAround(pinch.s0*Math.hypot(p1.x-p2.x,p1.y-p2.y)/pinch.d0,(p1.x+p2.x)/2-r.left,(p1.y+p2.y)/2-r.top);return}
+  if(!G||G.id!==e.pointerId)return;
+  const dx=e.clientX-G.sx,dy=e.clientY-G.sy;
+  if(G.type==="pending"&&Math.hypot(dx,dy)>8){clearTimeout(G.timer);
+    if(S.mode==="build"&&G.tgt&&!S.far&&!S.plan)startThread();else G.type="pan"}
+  if(G.type==="pan"){S.tx=G.tx0+dx;S.ty=G.ty0+dy;clampView();applyView()}
+  else if(G.type==="thread")moveThread(e);
+  else if(G.type==="lift")moveLift(e);
+});
+function endPtr(e){
+  if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);
+  if(pinch){if(ptrs.size<2)pinch=null;G=null;return}
+  if(!G||G.id!==e.pointerId)return;clearTimeout(G.timer);
+  const g=G;G=null;
+  if(g.type==="pending")tap(g);else if(g.type==="thread")endThread(e,g);else if(g.type==="lift")endLift(e,g);
+}
+cv.addEventListener("pointerup",endPtr);cv.addEventListener("pointercancel",e=>{cancelG();endPtr(e)});
+function cancelG(){if(!G)return;clearTimeout(G.timer);if(G.type==="lift"&&G.el){G.el.classList.remove("lifted");render()}fx.innerHTML="";G=null}
+cv.addEventListener("wheel",e=>{e.preventDefault();const r=cv.getBoundingClientRect();zoomAround(S.s*Math.exp(-e.deltaY*.0016),e.clientX-r.left,e.clientY-r.top)},{passive:false});
+
+function tap(g){
+  if(S.far&&g.pid){const p=place(g.pid);centerOn(p.x,p.y,p.w,p.h,1);return}
+  if(g.door){enterDoor(g.door);return}
+  if(g.tgt){S.sel=S.sel===g.tgt?null:g.tgt}else S.sel=null;
+  render();
+}
+cv.addEventListener("click",e=>{
+  const en=e.target.closest("[data-enter]");if(en){enterDoor(en.dataset.enter);return}
+  const mk=e.target.closest("[data-mark]");if(mk){openMark(mk.dataset.mark);return}
+  const ov=e.target.closest("[data-ovf]");if(ov){const p=place(ov.dataset.ovf),l=W.objs.filter(o=>o.place===p.id);
+    snack({t:`${p.name}: ${l.map(o=>o.name).join(", ")}`,s:"",ms:3000});return}
+  const st=e.target.closest("[data-start]");if(st)quickStart(st.dataset.start);
+});
+cv.addEventListener("keydown",e=>{const t=e.target.closest("[data-id]");if(t&&(e.key==="Enter"||e.key===" ")){e.preventDefault();S.sel=S.sel===t.dataset.id?null:t.dataset.id;render()}});
+
+/* Вход в место и назад */
+function enterDoor(id){const d=W.doors.find(x=>x.id===id);if(!d)return;S.level="zaboy";S.sel=null;homeView();render();
+}
+$("#back").onclick=()=>{S.level="root";S.sel=null;homeView();render()};
+
+/* Провести нить */
+function startThread(){G.type="thread";S.sel=null;render();const a=relRect(elOf(G.tgt));G.a=a;
+  fx.innerHTML=`<line class="tmp" x1="${a.cx}" y1="${a.cy}" x2="${a.cx}" y2="${a.cy}"/>`}
+function hitId(e,except){const els=document.elementsFromPoint(e.clientX,e.clientY);for(const el of els){const t=el.closest&&el.closest("[data-id]");if(t&&t.dataset.id!==except&&cv.contains(t))return t}return null}
+function moveThread(e){const c=cv.getBoundingClientRect(),ln=fx.querySelector("line");ln.setAttribute("x2",e.clientX-c.left);ln.setAttribute("y2",e.clientY-c.top);
+  document.querySelectorAll(".target").forEach(x=>x.classList.remove("target"));const t=hitId(e,G.tgt);if(t)t.classList.add("target")}
+function linkRule(a,b){
+  const k=a.kind+">"+b.kind;
+  const R={"enemy>item":{t:"роняет",wheel:"chance",loot:1},"item>enemy":{t:"роняет",wheel:"chance",loot:1,flip:1},
+    "quest>npc":{menu:1},"npc>quest":{menu:1,flip:1},
+    "quest>enemy":{t:"убить",wheel:"count"},"enemy>quest":{t:"убить",wheel:"count",flip:1},
+    "quest>item":{t:"собрать"},"item>quest":{t:"собрать",flip:1},
+    "quest>event":{t:"пройти"},"event>quest":{t:"пройти",flip:1},
+    "event>enemy":{t:"враги",wheel:"count"},"enemy>event":{t:"враги",wheel:"count",flip:1},
+    "event>item":{t:"лежит"},"item>event":{t:"лежит",flip:1},
+    "npc>item":{t:"продаёт"},"item>npc":{t:"продаёт",flip:1}};
+  return R[k];
+}
+function endThread(e,g){
+  fx.innerHTML="";document.querySelectorAll(".target").forEach(x=>x.classList.remove("target"));
+  const t=hitId(e,g.tgt);if(!t){snack({t:"Отпусти на другом объекте",s:"",bar:false,ms:2000});return}
+  let A=obj(g.tgt),B=obj(t.dataset.id);const r=linkRule(A,B);
+  if(!r){snack({t:`${cap(KNAME[A.kind])} и ${KNAME[B.kind]} не связываются`,s:"",tone:"err",bar:false,ms:2600});return}
+  if(r.flip)[A,B]=[B,A];
+  if(W.links.some(l=>l.a===A.id&&l.b===B.id)){snack({t:`Уже связаны: ${A.name} и ${B.name}`,s:"",bar:false,ms:2000});return}
+  const c=cv.getBoundingClientRect(),px=e.clientX-c.left,py=e.clientY-c.top;
+  if(r.menu){openMenu(A,B,px,py);return}
+  commit();
+  const l={a:A.id,b:B.id,t:r.t,st:"new",loot:r.loot};
+  if(r.wheel==="chance")l.t=`${r.t} 25%`;if(r.wheel==="count")l.t=`${r.t} ×1`;
+  W.links.push(l);render();
+  if(r.wheel)openWheel(l,r);else snack({t:`Связь: ${A.name} — ${r.t} — ${B.name}`,act:undoAct()});
+}
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+
+/* Колёсико числа на нити */
+function openWheel(l,r){
+  closePops();hideSnack();const i=W.links.indexOf(l),m=mids[i]||{x:120,y:120},c=cv.getBoundingClientRect();
+  const vals=r.wheel==="chance"?Array.from({length:20},(_,k)=>(k+1)*5):Array.from({length:10},(_,k)=>k+1);
+  const start=r.wheel==="chance"?4:0,fmt=v=>r.wheel==="chance"?v+"%":"×"+v;
+  const el=document.createElement("div");el.className="pop wheel";
+  el.innerHTML=`<div class="wh">${r.wheel==="chance"?"Шанс":"Сколько"}</div><div class="drum">${vals.map(v=>`<div>${fmt(v)}</div>`).join("")}</div><div class="wsel"></div><button class="wb" type="button">Готово</button>`;
+  cv.appendChild(el);
+  const x=Math.max(8,Math.min(c.width-158,m.x-75)),y=Math.max(8,Math.min(c.height-64-el.offsetHeight-8,m.y+16));
+  el.style.left=x+"px";el.style.top=y+"px";
+  const drum=el.querySelector(".drum"),cells=[...drum.children];let cur=start;
+  const mark=()=>cells.forEach((d,k)=>d.classList.toggle("cur",k===cur));
+  drum.scrollTop=start*48;mark();let st;
+  drum.addEventListener("scroll",()=>{cur=Math.max(0,Math.min(vals.length-1,Math.round(drum.scrollTop/48)));mark();clearTimeout(st);
+    st=setTimeout(()=>{l.t=`${r.t} ${fmt(vals[cur])}`;drawThreads()},60)});
+  el.querySelector(".wb").onclick=()=>{l.t=`${r.t} ${fmt(vals[cur])}`;el.remove();render();
+    snack({t:`Связь: ${nameOf(l.a)} — ${l.t} — ${nameOf(l.b)}`,act:undoAct()})};
+}
+/* Меню вида связи: квест → житель */
+function openMenu(A,B,px,py){
+  closePops();const c=cv.getBoundingClientRect(),el=document.createElement("div");el.className="pop menu";
+  el.innerHTML=`<div class="mh">${esc(A.name)} → ${esc(B.name)}</div>
+    <button type="button" data-k="поговорить"><span class="ms">forum</span>Поговорить</button>
+    <button type="button" data-k="убить"><span class="ms">swords</span>Убить</button>`;
+  cv.appendChild(el);el.style.left=Math.max(8,Math.min(c.width-208,px-100))+"px";el.style.top=Math.max(8,Math.min(c.height-64-el.offsetHeight-8,py-el.offsetHeight-12))+"px";
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{el.remove();commit();W.links.push({a:A.id,b:B.id,t:b.dataset.k,st:"new"});render();
+    snack({t:`Связь: ${A.name} — ${b.dataset.k} — ${B.name}`,act:undoAct()})});
+}
+function closePops(){cv.querySelectorAll(".pop").forEach(p=>{p.remove()});const m=$("#markSheet");if(m)m.remove()}
+
+/* Поднять и перенести объект */
+function startLift(e){if(!G)return;G.type="lift";S.sel=null;
+  const el=objL.querySelector(`[data-id="${G.tgt}"]`);G.el=el;el.classList.add("lifted");
+  G.ox=parseFloat(el.style.left);G.oy=parseFloat(el.style.top);G.w0=toWorld(G.sx,G.sy);navigator.vibrate?.(12)}
+function toWorld(cx,cy){const r=cv.getBoundingClientRect();return{x:(cx-r.left-S.tx)/S.s,y:(cy-r.top-S.ty)/S.s}}
+function dropAt(w){
+  for(const p of visPlaces()){const {doorR}=slots(p);if(doorR&&w.x>doorR.x&&w.x<doorR.x+doorR.w&&w.y>doorR.y&&w.y<doorR.y+doorR.h)return{door:doorR.door}}
+  for(const p of visPlaces().slice().reverse())if(w.x>p.x&&w.x<p.x+p.w&&w.y>p.y&&w.y<p.y+p.h)return{place:p};
+  return null;
+}
+function hiDrop(t){document.querySelectorAll(".drop").forEach(x=>x.classList.remove("drop"));
+  if(t?.place)plL.querySelector(`[data-pid="${t.place.id}"]`)?.classList.add("drop");
+  if(t?.door)objL.querySelector(`[data-door="${t.door.id}"]`)?.classList.add("drop")}
+function moveLift(e){const w=toWorld(e.clientX,e.clientY);G.el.style.left=G.ox+w.x-G.w0.x+"px";G.el.style.top=G.oy+w.y-G.w0.y+"px";hiDrop(dropAt(w))}
+function returnBack(g,then){g.el.classList.add("back");g.el.style.left=g.ox+"px";g.el.style.top=g.oy+"px";
+  setTimeout(()=>{g.el.classList.remove("lifted","back");then&&then()},RM?0:300)}
+function endLift(e,g){
+  hiDrop(null);const o=W.objs.find(x=>x.id===g.tgt),t=dropAt(toWorld(e.clientX,e.clientY)),from=place(o.place);
+  if(!t){returnBack(g,()=>render());snack({t:"Брось в место",s:"",bar:false,ms:2000});return}
+  const toId=t.door?t.door.to:t.place.id,to=place(toId);
+  if(toId===o.place){returnBack(g,()=>render());return}
+  // ошибка: событие нужно квесту на своём месте — жест не применяется
+  const need=W.links.find(l=>l.b===o.id&&l.t==="пройти");
+  if(o.kind==="event"&&need){
+    returnBack(g,()=>{W.links.forEach(l=>{if(l===need)l.err=1});render();setTimeout(()=>{delete need.err;drawThreads()},2600)});
+    snack({t:`Не перенесено: ${o.name}`,s:`нужна квесту «${nameOf(need.a)}» в «${from.name}»`,tone:"err",act:{label:"Понятно",fn:()=>{}},bar:false,ms:6000});return}
+  commit();o.place=toId;o.st="changed";
+  if(o.kind==="enemy"&&o.lv>to.lv[1]){
+    o.mark={text:`${o.name} (ур. ${o.lv}) сильнее места «${to.name}» (${lvTxt(to)})`,from:from.id};
+    render();snack({t:`Перенесено: ${o.name} → ${to.name}`,tone:"warn",act:undoAct()});
+  }else{delete o.mark;render();snack({t:`Перенесено: ${o.name} → ${to.name}${t.door?" (внутрь)":""}`,act:undoAct()})}
+}
+/* Окно жёлтой метки: «Откатить» доступно всегда */
+function openMark(id){
+  closePops();const o=W.objs.find(x=>x.id===id);if(!o?.mark)return;const fromP=place(o.mark.from);
+  const el=document.createElement("div");el.id="markSheet";el.className="pop";
+  el.style.cssText="left:8px;right:8px;bottom:72px;border-color:var(--warn)";
+  el.innerHTML=`<div style="display:flex;gap:10px;padding:12px 12px 8px"><span class="ms f" style="color:var(--warn)">warning</span><div style="font-size:14px"><b style="font-weight:600">${esc(o.mark.text)}</b></div></div>
+    <div class="sacts" style="border-top:1px solid var(--outv)"><button class="qb text" type="button" data-k="keep">Оставить</button><button class="qb" type="button" data-k="back"><span class="ms">undo</span>Откатить</button></div>`;
+  cv.appendChild(el);
+  el.querySelector('[data-k="keep"]').onclick=()=>el.remove();
+  el.querySelector('[data-k="back"]').onclick=()=>{el.remove();commit();o.place=fromP.id;delete o.mark;o.st="changed";render();
+    snack({t:`Откачено: ${o.name} → ${fromP.name}`,act:undoAct()})};
+}
+
+/* Палитра: тащишь новое на холст */
+const NEWN={enemy:"Новый враг",npc:"Новый житель",event:"Новое событие",item:"Новый предмет",place:"Новое место"};
+$("#bottom").addEventListener("pointerdown",e=>{const p=e.target.closest(".pal");if(!p)return;e.preventDefault();
+  const k=p.dataset.new,app=$("#app"),ar=app.getBoundingClientRect(),gh=document.createElement("div");
+  gh.className="ghost";gh.innerHTML=`<span class="ms">${KIC[k]}</span>${NEWN[k]}`;app.appendChild(gh);
+  const mv=ev=>{gh.style.left=ev.clientX-ar.left+"px";gh.style.top=ev.clientY-ar.top+"px";
+    const c=cv.getBoundingClientRect(),over=ev.clientY<c.bottom-64&&ev.clientY>c.top;hiDrop(over&&k!=="item"&&k!=="place"?dropAt(toWorld(ev.clientX,ev.clientY)):null)};
+  mv(e);
+  const up=ev=>{window.removeEventListener("pointermove",mv);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",up);gh.remove();hiDrop(null);
+    const c=cv.getBoundingClientRect();if(ev.type==="pointercancel"||ev.clientY>c.bottom||ev.clientY<c.top){return}
+    dropNew(k,toWorld(ev.clientX,ev.clientY))};
+  window.addEventListener("pointermove",mv);window.addEventListener("pointerup",up);window.addEventListener("pointercancel",up);
+});
+function dropNew(k,w){
+  if(k==="item"){commit();const id="n"+(++S.uid);W.shelf.push({id,kind:"item",name:NEWN.item,ic:"key",st:"new"});render();
+    snack({t:"Создано: Новый предмет на полке",act:undoAct()});return}
+  if(k==="place"){commit();const b=bounds(),id="p"+(++S.uid),np={id,level:S.level,name:NEWN.place,lv:[1,3],hue:(S.uid+1)%5,x:visPlaces().length?Math.round(w.x-82):0,y:visPlaces().length?Math.round(w.y-20):0,w:164,h:148,st:"new"};
+    W.places.push(np);render();snack({t:"Создано: Новое место",act:undoAct()});return}
+  const t=dropAt(w);if(!t||t.door){snack({t:"Брось в место",s:"",bar:false,ms:2000});return}
+  commit();const id="n"+(++S.uid),o={id,kind:k,name:NEWN[k],place:t.place.id,st:"new",anim:1};if(k==="enemy"){o.lv=1;o.n=1}
+  W.objs.push(o);render();snack({t:`Создано: ${o.name} в «${t.place.name}»`,act:undoAct()});
+}
+
+/* ---------- Менять: план проступает на холсте ---------- */
+const ROW=(ic,o,f,was,now,target,tone,lvl)=>({ic,o,f,was,now,target,tone,lvl});
+function floodSteps(){return[
+  [ROW("location_on","Штольня №3","описание","сухая выработка","затоплена по пояс","place:shaft"),()=>{const p=place("shaft");p.desc="затоплена по пояс";p.st="changed"}],
+  [ROW("skull","Слизень","место","Штольня №3","Лебёдка","slime"),()=>{const o=obj("slime");o.place="winch";o.st="changed"}],
+  [ROW("skull","Утопленник","новый враг","—","Штольня №3 · ×3 · ур. 5","drown","new"),()=>{W.objs.splice(1,0,{id:"drown",kind:"enemy",name:"Утопленник",n:3,lv:5,place:"shaft",st:"new",anim:1})}],
+  [ROW("flag","Обвал","шаг 1","убить Слизня ×3","убить Утопленника ×3","obval"),()=>{const l=W.links.find(l=>l.a==="obval"&&l.b==="slime");l.b="drown";l.st="changed";obj("obval").st="changed"}],
+  [ROW("bolt","Засада","враги","Слизень ×3","Утопленник ×3","ambush"),()=>{const l=W.links.find(l=>l.a==="ambush"&&l.b==="slime");l.b="drown";l.st="changed";obj("ambush").st="changed"}],
+  [ROW("key","Ключ от лебёдки","кто роняет","Слизень 35%","Утопленник 35%","key"),()=>{const l=W.links.find(l=>l.a==="slime"&&l.b==="key");l.a="drown";l.st="changed";obj("key").st="changed"}]
+]}
+function seedSteps(){return[
+  [ROW("location_on","Шахты","новое место","—","ур. 2–5","place:s1","new"),()=>W.places.push({id:"s1",level:"root",name:"Шахты",lv:[2,5],hue:0,x:0,y:0,w:344,h:104,st:"new"})],
+  [ROW("location_on","Рынок","новое место","—","ур. 1–2","place:s2","new"),()=>W.places.push({id:"s2",level:"root",name:"Рынок",lv:[1,2],hue:3,x:0,y:120,w:164,h:148,st:"new"})],
+  [ROW("location_on","Бараки","новое место","—","ур. 1–3","place:s3","new"),()=>W.places.push({id:"s3",level:"root",name:"Бараки",lv:[1,3],hue:1,x:180,y:120,w:164,h:148,st:"new"})],
+  [ROW("person","Староста","новый житель","—","Бараки","st1","new"),()=>W.objs.push({id:"st1",kind:"npc",name:"Староста",place:"s3",st:"new",anim:1})],
+  [ROW("person","Торговец","новый житель","—","Рынок","st2","new"),()=>W.objs.push({id:"st2",kind:"npc",name:"Торговец",place:"s2",st:"new",anim:1})]
+]}
+const BIG=[
+  ROW("location_on","Штольня №3","описание","сухая выработка","затоплена по пояс","place:shaft"),
+  ROW("location_on","Штольня №3","уровни","3–5","4–6","place:shaft"),
+  ROW("skull","Слизень","место","Штольня №3","Лебёдка","slime"),
+  ROW("skull","Слизень","число","×3","×2","slime"),
+  ROW("skull","Утопленник","новый враг","—","Штольня №3 · ×3 · ур. 5","drown","new"),
+  ROW("skull","Утопленник","добыча","—","Ключ от лебёдки 35%","drown","new"),
+  ROW("bolt","Засада","враги","Слизень ×3","Утопленник ×3","ambush"),
+  ROW("bolt","Засада","описание","крик из темноты","тени поднимаются из воды","ambush"),
+  ROW("flag","Обвал","шаг 1","убить Слизня ×3","убить Утопленника ×3","obval"),
+  ROW("flag","Обвал","награда","Кирка","Кирка, 40 монет","obval"),
+  ROW("person","Бригадир","описание","ждёт у ворот","просит откачать воду","brig"),
+  ROW("person","Сторож","описание","дремлет","держит Слизней у лебёдки","guard"),
+  ROW("key","Ключ от лебёдки","кто роняет","Слизень","Утопленник","key"),
+  ROW("hardware","Кирка","цена","12","15","pick"),
+  ROW("location_on","Лебёдка","уровни","2–4","2–5","place:winch"),
+  ROW("location_on","Забой","описание","сухой","затоплен целиком","door:zaboy",null,"внутри"),
+  ROW("delete","Камнеед","удалён","Забой","—","door:zaboy",null,"внутри"),
+  ROW("bolt","Пузыри","новое событие","—","Забой","door:zaboy","new","внутри"),
+  ROW("person","Лодочник","новый житель","—","Рынок","place:market","new"),
+  ROW("person","Лодочник","продаёт","—","Кирка","place:market","new")
+];
+async function showPlan(kind){
+  closePops();hideSnack();clearFlags();S.sel=null;const before=clone(W);
+  if(kind==="big"){S.plan={kind,rows:BIG,before,ready:true,big:true};W.doors.forEach(d=>{if(d.id==="zaboy")d.plan=3});render();return}
+  const steps=kind==="seed"?seedSteps():floodSteps();
+  S.plan={kind,rows:[],before,ready:false,total:steps.length};render();
+  if(kind==="seed")homeView();
+  for(const [row,fn] of steps){if(!S.plan)return;
+    fn();S.plan.rows.push(row);render();
+    const pl=document.querySelector(".plist");if(pl)pl.scrollTop=pl.scrollHeight;
+    const el=targetEl(row.target);if(el)await focusEl(el,false);
+    await wait(620)}
+  if(!S.plan)return;S.plan.ready=true;render();
+}
+function planHTML(){
+  const p=S.plan,n=p.big?20:p.total;
+  const rows=p.rows.map((r,i)=>`<div class="prow${!p.big&&i===p.rows.length-1&&!p.ready?" appear":""}" data-row="${i}"><span class="ms">${r.ic}</span>
+    <div class="pt"><b>${esc(r.o)}</b> · ${esc(r.f)}${r.lvl?`<span class="lvl">${r.lvl}</span>`:""}<div class="ba"><span class="was">${esc(r.was)}</span><span class="arr">→</span><span class="now${r.tone==="new"?" new":""}">${esc(r.now)}</span></div></div>
+    ${p.big?`<button class="ib" type="button" data-show="${i}" aria-label="Показать на холсте: ${esc(r.o)}"><span class="ms">visibility</span></button>`:""}</div>`).join("");
+  const chk=p.ready?`<div class="chk"><span class="ms" style="color:var(--on)">check</span>Проверка: 0 ошибок, 0 предупреждений</div>`
+    :`<div class="chk wait"><span class="ms">auto_awesome</span>Строю план · ${p.rows.length} из ${n}</div>`;
+  return `<div class="sheet${p.big?" big":""}${p.peek?" peek":""}">
+    <div class="shd"><h2>План · ${n} изменений</h2>${p.peek?`<button class="qb" type="button" data-act="unpeek">Список</button>`:""}</div>${chk}
+    <div class="plist">${rows}</div>
+    <div class="sacts"><button class="qb" type="button" data-act="reject">Отклонить</button><button class="mb" type="button" data-act="apply" ${p.ready?"":"disabled"}>Применить</button></div></div>`;
+}
+function targetEl(t){if(!t)return null;if(t.startsWith("place:"))return plL.querySelector(`[data-pid="${t.slice(6)}"]`);
+  if(t.startsWith("door:"))return objL.querySelector(`[data-door="${t.slice(5)}"]`);return elOf(t)}
+async function focusEl(el,pulse=true){
+  const c=cv.getBoundingClientRect(),r=el.getBoundingClientRect(),inShelf=!!el.closest(".shelf");
+  if(!inShelf){const vis=r.top>=c.top+4&&r.bottom<=c.bottom-68&&r.left>=c.left&&r.right<=c.right;
+    if(!vis){const wx=(r.left-c.left-S.tx)/S.s,wy=(r.top-c.top-S.ty)/S.s;await centerOn(wx,wy,r.width/S.s,r.height/S.s)}}
+  if(pulse){const e2=el.isConnected?el:null;if(e2){e2.classList.remove("pulse");void e2.offsetWidth;e2.classList.add("pulse")}}
+}
+function applyPlan(){
+  const p=S.plan,before=p.before;
+  if(p.big){floodSteps().forEach(([,fn])=>fn());const sl=obj("slime");sl.n=2;place("shaft").lv=[4,6];place("winch").lv=[2,5];
+    W.objs=W.objs.filter(o=>o.id!=="stone");W.objs.push({id:"bub",kind:"event",name:"Пузыри",place:"zab",st:"new"},{id:"boat",kind:"npc",name:"Лодочник",place:"market",st:"new",anim:1});
+    W.links.push({a:"boat",b:"pick",t:"продаёт",st:"new"});W.doors.forEach(d=>delete d.plan)}
+  const n=p.big?20:p.total;S.hist.push(before);S.plan=null;render();
+  snack({t:`План применён: ${n} изменений`,act:{label:"Откатить",fn:()=>{S.hist.pop();W=clone(before);clearFlags();render();
+    snack({t:"Набор откачен",ms:2400})}},ms:7000});
+}
+function rejectPlan(){W=S.plan.before;W.doors.forEach(d=>delete d.plan);S.plan=null;render();snack({t:"План отклонён",s:"",ms:2000})}
+
+/* ---------- Кнопки низа ---------- */
+$("#bottom").addEventListener("click",e=>{
+  const m=e.target.closest("[data-mode]");if(m){S.mode=m.dataset.mode;S.sel=null;closePops();render();return}
+  const sh=e.target.closest("[data-show]");if(sh){const r=S.plan.rows[+sh.dataset.show];S.plan.peek=true;render();const el=targetEl(r.target);if(el)focusEl(el);return}
+  const row=e.target.closest("[data-row]");if(row&&S.plan&&!S.plan.big){const el=targetEl(S.plan.rows[+row.dataset.row].target);if(el)focusEl(el);return}
+  const a=e.target.closest("[data-act]");if(!a)return;
+  ({plan:()=>showPlan(S.world==="ash"?"flood":"seed"),plan20:()=>showPlan("big"),apply:applyPlan,reject:rejectPlan,
+    unpeek:()=>{S.plan.peek=false;render()},
+    page:()=>snack({t:`Страница: ${nameOf(S.sel)}`,s:"в прототипе не открывается",bar:false,ms:2000})})[a.dataset.act]?.();
+});
+
+/* ---------- Пустой мир: быстрые старты ---------- */
+function quickStart(k){
+  if(k==="place"){commit();W.places.push({id:"p"+(++S.uid),level:"root",name:"Новое место",lv:[1,3],hue:0,x:0,y:0,w:344,h:148,st:"new"});homeView();render();
+    snack({t:"Создано: Новое место",act:undoAct()})}
+  if(k==="ask"){S.mode="change";render();showPlan("seed")}
+}
+
+/* ---------- Прототип: вид А/Б и мир ---------- */
+$("#segW").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.world=b.dataset.w;W=S.world==="ash"?ashWorld():emptyWorld();
+  S.level="root";S.sel=null;S.plan=null;S.hist=[];closePops();hideSnack();homeView();render()};
+$("#zoom").onclick=()=>{const r=cv.getBoundingClientRect(),b=bounds();
+  if(S.far){animView(1,Math.round((r.width-344)/2)-b.x,12-b.y)}
+  else{const s=Math.max(.45,Math.min(.62,(r.height-90)/b.h,(r.width-24)/b.w));animView(s,r.width/2-(b.x+b.w/2)*s,Math.max(12,(r.height-64)/2-(b.y+b.h/2)*s))}};
+
+/* ---------- Подсказка при первом входе и легенда «?» ---------- */
+function lineSample(cls,v){return v==="A"
+  ?`<svg class="sw" viewBox="0 0 56 24" width="56" height="24"><path class="th ${cls}" d="M2,18 Q28,0 54,18"/></svg>`
+  :`<svg class="sw" viewBox="0 0 56 24" width="56" height="24"><path class="th ${cls}" d="M4,20 L4,14 L10,8 L46,8 L52,14 L52,20"/><rect class="tend ${cls}" x="0.5" y="16.5" width="7" height="7"/><rect class="tend ${cls}" x="48.5" y="16.5" width="7" height="7"/></svg>`}
+function sw(c,label){return `<div class="lg"><div class="sw" style="background:${c}"></div><div>${label}</div></div>`}
+function openHelp(){
+  const v=S.v,el=document.createElement("div");el.className="scrim";el.id="helpS";
+  el.innerHTML=`<div class="card" role="dialog" aria-label="Легенда"><div class="cardh"><h2>Легенда</h2><button class="ib" type="button" data-x aria-label="Закрыть"><span class="ms">close</span></button></div>
+    <h3>Цвета</h3>
+    ${sw("var(--primary)","Главное действие")}${sw("var(--change)","Изменено")}${sw("var(--ok)","Новое")}${sw("var(--warn)","Предупреждение")}${sw("var(--error)","Ошибка")}
+    <h3>Нити</h3>
+    <div class="lg">${lineSample("",v)}<div>Связь</div></div>
+    <div class="lg">${lineSample("loot",v)}<div>Добыча</div></div>
+    <div class="lg">${lineSample("hot",v)}<div>Выбрано</div></div>
+    <div class="lg">${lineSample("changed",v)}<div>Изменено</div></div>
+    <h3>Жесты</h3>
+    <div class="tip"><span class="ms">touch_app</span><div>Касание — связи объекта</div></div>
+    <div class="tip"><span class="ms">pinch</span><div>Два пальца — ближе, дальше</div></div>
+    <div class="tip"><span class="ms">south_east</span><div>Войти в место</div></div>
+    <div class="tip"><span class="ms">add</span><div>Из палитры в место — создать</div></div>
+    <div class="tip"><span class="ms">gesture</span><div>От объекта к объекту — связь</div></div>
+    <div class="tip"><span class="ms">pan_tool</span><div>Держать и тащить — перенести</div></div>
+    <div class="tip"><span class="ms">undo</span><div>Отменить — 5 секунд после жеста</div></div>
+  </div>`;
+  $("#app").appendChild(el);el.onclick=e=>{if(e.target===el||e.target.closest("[data-x]"))el.remove()};
+}
+$("#help").onclick=openHelp;
+function openCoach(){
+  const el=document.createElement("div");el.className="scrim";
+  el.innerHTML=`<div class="card" role="dialog" aria-label="Подсказка"><h2>Холст мира</h2>
+    <div class="tip"><span class="ms">touch_app</span><div>Нажми объект — увидишь связи</div></div>
+    <div class="tip"><span class="ms">pinch</span><div>Два пальца — ближе, дальше</div></div>
+    <div class="tip"><span class="ms">pan_tool</span><div>«Строить» — тащи и соединяй</div></div>
+    <button class="mb" type="button" data-x>Понятно</button></div>`;
+  $("#app").appendChild(el);el.querySelector("[data-x]").onclick=()=>{el.remove();try{localStorage.setItem("holst-coach","1")}catch(_){}};
+}
+
+/* ---------- Старт ---------- */
+homeView();render();
+let seen=false;try{seen=localStorage.getItem("holst-coach")==="1"}catch(_){}
+if(!seen)openCoach();
+addEventListener("resize",()=>{clampView();applyView()});
+</script>
