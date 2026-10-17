@@ -2,6 +2,7 @@
 // полка; нажал объект — его нити и связи, остальное гаснет; издалека — числа, вблизи — объекты.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/map/gesture_link.dart';
 import 'package:rpg_builder/map/holst_links.dart';
 import 'package:rpg_builder/map/holst_scene.dart';
 import 'package:rpg_builder/map/holst_threads.dart';
@@ -28,8 +29,47 @@ List<ThreadSpec> drawnThreads(WidgetTester t) {
   return painters.single.threads();
 }
 
-String linksText(WidgetTester t) =>
-    t.widget<Text>(find.byKey(const Key('holst-links'))).data!;
+/// Плитки связей нижней строки: имя объекта → как связаны.
+Map<String, String> linkTiles(WidgetTester t) {
+  final out = <String, String>{};
+  final info = find.byKey(const Key('holst-info'));
+  for (final e
+      in find
+          .descendant(
+            of: info,
+            matching: find.byWidgetPredicate(
+              (w) =>
+                  w.key is ValueKey<String> &&
+                  (w.key! as ValueKey<String>).value.startsWith('holst-link-'),
+            ),
+          )
+          .evaluate()) {
+    final texts = [
+      for (final x
+          in find
+              .descendant(
+                of: find.byWidget(e.widget),
+                matching: find.byType(Text),
+              )
+              .evaluate())
+        (x.widget as Text).data!,
+    ];
+    out[texts.first] = texts.last;
+  }
+  return out;
+}
+
+/// Все тексты нижней строки выбранного.
+List<String> infoTexts(WidgetTester t) => [
+  for (final x
+      in find
+          .descendant(
+            of: find.byKey(const Key('holst-info')),
+            matching: find.byType(Text),
+          )
+          .evaluate())
+    (x.widget as Text).data ?? '',
+];
 
 void main() {
   testWidgets('верхний уровень: места с жетонами, вложенное — дверью', (
@@ -100,10 +140,16 @@ void main() {
           reason: x.label,
         );
       }
-      expect(
-        linksText(t),
-        'убить ×3 · Обвал  /  роняет 35% · Ключ от лебёдки  /  враги ×3 · Засада',
-      );
+      // Связи — плитками: объект и как связан; ни точек, ни косых черт, ни «житель · место».
+      expect(linkTiles(t), {
+        'Обвал': 'убить ×3',
+        'Ключ от лебёдки': 'роняет 35%',
+        'Засада': 'враги ×3',
+      });
+      for (final x in infoTexts(t)) {
+        expect(x.contains('·') || x.contains(' / '), isFalse, reason: x);
+      }
+      expect(infoTexts(t), isNot(contains(contains('Штольня'))));
       for (final s in ['slizen', 'obval', 'zasada', 'klyuch_ot_lebedki']) {
         expect(opacityOf(t, s), 1, reason: s);
       }
@@ -141,7 +187,9 @@ void main() {
     t,
   ) async {
     await pumpHolst(t, await ashMines());
-    await t.tap(find.byKey(const Key('henter-zaboy')));
+    // Дверь нажимается целиком, не только стрелкой.
+    final door = t.getRect(find.byKey(const Key('hdoor-zaboy')));
+    await t.tapAt(door.topLeft + const Offset(30, 30));
     await t.pumpAndSettle();
     expect(
       t.widget<Text>(find.byKey(const Key('holst-path'))).data,
@@ -263,5 +311,35 @@ void main() {
     final side = [Rect.fromCenter(center: mid, width: 60, height: 30)];
     final moved = labelSpot(mid, const Size(80, 22), side, 400)!;
     expect(moved.overlaps(side.first.inflate(3)), isFalse);
+  });
+
+  test('связи по объекту: одна плитка, все виды связи в ней', () {
+    const links = [
+      HolstLink('q', 'npc', 'выдаёт'),
+      HolstLink('q', 'npc', 'поговорить'),
+      HolstLink('q', 'key', 'собрать ×1'),
+    ];
+    final g = linkGroups('q', links);
+    expect(g.map((x) => x.other), ['npc', 'key']);
+    expect(g.first.words, ['выдаёт', 'поговорить']);
+  });
+
+  testWidgets('две связи с одним объектом — одна плитка, без точек', (t) async {
+    final c = await ashMines();
+    final w = await c.snapshotOf(holstWorld.id);
+    final quest = w.quests.single.id;
+    final brig = w.characters.firstWhere((x) => x.slug == 'brigadir').id;
+    // Квест и выдаётся Бригадиром, и просит с ним поговорить.
+    await c.applyManualEdit(
+      holstWorld.id,
+      linkByGesture(holstWorld.id, w, LinkKind.talk, quest, brig, 1),
+    );
+    await pumpHolst(t, c);
+    await t.tap(token('brigadir'));
+    await t.pumpAndSettle();
+    expect(linkTiles(t), {'Обвал': 'выдаёт, поговорить'});
+    for (final x in infoTexts(t)) {
+      expect(x.contains('·') || x.contains(' / '), isFalse, reason: x);
+    }
   });
 }

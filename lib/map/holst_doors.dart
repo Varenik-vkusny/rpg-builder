@@ -31,95 +31,100 @@ class DoorTile extends StatelessWidget {
     Color tint(double a) =>
         Color.alphaBlend(hue.withValues(alpha: a), s.surface);
     final inside = door.inside.isEmpty ? 'пусто' : door.inside.join(', ');
-    return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: tokenTextScaleMax,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            left: 10,
-            top: 10,
-            right: -10,
-            bottom: -10,
-            child: ColoredBox(color: tint(.08)),
-          ),
-          Positioned(
-            left: 5,
-            top: 5,
-            right: -5,
-            bottom: -5,
-            child: ColoredBox(color: tint(.12)),
-          ),
-          Container(
-            width: door.rect.width,
-            height: door.rect.height,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: tint(.22),
-              border: drop ? Border.all(color: s.onSurface, width: 2) : null,
+    // Дверь нажимается целиком (замечание владельца 17.10), стрелка — для озвучки.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onEnter,
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: tokenTextScaleMax,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: 10,
+              top: 10,
+              right: -10,
+              bottom: -10,
+              child: ColoredBox(color: tint(.08)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Symbols.location_on_rounded,
-                      size: 20,
-                      color: s.onSurface,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        door.place.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.fade,
-                        softWrap: false,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+            Positioned(
+              left: 5,
+              top: 5,
+              right: -5,
+              bottom: -5,
+              child: ColoredBox(color: tint(.12)),
+            ),
+            Container(
+              width: door.rect.width,
+              height: door.rect.height,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: tint(.22),
+                border: drop ? Border.all(color: s.onSurface, width: 2) : null,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Symbols.location_on_rounded,
+                        size: 20,
+                        color: s.onSurface,
                       ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.only(right: 40),
-                  child: mark != null
-                      ? _DoorMark(mark!)
-                      : Text(
-                          'внутри: $inside',
-                          maxLines: 2,
-                          overflow: TextOverflow.clip,
-                          style: TextStyle(
-                            fontSize: 12,
-                            height: 1.3,
-                            color: s.onSurfaceVariant,
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          door.place.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.fade,
+                          softWrap: false,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                ),
-              ],
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 40),
+                    child: mark != null
+                        ? _DoorMark(mark!)
+                        : Text(
+                            'внутри: $inside',
+                            maxLines: 2,
+                            overflow: TextOverflow.clip,
+                            style: TextStyle(
+                              fontSize: 12,
+                              height: 1.3,
+                              color: s.onSurfaceVariant,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Semantics(
-              button: true,
-              label: 'Войти в место ${door.place.title}',
-              child: InkWell(
-                key: Key('henter-${door.place.slug}'),
-                onTap: onEnter,
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Icon(Symbols.south_east_rounded, color: s.onSurface),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Semantics(
+                button: true,
+                label: 'Войти в место ${door.place.title}',
+                child: InkWell(
+                  key: Key('henter-${door.place.slug}'),
+                  onTap: onEnter,
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(Symbols.south_east_rounded, color: s.onSurface),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

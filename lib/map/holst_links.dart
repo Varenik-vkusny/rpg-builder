@@ -48,17 +48,17 @@ List<HolstLink> worldLinks(WorldSnapshot w) => [
   ],
 ];
 
-/// Нижняя строка выбранного: «убить ×3 · Обвал / роняет 35% · Ключ». Связей нет — null.
-String? linksLine(
+/// Связи выбранного по объектам: с кем связан и как («Обвал» → «выдаёт», «поговорить»).
+/// Порядок — как у нитей; один объект — одна плитка.
+List<({String other, List<String> words})> linkGroups(
   String id,
   List<HolstLink> links,
-  String Function(String id) title,
 ) {
-  final mine = [
-    for (final l in links)
-      if (l.touches(id)) '${l.label} · ${title(l.other(id))}',
-  ];
-  return mine.isEmpty ? null : mine.join('  /  ');
+  final out = <String, List<String>>{};
+  for (final l in links) {
+    if (l.touches(id)) out.putIfAbsent(l.other(id), () => []).add(l.label);
+  }
+  return [for (final e in out.entries) (other: e.key, words: e.value)];
 }
 
 /// Соседи выбранного по нитям — вместе с ним самим.

@@ -134,7 +134,7 @@ class PlanSheet extends StatelessWidget {
     final h = MediaQuery.sizeOf(context).height;
     final checkLine = ready
         ? 'Проверка: ошибок $errors, предупреждений $warnings'
-        : 'Строю план · $shown из $total';
+        : 'Строю план: $shown из $total';
     return Container(
       key: const Key('holst-plan'),
       decoration: BoxDecoration(
@@ -149,15 +149,20 @@ class PlanSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 10, 12, 4),
             child: Row(
               children: [
+                Text(
+                  'План',
+                  style: TextStyle(
+                    fontFamily: AppStyle.of(context).display,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'План · ${changesWord(total)}',
+                    changesWord(total),
                     key: const Key('holst-plan-title'),
-                    style: TextStyle(
-                      fontFamily: AppStyle.of(context).display,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 14, color: s.onSurfaceVariant),
                   ),
                 ),
                 if (peek)
@@ -274,20 +279,23 @@ class _Row extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: row.title,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                // Имя и что меняется — раздельно, без точек-разделителей.
+                Wrap(
+                  spacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  children: [
+                    Text(
+                      row.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
-                      TextSpan(
-                        text: ' · ${row.field}',
-                        style: TextStyle(color: s.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                  style: const TextStyle(fontSize: 14),
+                    ),
+                    Text(
+                      row.field,
+                      style: TextStyle(fontSize: 13, color: s.onSurfaceVariant),
+                    ),
+                  ],
                 ),
                 if (row.error != null)
                   Text(

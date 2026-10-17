@@ -339,13 +339,17 @@ class _HolstState extends State<HolstScreen>
                       ),
                       child: HolstInfo(
                         token: sel,
-                        where: _placeTitle(sel.placeId),
-                        links: linksLine(
-                          sel.id,
-                          _links,
-                          (id) =>
-                              _scene.all[id]?.title ?? _placeTitle(id) ?? '?',
-                        ),
+                        links: [
+                          for (final g in linkGroups(sel.id, _links))
+                            (
+                              token: _scene.all[g.other],
+                              title:
+                                  _scene.all[g.other]?.title ??
+                                  _placeTitle(g.other) ??
+                                  '?',
+                              words: g.words,
+                            ),
+                        ],
                         onPage: _openPage,
                       ),
                     ),

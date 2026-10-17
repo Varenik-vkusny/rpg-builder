@@ -85,10 +85,10 @@ void main() {
       final c = await mines();
       await pumpHolst(t, c, assistant: everyTry(floodPlan()));
       await ask(t);
-      expect(text(t, 'holst-plan-title'), 'План · 5 изменений');
+      expect(text(t, 'holst-plan-title'), '5 изменений');
       // По шагу: строки и объекты появляются не сразу.
       await t.pump(const Duration(milliseconds: 700));
-      expect(text(t, 'holst-plan-check'), startsWith('Строю план ·'));
+      expect(text(t, 'holst-plan-check'), startsWith('Строю план:'));
       expect(t.widget<FilledButton>(k('holst-plan-apply')).onPressed, isNull);
       await settle(t);
       await t.pump(const Duration(seconds: 3));
@@ -152,7 +152,15 @@ void main() {
       );
       await ask(t);
       await settle(t);
-      expect(text(t, 'holst-plan-title'), 'План · 7 изменений');
+      expect(text(t, 'holst-plan-title'), '7 изменений');
+      // Лист плана — без точек-разделителей: имя и поле разнесены вёрсткой.
+      for (final e
+          in find
+              .descendant(of: k('holst-plan'), matching: find.byType(RichText))
+              .evaluate()) {
+        final x = (e.widget as RichText).text.toPlainText();
+        expect(x.contains('·'), isFalse, reason: x);
+      }
       expect(text(t, 'holst-plan-check'), startsWith('Проверка:'));
       // Седьмой враг — в Забое, уровнем ниже: на двери метка.
       expect(
@@ -186,7 +194,10 @@ void main() {
     await ask(t);
     await settle(t);
     await t.pump(const Duration(seconds: 2));
-    expect(text(t, 'holst-plan-check'), isNot(startsWith('Проверка: ошибок 0')));
+    expect(
+      text(t, 'holst-plan-check'),
+      isNot(startsWith('Проверка: ошибок 0')),
+    );
     expect(t.widget<FilledButton>(k('holst-plan-apply')).onPressed, isNull);
     await t.tap(k('holst-plan-apply'));
     await settle(t);
@@ -211,7 +222,7 @@ void main() {
     String line(PlanRow r) => '${r.title} · ${r.field}: ${r.was} → ${r.now}';
     expect(rows.map(line), [
       'Штольня №3 · описание: обвалившаяся выработка → затоплена по пояс',
-      'Утопленник · новое: — → Штольня №3 · ур. 3',
+      'Утопленник · новое: — → Штольня №3, ур. 3',
       'Слизень · добыча: Ключ 35% → —',
       'Утопленник · добыча: — → Ключ 35%',
       'Обвал · шаг 2: Убить: Слизень × 4 → Убить: Утопленник × 3',

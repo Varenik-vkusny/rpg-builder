@@ -174,21 +174,21 @@ class HolstShelf extends StatelessWidget {
   }
 }
 
-/// Нижняя строка выбранного: что это, где стоит, все связи словами, «Страница».
+/// Связь выбранного: с кем (жетон, если он на холсте или полке; место — без жетона) и как.
+typedef LinkTile = ({HolstToken? token, String title, List<String> words});
+
+/// Нижняя строка выбранного: имя крупно и связи плитками — значок и имя объекта,
+/// под ним мелко, как связаны. Вид объекта — по значку, место — видно на холсте.
 class HolstInfo extends StatelessWidget {
   const HolstInfo({
     super.key,
     required this.token,
-    required this.where,
     required this.links,
     required this.onPage,
   });
 
   final HolstToken token;
-
-  /// Название места; на полке — null.
-  final String? where;
-  final String? links;
+  final List<LinkTile> links;
   final VoidCallback onPage;
 
   @override
@@ -197,44 +197,100 @@ class HolstInfo extends StatelessWidget {
     return Padding(
       key: const Key('holst-info'),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 8,
         children: [
-          Icon(tokenIcon(token), color: s.onSurfaceVariant),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
+          Row(
+            children: [
+              Icon(tokenIcon(token), color: s.onSurfaceVariant),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
                   token.title,
                   maxLines: 2,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  '${kindName(token.kind)} · ${where ?? 'на полке'}',
-                  style: TextStyle(fontSize: 12, color: s.onSurfaceVariant),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    links ?? 'связей нет',
-                    key: const Key('holst-links'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.3,
-                      color: links == null ? s.onSurfaceVariant : s.onSurface,
-                    ),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
+              ),
+              OutlinedButton(
+                key: const Key('holst-page'),
+                onPressed: onPage,
+                child: const Text('Страница'),
+              ),
+            ],
+          ),
+          if (links.isEmpty)
+            Text(
+              'Связей нет',
+              key: const Key('holst-no-links'),
+              style: TextStyle(fontSize: 13, color: s.onSurfaceVariant),
+            )
+          else
+            SizedBox(
+              height: 52,
+              // Связей у объекта немного — строка целиком, листается вбок.
+              child: SingleChildScrollView(
+                key: const Key('holst-links'),
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  spacing: 8,
+                  children: [for (final l in links) _LinkChip(l)],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkChip extends StatelessWidget {
+  const _LinkChip(this.link);
+
+  final LinkTile link;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    final t = link.token;
+    return Container(
+      key: Key('holst-link-${t?.slug ?? link.title}'),
+      padding: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(color: s.surfaceContainerHigh),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            color: s.surfaceContainerHighest,
+            alignment: Alignment.center,
+            child: Icon(
+              t == null ? Symbols.location_on_rounded : tokenIcon(t),
+              size: 20,
+              color: s.onSurface,
+              fill: t?.kind == TokenKind.event ? 1 : 0,
             ),
           ),
-          const SizedBox(width: 8),
-          OutlinedButton(
-            key: const Key('holst-page'),
-            onPressed: onPage,
-            child: const Text('Страница'),
+          const SizedBox(width: 10),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                link.title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                link.words.join(', '),
+                style: TextStyle(fontSize: 12, color: s.onSurfaceVariant),
+              ),
+            ],
           ),
         ],
       ),

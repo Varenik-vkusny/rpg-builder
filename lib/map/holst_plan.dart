@@ -99,9 +99,7 @@ String _brief(OpResult r) {
     ?f('Место'),
     if (f('Уровень') case final l?) 'ур. $l',
   ];
-  return parts.isEmpty
-      ? (r.changes.lastOrNull?.after ?? '')
-      : parts.join(' · ');
+  return parts.isEmpty ? (r.changes.lastOrNull?.after ?? '') : parts.join(', ');
 }
 
 /// Связь (добыча, шаг, награда, враг и предмет события) — словом и вторым концом.
