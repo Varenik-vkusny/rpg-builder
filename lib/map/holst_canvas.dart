@@ -25,6 +25,7 @@ extension _Canvas on _HolstState {
               onTap: () => _setSel(null),
               onScaleStart: _scaleStart,
               onScaleUpdate: _scaleUpdate,
+              onScaleEnd: (_) => _setMoving(false),
               child: Stack(
                 key: _canvasKey,
                 children: [
@@ -313,6 +314,7 @@ extension _Canvas on _HolstState {
   // Сдвиг одним пальцем и масштаб двумя — вокруг точки между пальцами.
   void _scaleStart(ScaleStartDetails d) {
     _fly.stop();
+    _setMoving(true);
     _start = _view.value.clone();
     _focal0 = d.localFocalPoint;
   }

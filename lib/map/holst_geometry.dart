@@ -25,8 +25,63 @@ extension _Geometry on _HolstState {
   }
 
   /// Нити по требованию: в покое их нет, видны только у выбранного объекта.
+  /// Каждая проложена в обход блоков (иначе нить «проходит сквозь» чужой объект).
   List<ThreadSpec> _threads() {
     if (_far) return const [];
+    final raw = _rawThreads();
+    // Пока холст или блок едут под пальцем — без обхода: он считается, когда встанет.
+    if (raw.isEmpty || _moving || _lift != null || _drag != null) return raw;
+    final blocks = _blocks();
+    // Пути ищутся по очереди: следующая нить обходит полосы прежних. Один и тот же
+    // набор путей не ищется дважды, пока холст и нити не поменялись.
+    final key = Object.hashAll([
+      ...blocks,
+      for (final t in raw) ...[t.a, t.b],
+    ]);
+    final routes = _routes[key] ??= _routeAll(raw, blocks);
+    if (_routes.length > 60) _routes.removeWhere((k, _) => k != key);
+    return [for (final (i, t) in raw.indexed) t.withRoute(routes[i])];
+  }
+
+  List<List<Offset>?> _routeAll(List<ThreadSpec> raw, List<Rect> blocks) {
+    final taken = <Offset>{};
+    final band = Rect.fromLTWH(
+      0,
+      _vp.height - HolstShelf.height + 2,
+      _vp.width,
+      HolstShelf.height,
+    );
+    return [
+      for (final t in raw)
+        () {
+          final r = routeAround(
+            t.a,
+            t.b,
+            blocks,
+            _vp,
+            aOnlyTop: t.aShelf,
+            bOnlyTop: t.bShelf,
+            forbidden: band,
+            taken: taken,
+          );
+          if (r != null) taken.addAll(pathCells(r));
+          return r;
+        }(),
+    ];
+  }
+
+  /// Блоки, которые нить обходит: жетоны и двери. Полка закрыта целиком полосой.
+  List<Rect> _blocks() {
+    final m = _view.value;
+    return [
+      for (final p in _scene.places) ...[
+        for (final t in p.tokens) toScreen(m, t.rect),
+        for (final d in p.doors) toScreen(m, d.rect),
+      ],
+    ];
+  }
+
+  List<ThreadSpec> _rawThreads() {
     return [
       ?_pendingThread(),
       // План на холсте: новые нити — зелёные, изменённые — пурпурные, и в покое.
@@ -75,13 +130,10 @@ extension _Geometry on _HolstState {
   }
 
   /// Подпись не ложится на блоки: жетоны, двери и полку целиком.
+  /// Те же блоки, что обходит нить, и полка целиком.
   List<Rect> _obstacles() {
-    final m = _view.value;
     return [
-      for (final p in _scene.places) ...[
-        for (final t in p.tokens) toScreen(m, t.rect),
-        for (final d in p.doors) toScreen(m, d.rect),
-      ],
+      ..._blocks(),
       Rect.fromLTWH(
         0,
         _vp.height - HolstShelf.height,

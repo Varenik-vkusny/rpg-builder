@@ -35,6 +35,7 @@ import 'holst_pops.dart';
 import 'holst_parts.dart';
 import 'holst_plan.dart';
 import 'holst_plan_sheet.dart';
+import 'holst_route.dart';
 import 'holst_scene.dart';
 import 'holst_snack.dart';
 import 'holst_threads.dart';
@@ -143,6 +144,15 @@ class _HolstState extends State<HolstScreen>
   final _shelfKeys = <String, GlobalKey>{};
   final _shelfScroll = ScrollController();
 
+  /// Холст едет (палец, перелёт кадра): нити — простой ломаной, обход — когда встал.
+  bool _moving = false;
+  void _setMoving(bool v) {
+    if (v != _moving && mounted) setState(() => _moving = v);
+  }
+
+  /// Проложенные пути нитей (ключ — концы и блоки на экране).
+  final _routes = <int, List<List<Offset>?>>{};
+
   // Сцена, нити и проблемы — пересчитываются при смене мира или уровня.
   late HolstScene _scene;
   late List<HolstLink> _links;
@@ -154,6 +164,12 @@ class _HolstState extends State<HolstScreen>
     _rebuild();
     _fly.addListener(() {
       if (_flight case final f?) _view.value = f.value;
+    });
+    _fly.addStatusListener((s) {
+      if (s == AnimationStatus.forward) _setMoving(true);
+      if (s == AnimationStatus.completed || s == AnimationStatus.dismissed) {
+        _setMoving(false);
+      }
     });
     _view.addListener(_onView);
     coachSeen().then((seen) {

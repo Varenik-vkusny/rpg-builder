@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../ui/theme.dart';
+import 'holst_route.dart';
 
 /// Как выглядит нить: выбранного — белая, новая — зелёная, изменённая — пурпур, ошибка — красная.
 enum ThreadTone { hot, isNew, changed, error }
@@ -20,6 +21,7 @@ class ThreadSpec {
     this.loot = false,
     this.aShelf = false,
     this.bShelf = false,
+    this.route,
   });
 
   final Rect a;
@@ -29,6 +31,20 @@ class ThreadSpec {
   final bool loot;
   final bool aShelf;
   final bool bShelf;
+
+  /// Проложенный путь в обход блоков; null — простая ломаная между концами.
+  final List<Offset>? route;
+
+  ThreadSpec withRoute(List<Offset>? r) => ThreadSpec(
+    a: a,
+    b: b,
+    label: label,
+    tone: tone,
+    loot: loot,
+    aShelf: aShelf,
+    bShelf: bShelf,
+    route: r,
+  );
 }
 
 /// Точки ломаной между блоками: оба на полке — дугой над полкой; рядом по горизонтали —
@@ -148,6 +164,32 @@ Rect? labelSpot(
   return null;
 }
 
+/// Место подписи нити [t]: на её собственном участке (общие с другими нитями из [all]
+/// — не годятся: там не понять, чья подпись), отрезки от длинного к короткому.
+Rect? placeLabel(
+  ThreadSpec t,
+  List<ThreadSpec> all,
+  Size size,
+  List<Rect> busy,
+  double width,
+) {
+  final route = t.route;
+  if (route == null) {
+    final pts = threadPoints(t);
+    return labelSpot(pts[1], pts[2], size, busy, width);
+  }
+  final others = [
+    for (final o in all)
+      if (!identical(o, t) && o.route != null) o.route!,
+  ];
+  for (final s in segmentsByLength(route)) {
+    if (onOther(s, others)) continue;
+    final spot = labelSpot(s.$1, s.$2, size, busy, width);
+    if (spot != null) return spot;
+  }
+  return null;
+}
+
 class ThreadPainter extends CustomPainter {
   ThreadPainter({
     required this.threads,
@@ -171,7 +213,7 @@ class ThreadPainter extends CustomPainter {
     final list = threads();
     final busy = labels ? obstacles() : <Rect>[];
     for (final t in list) {
-      final pts = threadPoints(t);
+      final pts = t.route ?? threadPoints(t);
       final color = colors.of(t.tone);
       if (!labels) {
         final path = chamferPath(pts);
@@ -198,9 +240,9 @@ class ThreadPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
         maxLines: 1,
       )..layout();
-      final spot = labelSpot(
-        pts[1],
-        pts[2],
+      final spot = placeLabel(
+        t,
+        list,
         Size(tp.width + 16, 22),
         busy,
         size.width,
