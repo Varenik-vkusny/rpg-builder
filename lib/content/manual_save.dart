@@ -6,6 +6,15 @@ import 'manual_edit.dart';
 
 String _key(Problem p) => '${p.rule}|${p.objectId}|${p.message}';
 
+/// Проблемы, которых не было до правки: одна проверка для формы и жеста на холсте.
+List<Problem> newProblems(WorldSnapshot was, WorldSnapshot now) {
+  final old = {for (final p in checkWorld(was)) _key(p)};
+  return [
+    for (final p in checkWorld(now))
+      if (!old.contains(_key(p))) p,
+  ];
+}
+
 /// null — сохранено (или менять было нечего); иначе — что сказать автору.
 Future<String?> saveManualEdit(
   ContentRepo repo,
@@ -14,10 +23,9 @@ Future<String?> saveManualEdit(
   ManualEdit edit,
 ) async {
   if (edit.isEmpty) return null;
-  final was = {for (final p in checkWorld(world)) _key(p)};
   final broken = [
-    for (final p in checkWorld(edit.applyTo(world)))
-      if (p.severity == Severity.error && !was.contains(_key(p))) p.message,
+    for (final p in newProblems(world, edit.applyTo(world)))
+      if (p.severity == Severity.error) p.message,
   ];
   if (broken.isNotEmpty) {
     return 'Правка ломает мир — не сохранено: ${broken.join('; ')}';

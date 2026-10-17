@@ -22,66 +22,78 @@ extension _Canvas on _HolstState {
           _view.value = nearView(_vp, _scene.bounds);
         }
         return ClipRect(
-          child: GestureDetector(
-            key: const Key('holst-canvas'),
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _setSel(null),
-            onScaleStart: _scaleStart,
-            onScaleUpdate: _scaleUpdate,
-            child: Stack(
-              key: _canvasKey,
-              children: [
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: DotGrid(_view, s.outline.withValues(alpha: .3)),
-                  ),
-                ),
-                _layer(_placesLayer(context)),
-                Positioned.fill(
-                  child: IgnorePointer(
+          child: DragTarget<NewKind>(
+            onMove: _dragOver,
+            onLeave: (_) => _set(() => _dropPlace = null),
+            onAcceptWithDetails: _drop,
+            builder: (context, _, _) => GestureDetector(
+              key: const Key('holst-canvas'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _setSel(null),
+              onScaleStart: _scaleStart,
+              onScaleUpdate: _scaleUpdate,
+              child: Stack(
+                key: _canvasKey,
+                children: [
+                  Positioned.fill(
                     child: CustomPaint(
-                      painter: ThreadPainter(
-                        threads: _threads,
-                        colors: colors,
-                        labels: false,
-                        obstacles: () => const [],
-                        textStyle: const TextStyle(),
-                        repaint: repaint,
-                      ),
+                      painter: DotGrid(_view, s.outline.withValues(alpha: .3)),
                     ),
                   ),
-                ),
-                if (!_far) _layer(_tokensLayer(context)),
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: ThreadPainter(
-                        threads: _threads,
-                        colors: colors,
-                        labels: true,
-                        obstacles: _obstacles,
-                        textStyle: const TextStyle(
-                          fontFamily: 'GolosText',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                  _layer(_placesLayer(context)),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: ThreadPainter(
+                          threads: _threads,
+                          colors: colors,
+                          labels: false,
+                          obstacles: () => const [],
+                          textStyle: const TextStyle(),
+                          repaint: repaint,
                         ),
-                        repaint: repaint,
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: HolstShelf(
-                    tokens: _scene.shelf,
-                    keys: _shelfKeys,
-                    controller: _shelfScroll,
-                    chip: (t) => _token(t, null, width: null),
+                  if (!_far) _layer(_tokensLayer(context)),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: ThreadPainter(
+                          threads: _threads,
+                          colors: colors,
+                          labels: true,
+                          obstacles: _obstacles,
+                          textStyle: const TextStyle(
+                            fontFamily: 'GolosText',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          repaint: repaint,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: HolstShelf(
+                      tokens: _scene.shelf,
+                      keys: _shelfKeys,
+                      controller: _shelfScroll,
+                      chip: (t) => _token(t, null, width: null),
+                    ),
+                  ),
+                  if (_snack case final sn?)
+                    Positioned(
+                      left: 8,
+                      right: 8,
+                      bottom: HolstShelf.height + 8,
+                      child: HolstSnack(data: sn),
+                    ),
+                ],
+              ),
             ),
           ),
         );
@@ -133,6 +145,8 @@ extension _Canvas on _HolstState {
                     far: _far,
                     stats: farStats(_w, p),
                     problems: placeProblems(_problems, p),
+                    mark: _marks[p.place.id] ?? Mark.none,
+                    drop: _dropPlace == p.place.id,
                   ),
                 ),
               ),
@@ -200,6 +214,8 @@ extension _Canvas on _HolstState {
             hue: hue,
             width: width,
             selected: _sel == t.id,
+            mark: _marks[t.id] ?? Mark.none,
+            warn: _warns.containsKey(t.id),
           ),
         ),
       ),

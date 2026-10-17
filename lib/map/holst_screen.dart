@@ -1,26 +1,35 @@
 // Холст мира (5е) — места уровня с объектами внутри, полка у края, нити выбранного.
 // Сдвиг и масштаб пальцами; издалека места с числами, вблизи — объекты; дверь ведёт
 // уровнем ниже. Формы и страницы объектов остаются запасным путём («Страница»).
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../content/event_pages.dart';
 import '../content/location.dart';
+import '../content/manual_edit.dart';
 import '../content/nesting.dart';
 import '../content/world_pages.dart';
 import '../help/help.dart';
 import '../ui/theme.dart';
 import '../worlds/world.dart';
+import 'gesture_create.dart';
+import 'gesture_path.dart';
 import 'holst_bars.dart';
 import 'holst_doors.dart';
 import 'holst_links.dart';
+import 'holst_modes.dart';
 import 'holst_parts.dart';
 import 'holst_scene.dart';
+import 'holst_snack.dart';
 import 'holst_threads.dart';
 import 'holst_view.dart';
 import 'map_parts.dart' show DotGrid;
 
+part 'holst_build.dart';
 part 'holst_canvas.dart';
 
 class HolstScreen extends StatefulWidget {
@@ -50,6 +59,23 @@ class _HolstState extends State<HolstScreen>
   List<Location> _path = const [];
   String? _sel;
   bool _far = false;
+  HolstMode _mode = HolstMode.look;
+
+  /// Жест в пути — второй не начинается.
+  bool _busy = false;
+
+  /// Место, над которым держат объект из палитры.
+  String? _dropPlace;
+
+  /// Полоса после жеста и её таймер.
+  SnackData? _snack;
+  Timer? _snackTimer;
+
+  /// Подсветка после жеста: новое — зелёным, изменённое — пурпуром (до следующего жеста).
+  final _marks = <String, Mark>{};
+
+  /// Жёлтые метки: объект с новым предупреждением — текст и набор, который откатить.
+  final _warns = <String, ({String text, String setId})>{};
 
   final _view = TransformationController();
   late final _fly = AnimationController(
@@ -85,6 +111,7 @@ class _HolstState extends State<HolstScreen>
 
   @override
   void dispose() {
+    _snackTimer?.cancel();
     _fly.dispose();
     _view.dispose();
     _shelfScroll.dispose();
@@ -140,6 +167,9 @@ class _HolstState extends State<HolstScreen>
   void _tapToken(String id) => setState(() => _sel = _sel == id ? null : id);
   void _setSel(String? id) => setState(() => _sel = id);
 
+  /// setState для частей экрана (holst_build.dart, holst_canvas.dart).
+  void _set(VoidCallback f) => setState(f);
+
   /// Страница выбранного объекта; вернулись с правкой — перечитать мир.
   Future<void> _openPage() async {
     final id = _sel;
@@ -193,7 +223,8 @@ class _HolstState extends State<HolstScreen>
                 trailing: const [HelpAction('holst')],
               ),
               Expanded(child: _canvas(context)),
-              if (sel != null && !_far)
+              if (_mode == HolstMode.build) const HolstPalette(),
+              if (sel != null && !_far && _mode == HolstMode.look)
                 DecoratedBox(
                   decoration: BoxDecoration(
                     border: Border(
@@ -213,6 +244,14 @@ class _HolstState extends State<HolstScreen>
                     onPage: _openPage,
                   ),
                 ),
+              HolstModes(
+                mode: _mode,
+                modes: const [HolstMode.look, HolstMode.build],
+                onMode: (m) => setState(() {
+                  _mode = m;
+                  _sel = null;
+                }),
+              ),
             ],
           ),
         ),

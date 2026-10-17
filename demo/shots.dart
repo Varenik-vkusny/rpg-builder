@@ -10,8 +10,16 @@ export '../test/real_fonts.dart' show loadFont;
 
 final frame = GlobalKey();
 
-Future<void> shot(WidgetTester t, String name, {double ratio = 1.5}) async {
-  await t.pumpAndSettle();
+Future<void> shot(
+  WidgetTester t,
+  String name, {
+  double ratio = 1.5,
+  bool settle = true,
+}) async {
+  // Полоса после жеста живёт 5 секунд: «до тишины» её не снять.
+  settle
+      ? await t.pumpAndSettle()
+      : await t.pump(const Duration(milliseconds: 400));
   await t.runAsync(() async {
     final boundary =
         frame.currentContext!.findRenderObject()! as RenderRepaintBoundary;
