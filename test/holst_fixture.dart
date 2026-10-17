@@ -3,6 +3,7 @@
 // квест «Обвал», Ключ от лебёдки и Кирка на полке. Холст — прямо, без входа в приложение.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/event.dart';
@@ -136,7 +137,10 @@ Future<void> pumpHolst(
   GlobalKey? wrap,
   Widget Function(Widget app)? around,
   AssistantService? assistant,
+  bool coachSeen = true,
 }) async {
+  // Подсказку первого входа «уже видели», если тест не про неё: она закрывает холст.
+  SharedPreferences.setMockInitialValues({if (coachSeen) 'holst-coach': true});
   t.view.physicalSize = size;
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
@@ -158,6 +162,24 @@ Future<void> pumpHolst(
   }
   await t.pumpWidget(
     wrap == null ? app : RepaintBoundary(key: wrap, child: app),
+  );
+  await t.pumpAndSettle();
+}
+
+/// Холст заново, не трогая хранилище подсказки (второй вход).
+Future<void> pumpHolstKeepPrefs(WidgetTester t, FakeContent c) async {
+  final snapshot = await c.snapshotOf(holstWorld.id);
+  await t.pumpWidget(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: appTheme(Brightness.dark),
+      home: HolstScreen(
+        world: holstWorld,
+        repo: c,
+        snapshot: snapshot,
+        assistant: FakeAssistant(),
+      ),
+    ),
   );
   await t.pumpAndSettle();
 }

@@ -28,6 +28,7 @@ import 'gesture_move.dart';
 import 'gesture_path.dart';
 import 'holst_bars.dart';
 import 'holst_doors.dart';
+import 'holst_help.dart';
 import 'holst_links.dart';
 import 'holst_modes.dart';
 import 'holst_pops.dart';
@@ -108,6 +109,9 @@ class _HolstState extends State<HolstScreen>
   DragThread? _drag;
   PendingLink? _link;
 
+  /// Подсказку первого входа уже видели (до чтения — не показывать).
+  bool _coachSeen = true;
+
   /// Жёлтые метки: объект с новым предупреждением — текст и набор, который откатить.
   final _warns = <String, ({String text, String setId, String undone})>{};
 
@@ -148,6 +152,14 @@ class _HolstState extends State<HolstScreen>
       if (_flight case final f?) _view.value = f.value;
     });
     _view.addListener(_onView);
+    coachSeen().then((seen) {
+      if (mounted && !seen) setState(() => _coachSeen = false);
+    });
+  }
+
+  void _coachDone() {
+    setState(() => _coachSeen = true);
+    markCoachSeen();
   }
 
   @override
@@ -256,72 +268,79 @@ class _HolstState extends State<HolstScreen>
       },
       child: Scaffold(
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              HolstTopBar(
-                world: widget.world.title,
-                path: _crumb,
-                far: _far,
-                onBack: _back,
-                onZoom: _scene.places.isEmpty ? null : _toggleZoom,
-                trailing: const [HelpAction('holst')],
-              ),
-              Expanded(child: _canvas(context)),
-              if (_plan case final p?)
-                PlanSheet(
-                  rows: p.rows,
-                  total: p.run.proposal.plan.ops.length,
-                  shown: p.shown,
-                  ready: p.ready,
-                  errors: p.run.preview.of(Severity.error).length,
-                  warnings: p.run.preview.of(Severity.warning).length,
-                  canApply: p.run.canApply,
-                  big: p.big,
-                  peek: p.peek,
-                  busy: _busy,
-                  onShow: _showRow,
-                  onUnpeek: () => setState(() => _plan = _with(p, peek: false)),
-                  onApply: () => _decidePlan(true),
-                  onReject: () => _decidePlan(false),
-                )
-              else if (_mode == HolstMode.build)
-                const HolstPalette()
-              else if (_mode == HolstMode.change)
-                ChangeTray(
-                  controller: _phrase,
-                  scope: _scopeTitle,
-                  busy: _asking,
-                  onAsk: _ask,
-                ),
-              if (sel != null && !_far && _mode == HolstMode.look)
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: Theme.of(context).colorScheme.outlineVariant,
+              Column(
+                children: [
+                  HolstTopBar(
+                    world: widget.world.title,
+                    path: _crumb,
+                    far: _far,
+                    onBack: _back,
+                    onZoom: _scene.places.isEmpty ? null : _toggleZoom,
+                    trailing: const [HelpAction('holst', body: holstLegend)],
+                  ),
+                  Expanded(child: _canvas(context)),
+                  if (_plan case final p?)
+                    PlanSheet(
+                      rows: p.rows,
+                      total: p.run.proposal.plan.ops.length,
+                      shown: p.shown,
+                      ready: p.ready,
+                      errors: p.run.preview.of(Severity.error).length,
+                      warnings: p.run.preview.of(Severity.warning).length,
+                      canApply: p.run.canApply,
+                      big: p.big,
+                      peek: p.peek,
+                      busy: _busy,
+                      onShow: _showRow,
+                      onUnpeek: () =>
+                          setState(() => _plan = _with(p, peek: false)),
+                      onApply: () => _decidePlan(true),
+                      onReject: () => _decidePlan(false),
+                    )
+                  else if (_mode == HolstMode.build)
+                    const HolstPalette()
+                  else if (_mode == HolstMode.change)
+                    ChangeTray(
+                      controller: _phrase,
+                      scope: _scopeTitle,
+                      busy: _asking,
+                      onAsk: _ask,
+                    ),
+                  if (sel != null && !_far && _mode == HolstMode.look)
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                        ),
+                      ),
+                      child: HolstInfo(
+                        token: sel,
+                        where: _placeTitle(sel.placeId),
+                        links: linksLine(
+                          sel.id,
+                          _links,
+                          (id) =>
+                              _scene.all[id]?.title ?? _placeTitle(id) ?? '?',
+                        ),
+                        onPage: _openPage,
                       ),
                     ),
-                  ),
-                  child: HolstInfo(
-                    token: sel,
-                    where: _placeTitle(sel.placeId),
-                    links: linksLine(
-                      sel.id,
-                      _links,
-                      (id) => _scene.all[id]?.title ?? _placeTitle(id) ?? '?',
+                  if (_plan == null)
+                    HolstModes(
+                      mode: _mode,
+                      onMode: (m) => setState(() {
+                        _mode = m;
+                        _sel = null;
+                        _scopePlace = null;
+                      }),
                     ),
-                    onPage: _openPage,
-                  ),
-                ),
-              if (_plan == null)
-                HolstModes(
-                  mode: _mode,
-                  onMode: (m) => setState(() {
-                    _mode = m;
-                    _sel = null;
-                    _scopePlace = null;
-                  }),
-                ),
+                ],
+              ),
+              if (!_coachSeen) HolstCoach(onDone: _coachDone),
             ],
           ),
         ),

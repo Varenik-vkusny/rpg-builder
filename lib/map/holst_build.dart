@@ -71,6 +71,30 @@ extension _Build on _HolstState {
     );
   }
 
+  /// Пустой мир: первое место — тем же жестом, что из палитры. «Попросить ассистента» —
+  /// ассистенту нужна область, поэтому сначала место, затем «Менять» с ним.
+  Future<void> _firstPlace({required bool ask}) async {
+    final made = createByGesture(
+      widget.world.id,
+      _w,
+      NewKind.place,
+      levels: (
+        widget.world.levelMin,
+        math.min(widget.world.levelMin + 2, widget.world.levelMax),
+      ),
+    );
+    final ok = await _gesture(
+      made.edit,
+      done: 'Создано: ${newTitle(NewKind.place)}',
+      marks: {made.id: Mark.isNew},
+    );
+    if (!ok || !mounted || !ask) return;
+    _set(() {
+      _mode = HolstMode.change;
+      _scopePlace = made.id;
+    });
+  }
+
   /// Жест через единственную дорогу; применён — мир перечитан, полоса с «Отменить».
   /// [undone] — что сказать, если откатят из жёлтой метки. true — применён.
   Future<bool> _gesture(

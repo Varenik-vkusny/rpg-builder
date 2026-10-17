@@ -5,6 +5,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../ui/theme.dart';
+
 /// Как выглядит нить: выбранного — белая, новая — зелёная, изменённая — пурпур, ошибка — красная.
 enum ThreadTone { hot, isNew, changed, error }
 
@@ -107,6 +109,19 @@ class ThreadColors {
     ThreadTone.changed => changed,
     ThreadTone.error => error,
   };
+}
+
+/// Цвета нитей холста — одни для холста и легенды «?».
+ThreadColors threadColors(BuildContext context) {
+  final s = Theme.of(context).colorScheme;
+  final c = AppColors.of(context);
+  return ThreadColors(
+    hot: s.onSurface,
+    isNew: c.ok,
+    changed: c.change,
+    error: s.error,
+    ink: s.surfaceContainerLowest,
+  );
 }
 
 /// Где встанет подпись: у середины нити и рядом, но не на блоках, не на других подписях

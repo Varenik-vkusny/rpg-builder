@@ -120,12 +120,15 @@ extension HelpFieldX on Widget {
       HelpField(id, top: top, child: this);
 }
 
-/// «?» в шапке экрана.
+/// «?» в шапке экрана; нажатие — шторка со строками справки.
 class HelpAction extends StatelessWidget {
-  const HelpAction(this.id, {super.key});
+  const HelpAction(this.id, {super.key, this.body});
 
   /// Ключ текста в [screenHelp].
   final String id;
+
+  /// Своё наполнение шторки (легенда холста); строки справки в нём показываются всё равно.
+  final List<Widget> Function(BuildContext, ScreenHelp)? body;
 
   @override
   Widget build(BuildContext context) {
@@ -136,8 +139,12 @@ class HelpAction extends StatelessWidget {
       key: Key('help-screen-$id'),
       tooltip: 'Справка',
       icon: const Icon(Symbols.help_rounded),
-      onPressed: () =>
-          _sheet(context, help.title, [for (final l in help.lines) Text(l)]),
+      onPressed: () => _sheet(context, help.title, [
+        if (body case final b?)
+          ...b(context, help)
+        else
+          for (final l in help.lines) Text(l),
+      ]),
     );
   }
 }

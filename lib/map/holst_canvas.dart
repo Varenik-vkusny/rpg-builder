@@ -5,14 +5,7 @@ part of 'holst_screen.dart';
 extension _Canvas on _HolstState {
   Widget _canvas(BuildContext context) {
     final s = Theme.of(context).colorScheme;
-    final c = AppColors.of(context);
-    final colors = ThreadColors(
-      hot: s.onSurface,
-      isNew: c.ok,
-      changed: c.change,
-      error: s.error,
-      ink: s.surfaceContainerLowest,
-    );
+    final colors = threadColors(context);
     final repaint = Listenable.merge([_view, _shelfScroll]);
     return LayoutBuilder(
       builder: (context, box) {
@@ -74,6 +67,15 @@ extension _Canvas on _HolstState {
                       ),
                     ),
                   ),
+                  // Пустой мир — три быстрых старта вместо пустого поля.
+                  if (_scene.places.isEmpty && _path.isEmpty && _plan == null)
+                    Positioned.fill(
+                      bottom: HolstShelf.height,
+                      child: EmptyStarts(
+                        onPlace: () => _firstPlace(ask: false),
+                        onAsk: () => _firstPlace(ask: true),
+                      ),
+                    ),
                   Positioned(
                     left: 0,
                     right: 0,
