@@ -150,7 +150,6 @@ class _WorldScreenState extends State<WorldScreen> {
             world: widget.world,
             repo: widget.repo,
             open5e: widget.open5e,
-            assistant: widget.assistant,
             open: _open,
             filter: _filter,
             setFilter: _setFilter,

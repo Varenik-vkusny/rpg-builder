@@ -68,9 +68,11 @@ Future<void> signUp(WidgetTester t, String email) async {
   await t.pumpAndSettle();
 }
 
-/// Открывает мир из списка своих миров.
+/// Открывает мир из списка своих миров: он открывается холстом, отсюда — «Списки».
 Future<void> openWorld(WidgetTester t, String title) async {
   await t.tap(find.text(title));
+  await t.pumpAndSettle();
+  await t.tap(find.byKey(const Key('holst-lists')));
   await t.pumpAndSettle();
 }
 

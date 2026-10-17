@@ -23,6 +23,9 @@ void main() {
     await createWorld(t, 'Пепельные копи');
     await t.tap(find.text('Пепельные копи'));
     await t.pumpAndSettle();
+    // Мир открывается холстом; снимки ниже — про списки мира.
+    await t.tap(find.byKey(const Key('holst-lists')));
+    await t.pumpAndSettle();
 
     await t.tap(find.byKey(const Key('new-location')));
     await t.pumpAndSettle();

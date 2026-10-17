@@ -68,6 +68,9 @@ Future<void> mainTour(WidgetTester t, TextFit fit) async {
   await tapKey(t, const Key('world-save'));
   await fit.see(t, 'мои миры');
   await tapOn(t, find.text('Пепельные копи'));
+  // Мир открывается холстом; списки — кнопкой «Списки».
+  await fit.see(t, 'холст');
+  await tapKey(t, const Key('holst-lists'));
   await fit.scanScrolling(t, 'мир');
 
   for (final (slug, name, page) in [

@@ -55,6 +55,7 @@ class HolstScreen extends StatefulWidget {
     required this.repo,
     required this.snapshot,
     required this.assistant,
+    this.lists,
   });
 
   final World world;
@@ -63,6 +64,9 @@ class HolstScreen extends StatefulWidget {
 
   /// Ассистент фразы — режим «Менять».
   final AssistantService assistant;
+
+  /// Экран списков мира — кнопка «Списки» (холст — главный экран мира); null — кнопки нет.
+  final Widget Function()? lists;
 
   @override
   State<HolstScreen> createState() => _HolstState();
@@ -226,6 +230,13 @@ class _HolstState extends State<HolstScreen>
   /// setState для частей экрана (holst_build.dart, holst_canvas.dart).
   void _set(VoidCallback f) => setState(f);
 
+  /// Списки мира; вернулись — перечитать мир: там могли создать, править и удалять.
+  Future<void> _openLists() async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => widget.lists!()));
+    if (mounted) await _reload();
+  }
+
   /// Страница выбранного объекта; вернулись с правкой — перечитать мир.
   Future<void> _openPage() async {
     final id = _sel;
@@ -278,7 +289,16 @@ class _HolstState extends State<HolstScreen>
                     far: _far,
                     onBack: _back,
                     onZoom: _scene.places.isEmpty ? null : _toggleZoom,
-                    trailing: const [HelpAction('holst', body: holstLegend)],
+                    trailing: [
+                      if (widget.lists != null)
+                        IconButton(
+                          key: const Key('holst-lists'),
+                          tooltip: 'Списки',
+                          icon: const Icon(Symbols.list_alt_rounded),
+                          onPressed: _openLists,
+                        ),
+                      const HelpAction('holst', body: holstLegend),
+                    ],
                   ),
                   Expanded(child: _canvas(context)),
                   if (_plan case final p?)

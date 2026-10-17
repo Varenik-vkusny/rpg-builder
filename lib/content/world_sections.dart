@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
-import '../assistant/assistant_service.dart';
-import '../map/holst_screen.dart';
 import '../map/map_screen.dart';
 import '../open5e/open5e_api.dart';
 import '../open5e/open5e_screen.dart';
@@ -29,7 +27,6 @@ class WorldSections {
     required this.world,
     required this.repo,
     required this.open5e,
-    required this.assistant,
     required this.open,
     required this.filter,
     required this.setFilter,
@@ -38,9 +35,6 @@ class WorldSections {
   });
 
   final BuildContext context;
-
-  /// Ассистент фразы — для «Менять» на холсте.
-  final AssistantService assistant;
   final World world;
   final ContentRepo repo;
   final Open5eApi open5e;
@@ -108,30 +102,11 @@ class WorldSections {
       const Key('new-location'),
       'Новая локация',
       NewLocationScreen(world: world, repo: repo, locations: c.locations),
-      lead: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            key: const Key('holst-open'),
-            tooltip: 'Холст мира',
-            icon: const Icon(Symbols.dashboard_rounded),
-            onPressed: () => open(
-              HolstScreen(
-                world: world,
-                repo: repo,
-                snapshot: c,
-                assistant: assistant,
-              ),
-            ),
-          ),
-          IconButton(
-            key: const Key('map-open'),
-            tooltip: 'Карта',
-            icon: const Icon(Symbols.map_rounded),
-            onPressed: () =>
-                open(MapScreen(world: world, repo: repo, snapshot: c)),
-          ),
-        ],
+      lead: IconButton(
+        key: const Key('map-open'),
+        tooltip: 'Карта',
+        icon: const Icon(Symbols.map_rounded),
+        onPressed: () => open(MapScreen(world: world, repo: repo, snapshot: c)),
       ),
     ),
     if (c.locations.isEmpty) const ListTile(subtitle: Text('Локаций пока нет')),

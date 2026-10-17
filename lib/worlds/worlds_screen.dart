@@ -3,10 +3,10 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../assistant/assistant_service.dart';
 import '../content/content_repo.dart';
-import '../content/world_screen.dart';
 import '../help/help.dart';
 import '../open5e/open5e_api.dart';
 import 'new_world_screen.dart';
+import 'world_home.dart';
 import '../ui/cover_card.dart';
 import '../ui/parts.dart';
 import 'world.dart';
@@ -100,7 +100,7 @@ class _WorldsScreenState extends State<WorldsScreen> {
                     caption: _subtitle(w),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => WorldScreen(
+                        builder: (_) => WorldHome(
                           world: w,
                           repo: widget.content,
                           assistant: widget.assistant,

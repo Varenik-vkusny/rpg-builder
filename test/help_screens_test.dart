@@ -155,9 +155,10 @@ void main() {
     await checkScreen(t, 'map');
     await back(t);
 
-    await tapKey(t, 'holst-open');
-    await checkScreen(t, 'holst');
+    // Холст — главный экран мира: назад со списков — на него, и снова «Списки».
     await back(t);
+    await checkScreen(t, 'holst');
+    await tapKey(t, 'holst-lists');
 
     await tapKey(t, 'history-open');
     await checkScreen(t, 'history');
