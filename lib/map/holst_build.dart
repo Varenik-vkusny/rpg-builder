@@ -80,6 +80,7 @@ extension _Build on _HolstState {
     Set<String> threads = const {},
     String failed = 'Не применено',
     String undone = 'Откачено',
+    String? Function(Problem)? explain,
   }) async {
     _set(() => _busy = true);
     final r = await applyGesture(widget.repo, widget.world.id, _w, edit);
@@ -89,7 +90,9 @@ extension _Build on _HolstState {
       _say(
         SnackData(
           title: failed,
-          sub: r.reason,
+          sub:
+              (r.problem == null ? null : explain?.call(r.problem!)) ??
+              r.reason,
           tone: GestureTone.error,
           action: 'Понятно',
           onAction: _hideSnack,

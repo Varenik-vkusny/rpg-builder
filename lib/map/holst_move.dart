@@ -88,10 +88,22 @@ extension _Move on _HolstState {
       failed: 'Не перенесено: $title',
       marks: {l.id: Mark.changed},
       undone: 'Откачено: $title → ${old ?? 'мир'}',
+      explain: (p) => _why(p, title, target.title),
     );
     // Не применено — блок возвращается в свою клетку; применено — летит в новую.
     _land(l.id, ok ? _flyFar : _flyNear);
   }
+
+  /// Почему перенос не применён — словами автора, а не правилом проверки.
+  String? _why(Problem p, String what, String into) => switch (p.rule) {
+    'location_cycle' =>
+      '«$into» и так лежит внутри «$what» — место нельзя положить внутрь '
+          'самого себя',
+    'location_too_deep' =>
+      'Внутри «$into» уже нет места: мест в месте — не больше '
+          '$maxNestingDepth уровней',
+    _ => null,
+  };
 
   /// Отпустить поднятый блок: он доедет до своей клетки за [ms].
   void _land(String id, int ms) {

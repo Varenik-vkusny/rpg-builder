@@ -99,7 +99,12 @@ void main() {
       t.getCenter(find.byKey(const Key('hdoor-zaboy'))),
     );
     expect(snack(t), 'Не перенесено: Штольня №3');
-    expect(snackSub(t), contains('само в себе'));
+    // Причина — словами автора, а не правилом проверки.
+    expect(
+      snackSub(t),
+      '«Забой» и так лежит внутри «Штольня №3» — место нельзя положить '
+      'внутрь самого себя',
+    );
     expect(c.journal.length, sets);
     await t.pump(const Duration(seconds: 1));
     expect(

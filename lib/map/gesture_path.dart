@@ -14,6 +14,7 @@ class GestureResult {
   const GestureResult({
     required this.tone,
     this.reason,
+    this.problem,
     this.setId,
     this.warnings = const [],
   });
@@ -22,6 +23,9 @@ class GestureResult {
 
   /// Почему не применён — одной строкой для полосы внизу.
   final String? reason;
+
+  /// Ошибка проверки, из-за которой жест не применён (null — не из-за проверки).
+  final Problem? problem;
 
   /// Набор в истории — его откатывает «Отменить» и «Откатить».
   final String? setId;
@@ -45,7 +49,11 @@ Future<GestureResult> applyGesture(
       if (p.severity == Severity.error) p,
   ];
   if (errors.isNotEmpty) {
-    return GestureResult(tone: GestureTone.error, reason: errors.first.message);
+    return GestureResult(
+      tone: GestureTone.error,
+      reason: errors.first.message,
+      problem: errors.first,
+    );
   }
   try {
     await repo.applyManualEdit(worldId, edit);
