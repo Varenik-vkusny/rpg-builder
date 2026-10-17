@@ -10,12 +10,12 @@ export '../test/real_fonts.dart' show loadFont;
 
 final frame = GlobalKey();
 
-Future<void> shot(WidgetTester t, String name) async {
+Future<void> shot(WidgetTester t, String name, {double ratio = 1.5}) async {
   await t.pumpAndSettle();
   await t.runAsync(() async {
     final boundary =
         frame.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-    final image = await boundary.toImage(pixelRatio: 1.5);
+    final image = await boundary.toImage(pixelRatio: ratio);
     final png = await image.toByteData(format: ui.ImageByteFormat.png);
     final file = File('build/snapshots/$name.png')..createSync(recursive: true);
     file.writeAsBytesSync(png!.buffer.asUint8List());

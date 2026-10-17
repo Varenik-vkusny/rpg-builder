@@ -155,6 +155,10 @@ void main() {
     await checkScreen(t, 'map');
     await back(t);
 
+    await tapKey(t, 'holst-open');
+    await checkScreen(t, 'holst');
+    await back(t);
+
     await tapKey(t, 'history-open');
     await checkScreen(t, 'history');
     await back(t);
