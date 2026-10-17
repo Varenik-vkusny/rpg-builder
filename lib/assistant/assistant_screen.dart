@@ -7,8 +7,8 @@ import '../help/help.dart';
 import '../ui/messages.dart';
 import '../worlds/world.dart';
 import 'assistant_service.dart';
-import 'change_set.dart';
 import 'assistant_flow.dart';
+import 'plan_decide.dart';
 import 'plan_view.dart';
 import 'question_dialog.dart';
 import 'sketch.dart';
@@ -266,28 +266,27 @@ class _AssistantScreenState extends State<AssistantScreen> {
   /// «Применить» — план одной транзакцией; «Отклонить» — только в журнал.
   /// Успех — назад в мир; при применении мир перечитывается.
   Future<void> _decide(bool apply) async {
-    final draft = ChangeSetDraft.fromRun(_run!, _asked!);
     setState(() {
       _busy = true;
       _error = null;
     });
-    try {
-      apply
-          ? await widget.repo.applyChangeSet(widget.world.id, draft)
-          : await widget.repo.rejectChangeSet(widget.world.id, draft);
-      if (!mounted) return;
-      showDone(context, apply ? 'План применён' : 'План отклонён');
-      Navigator.of(context).pop(apply);
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _error = apply
-              ? 'Не удалось применить — в мире ничего не изменилось: $e'
-              : 'Не удалось записать отказ: $e';
-        });
-      }
+    final failed = await decidePlan(
+      widget.repo,
+      widget.world.id,
+      _run!,
+      _asked!,
+      apply: apply,
+    );
+    if (!mounted) return;
+    if (failed != null) {
+      setState(() {
+        _busy = false;
+        _error = failed;
+      });
+      return;
     }
+    showDone(context, apply ? 'План применён' : 'План отклонён');
+    Navigator.of(context).pop(apply);
   }
 
   @override

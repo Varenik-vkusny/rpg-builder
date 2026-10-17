@@ -153,8 +153,14 @@ extension _Canvas on _HolstState {
                   : 1,
               child: GestureDetector(
                 // Издалека нажатие на место — приблизить его.
+                // Издалека — приблизить место; в «Менять» — выбрать его областью фразы.
                 onTap: _far
                     ? () => _flyTo(centerOn(_vp, p.rect, 1, HolstShelf.height))
+                    : _mode == HolstMode.change && _plan == null
+                    ? () => _set(() {
+                        _sel = null;
+                        _scopePlace = p.place.id;
+                      })
                     : null,
                 // В «Строить» место можно поднять и бросить в другое место.
                 onLongPressStart: _mode == HolstMode.build
@@ -177,7 +183,13 @@ extension _Canvas on _HolstState {
                     stats: farStats(_w, p),
                     problems: placeProblems(_problems, p),
                     mark: _marks[p.place.id] ?? Mark.none,
-                    drop: _dropPlace == p.place.id || _lift?.id == p.place.id,
+                    drop:
+                        _dropPlace == p.place.id ||
+                        _lift?.id == p.place.id ||
+                        (_mode == HolstMode.change &&
+                            _plan == null &&
+                            _sel == null &&
+                            _scopePlace == p.place.id),
                   ),
                 ),
               ),
@@ -203,6 +215,7 @@ extension _Canvas on _HolstState {
                   key: Key('hdoor-${d.place.slug}'),
                   door: d,
                   drop: _dropPlace == d.place.id,
+                  mark: _doorMark(d.place.id),
                   onEnter: () => _go([
                     ...ancestorsOf(_w.locations, d.place).reversed,
                     d.place,

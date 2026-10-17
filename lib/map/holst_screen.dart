@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../assistant/assistant_flow.dart';
+import '../assistant/assistant_service.dart';
+import '../assistant/plan_decide.dart';
+import '../assistant/question_dialog.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../content/event_pages.dart';
@@ -28,6 +32,8 @@ import 'holst_links.dart';
 import 'holst_modes.dart';
 import 'holst_pops.dart';
 import 'holst_parts.dart';
+import 'holst_plan.dart';
+import 'holst_plan_sheet.dart';
 import 'holst_scene.dart';
 import 'holst_snack.dart';
 import 'holst_threads.dart';
@@ -36,6 +42,7 @@ import 'map_parts.dart' show DotGrid;
 
 part 'holst_build.dart';
 part 'holst_canvas.dart';
+part 'holst_change.dart';
 part 'holst_geometry.dart';
 part 'holst_link.dart';
 part 'holst_move.dart';
@@ -46,11 +53,15 @@ class HolstScreen extends StatefulWidget {
     required this.world,
     required this.repo,
     required this.snapshot,
+    required this.assistant,
   });
 
   final World world;
   final ContentRepo repo;
   final WorldSnapshot snapshot;
+
+  /// Ассистент фразы — режим «Менять».
+  final AssistantService assistant;
 
   @override
   State<HolstScreen> createState() => _HolstState();
@@ -78,6 +89,14 @@ class _HolstState extends State<HolstScreen>
   /// Полоса после жеста и её таймер.
   SnackData? _snack;
   Timer? _snackTimer;
+
+  /// «Менять»: фраза, ассистент думает, нажатое место-область, план и копия мира после него.
+  final _phrase = TextEditingController();
+  bool _asking = false;
+  String? _scopePlace;
+  PlanState? _plan;
+  WorldSnapshot? _copy;
+  Map<String, ThreadTone> _planThreads = const {};
 
   /// Подсветка после жеста: новое — зелёным, изменённое — пурпуром (до следующего жеста).
   final _marks = <String, Mark>{};
@@ -134,6 +153,7 @@ class _HolstState extends State<HolstScreen>
   @override
   void dispose() {
     _snackTimer?.cancel();
+    _phrase.dispose();
     _fly.dispose();
     _view.dispose();
     _shelfScroll.dispose();
@@ -145,9 +165,11 @@ class _HolstState extends State<HolstScreen>
     final focus = _path.isEmpty
         ? null
         : _w.locations.where((l) => l.id == _path.last.id).firstOrNull;
-    _scene = buildScene(_w, focus);
-    _links = worldLinks(_w);
-    _problems = checkWorld(_w);
+    // Пока на холсте план — рисуется копия мира после него.
+    final w = _copy ?? _w;
+    _scene = buildScene(w, focus);
+    _links = worldLinks(w);
+    _problems = checkWorld(w);
   }
 
   void _onView() {
@@ -245,7 +267,32 @@ class _HolstState extends State<HolstScreen>
                 trailing: const [HelpAction('holst')],
               ),
               Expanded(child: _canvas(context)),
-              if (_mode == HolstMode.build) const HolstPalette(),
+              if (_plan case final p?)
+                PlanSheet(
+                  rows: p.rows,
+                  total: p.run.proposal.plan.ops.length,
+                  shown: p.shown,
+                  ready: p.ready,
+                  errors: p.run.preview.of(Severity.error).length,
+                  warnings: p.run.preview.of(Severity.warning).length,
+                  canApply: p.run.canApply,
+                  big: p.big,
+                  peek: p.peek,
+                  busy: _busy,
+                  onShow: _showRow,
+                  onUnpeek: () => setState(() => _plan = _with(p, peek: false)),
+                  onApply: () => _decidePlan(true),
+                  onReject: () => _decidePlan(false),
+                )
+              else if (_mode == HolstMode.build)
+                const HolstPalette()
+              else if (_mode == HolstMode.change)
+                ChangeTray(
+                  controller: _phrase,
+                  scope: _scopeTitle,
+                  busy: _asking,
+                  onAsk: _ask,
+                ),
               if (sel != null && !_far && _mode == HolstMode.look)
                 DecoratedBox(
                   decoration: BoxDecoration(
@@ -266,14 +313,15 @@ class _HolstState extends State<HolstScreen>
                     onPage: _openPage,
                   ),
                 ),
-              HolstModes(
-                mode: _mode,
-                modes: const [HolstMode.look, HolstMode.build],
-                onMode: (m) => setState(() {
-                  _mode = m;
-                  _sel = null;
-                }),
-              ),
+              if (_plan == null)
+                HolstModes(
+                  mode: _mode,
+                  onMode: (m) => setState(() {
+                    _mode = m;
+                    _sel = null;
+                    _scopePlace = null;
+                  }),
+                ),
             ],
           ),
         ),

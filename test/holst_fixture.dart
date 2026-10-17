@@ -3,6 +3,7 @@
 // квест «Обвал», Ключ от лебёдки и Кирка на полке. Холст — прямо, без входа в приложение.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/event.dart';
 import 'package:rpg_builder/content/item.dart';
@@ -134,6 +135,7 @@ Future<void> pumpHolst(
   Size size = const Size(380, 800),
   GlobalKey? wrap,
   Widget Function(Widget app)? around,
+  AssistantService? assistant,
 }) async {
   t.view.physicalSize = size;
   t.view.devicePixelRatio = 1;
@@ -142,7 +144,12 @@ Future<void> pumpHolst(
   final app = MaterialApp(
     debugShowCheckedModeBanner: false,
     theme: appTheme(Brightness.dark),
-    home: HolstScreen(world: holstWorld, repo: c, snapshot: snapshot),
+    home: HolstScreen(
+      world: holstWorld,
+      repo: c,
+      snapshot: snapshot,
+      assistant: assistant ?? FakeAssistant(),
+    ),
   );
   if (around != null) {
     await t.pumpWidget(around(app));

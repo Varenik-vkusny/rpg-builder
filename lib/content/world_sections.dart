@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
+import '../assistant/assistant_service.dart';
 import '../map/holst_screen.dart';
 import '../map/map_screen.dart';
 import '../open5e/open5e_api.dart';
@@ -28,6 +29,7 @@ class WorldSections {
     required this.world,
     required this.repo,
     required this.open5e,
+    required this.assistant,
     required this.open,
     required this.filter,
     required this.setFilter,
@@ -36,6 +38,9 @@ class WorldSections {
   });
 
   final BuildContext context;
+
+  /// Ассистент фразы — для «Менять» на холсте.
+  final AssistantService assistant;
   final World world;
   final ContentRepo repo;
   final Open5eApi open5e;
@@ -110,8 +115,14 @@ class WorldSections {
             key: const Key('holst-open'),
             tooltip: 'Холст мира',
             icon: const Icon(Symbols.dashboard_rounded),
-            onPressed: () =>
-                open(HolstScreen(world: world, repo: repo, snapshot: c)),
+            onPressed: () => open(
+              HolstScreen(
+                world: world,
+                repo: repo,
+                snapshot: c,
+                assistant: assistant,
+              ),
+            ),
           ),
           IconButton(
             key: const Key('map-open'),

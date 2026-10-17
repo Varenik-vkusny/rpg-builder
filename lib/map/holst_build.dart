@@ -112,6 +112,7 @@ extension _Build on _HolstState {
       _threadMarks
         ..clear()
         ..addAll(threads);
+      _planThreads = const {};
       for (final p in r.warnings) {
         if (setId != null) {
           _warns[p.objectId] = (text: p.message, setId: setId, undone: undone);
@@ -149,6 +150,7 @@ extension _Build on _HolstState {
     _set(() {
       _marks.clear();
       _threadMarks.clear();
+      _planThreads = const {};
       _warns.removeWhere((_, w) => w.setId == setId);
     });
     _say(SnackData(title: done, seconds: 2));

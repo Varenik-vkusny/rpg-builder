@@ -29,6 +29,20 @@ extension _Geometry on _HolstState {
     if (_far) return const [];
     return [
       ?_pendingThread(),
+      // План на холсте: новые нити — зелёные, изменённые — пурпурные, и в покое.
+      for (final l in _links)
+        if (_planThreads['${l.a}>${l.b}'] case final tone?
+            when !(_sel != null && l.touches(_sel!)))
+          if ((_rectOf(l.a), _rectOf(l.b)) case (final a?, final b?))
+            ThreadSpec(
+              a: a.rect,
+              b: b.rect,
+              aShelf: a.shelf,
+              bShelf: b.shelf,
+              label: l.label,
+              loot: l.loot,
+              tone: tone,
+            ),
       // Связь последнего жеста — зелёная и в покое.
       for (final l in _links)
         if (_threadMarks.contains('${l.a}>${l.b}') &&
