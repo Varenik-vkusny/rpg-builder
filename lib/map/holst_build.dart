@@ -72,19 +72,21 @@ extension _Build on _HolstState {
   }
 
   /// Жест через единственную дорогу; применён — мир перечитан, полоса с «Отменить».
-  Future<void> _gesture(
+  /// [undone] — что сказать, если откатят из жёлтой метки. true — применён.
+  Future<bool> _gesture(
     ManualEdit edit, {
     required String done,
     required Map<String, Mark> marks,
     Set<String> threads = const {},
     String failed = 'Не применено',
+    String undone = 'Откачено',
   }) async {
     _set(() => _busy = true);
     final r = await applyGesture(widget.repo, widget.world.id, _w, edit);
-    if (!mounted) return;
+    if (!mounted) return false;
     if (!r.applied) {
       _set(() => _busy = false);
-      return _say(
+      _say(
         SnackData(
           title: failed,
           sub: r.reason,
@@ -94,9 +96,10 @@ extension _Build on _HolstState {
           seconds: 6,
         ),
       );
+      return false;
     }
     await _reload();
-    if (!mounted) return;
+    if (!mounted) return false;
     final setId = r.setId;
     _set(() {
       _busy = false;
@@ -107,7 +110,9 @@ extension _Build on _HolstState {
         ..clear()
         ..addAll(threads);
       for (final p in r.warnings) {
-        if (setId != null) _warns[p.objectId] = (text: p.message, setId: setId);
+        if (setId != null) {
+          _warns[p.objectId] = (text: p.message, setId: setId, undone: undone);
+        }
       }
     });
     _say(
@@ -118,6 +123,7 @@ extension _Build on _HolstState {
         onAction: setId == null ? null : () => _undo(setId),
       ),
     );
+    return true;
   }
 
   /// «Отменить» и «Откатить»: тот же откат, что в истории изменений.

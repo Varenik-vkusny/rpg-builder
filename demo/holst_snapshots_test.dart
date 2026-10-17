@@ -96,4 +96,54 @@ void main() {
     await thread('storozh', 'obval');
     await hi(t, 'holst-11-menu', settle: false);
   });
+
+  testWidgets('холст: строить — перенос', (t) async {
+    await t.runAsync(loadFont);
+    final c = await ashMines();
+    await pumpHolst(t, c, wrap: frame);
+    await t.tap(find.byKey(const Key('holst-mode-build')));
+    await t.pumpAndSettle();
+
+    Future<TestGesture> lift(Offset a, Offset b) async {
+      final g = await t.startGesture(a);
+      await t.pump(const Duration(milliseconds: 600));
+      for (var i = 1; i <= 12; i++) {
+        await g.moveTo(Offset.lerp(a, b, i / 12)!);
+        await t.pump(const Duration(milliseconds: 16));
+      }
+      return g;
+    }
+
+    final market = t.getRect(find.byKey(const Key('hplace-rynok')));
+    final g = await lift(
+      t.getCenter(find.byKey(const Key('token-slizen'))),
+      Offset(market.center.dx, market.bottom - 30),
+    );
+    await hi(t, 'holst-12-lift', settle: false);
+    await g.up();
+    await t.pump(const Duration(milliseconds: 250));
+    await hi(t, 'holst-13-flight', settle: false);
+    for (var i = 0; i < 8; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+    await hi(t, 'holst-14-moved-warn', settle: false);
+    await t.tap(find.byKey(const Key('warn-slizen')));
+    await hi(t, 'holst-15-mark', settle: false);
+    await t.tap(find.byKey(const Key('holst-mark-back')));
+    for (var i = 0; i < 10; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+
+    final head = t.getRect(find.byKey(const Key('hplace-shtolnya_3')));
+    final g2 = await lift(
+      head.topLeft + const Offset(40, 16),
+      t.getCenter(find.byKey(const Key('hdoor-zaboy'))),
+    );
+    await hi(t, 'holst-16-place-lift', settle: false);
+    await g2.up();
+    for (var i = 0; i < 4; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+    await hi(t, 'holst-17-error', settle: false);
+  });
 }

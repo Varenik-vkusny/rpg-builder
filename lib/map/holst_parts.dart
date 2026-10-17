@@ -206,6 +206,7 @@ class TokenTile extends StatelessWidget {
     this.warn = false,
     this.lifted = false,
     this.target = false,
+    this.onWarn,
     this.width = 148,
   });
 
@@ -224,6 +225,9 @@ class TokenTile extends StatelessWidget {
 
   /// Сюда тянут нить — пунктирная обводка.
   final bool target;
+
+  /// Нажали на жёлтую метку — окно с причиной и «Откатить».
+  final VoidCallback? onWarn;
   final double? width;
 
   @override
@@ -343,19 +347,31 @@ class TokenTile extends StatelessWidget {
               ),
             ),
           if (warn)
+            // Метка 22 × 22 в углу, зона касания — 40 × 40 вокруг неё.
             Positioned(
               top: -9,
               right: -9,
-              child: Container(
+              child: GestureDetector(
                 key: Key('warn-${t.slug}'),
-                width: 22,
-                height: 22,
-                color: c.warn,
-                child: Icon(
-                  Symbols.warning_rounded,
-                  size: 16,
-                  fill: 1,
-                  color: s.surfaceContainerLowest,
+                behavior: HitTestBehavior.opaque,
+                onTap: onWarn,
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      color: c.warn,
+                      child: Icon(
+                        Symbols.warning_rounded,
+                        size: 16,
+                        fill: 1,
+                        color: s.surfaceContainerLowest,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

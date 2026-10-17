@@ -98,6 +98,7 @@ extension _Canvas on _HolstState {
                       ),
                     ),
                   ?_linkPopup(),
+                  ?_markSheet(),
                   if (_snack case final sn?)
                     Positioned(
                       left: 8,
@@ -136,9 +137,15 @@ extension _Canvas on _HolstState {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        for (final p in _scene.places)
-          Positioned.fromRect(
-            rect: p.rect,
+        for (final p in [
+          ..._scene.places.where((p) => _lift?.id != p.place.id),
+          ..._scene.places.where((p) => _lift?.id == p.place.id),
+        ])
+          AnimatedPositioned.fromRect(
+            key: ValueKey('pl-${p.place.id}'),
+            rect: _shownPlace(p),
+            duration: _flyTime(p.place.id),
+            curve: Curves.easeInOutCubic,
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 200),
               opacity: _sel != null && !p.tokens.any((t) => near.contains(t.id))
@@ -148,6 +155,17 @@ extension _Canvas on _HolstState {
                 // Издалека нажатие на место — приблизить его.
                 onTap: _far
                     ? () => _flyTo(centerOn(_vp, p.rect, 1, HolstShelf.height))
+                    : null,
+                // В «Строить» место можно поднять и бросить в другое место.
+                onLongPressStart: _mode == HolstMode.build
+                    ? (d) =>
+                          _liftStart(p.place.id, true, p.rect, d.globalPosition)
+                    : null,
+                onLongPressMoveUpdate: _mode == HolstMode.build
+                    ? (d) => _liftMove(d.globalPosition)
+                    : null,
+                onLongPressEnd: _mode == HolstMode.build
+                    ? (_) => _liftEnd()
                     : null,
                 child: Semantics(
                   container: true,
@@ -159,7 +177,7 @@ extension _Canvas on _HolstState {
                     stats: farStats(_w, p),
                     problems: placeProblems(_problems, p),
                     mark: _marks[p.place.id] ?? Mark.none,
-                    drop: _dropPlace == p.place.id,
+                    drop: _dropPlace == p.place.id || _lift?.id == p.place.id,
                   ),
                 ),
               ),
@@ -175,20 +193,16 @@ extension _Canvas on _HolstState {
       clipBehavior: Clip.none,
       children: [
         for (final p in _scene.places) ...[
-          for (final t in p.tokens)
-            Positioned.fromRect(
-              rect: t.rect,
-              child: _token(t, placeHue(context, p.place)),
-            ),
           for (final d in p.doors)
             Positioned.fromRect(
-              rect: d.rect,
+              rect: _shownIn(p.place.id, d.rect),
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 200),
                 opacity: dim ? .28 : 1,
                 child: DoorTile(
                   key: Key('hdoor-${d.place.slug}'),
                   door: d,
+                  drop: _dropPlace == d.place.id,
                   onEnter: () => _go([
                     ...ancestorsOf(_w.locations, d.place).reversed,
                     d.place,
@@ -198,15 +212,35 @@ extension _Canvas on _HolstState {
             ),
           if (p.overflowRect case final r?)
             Positioned.fromRect(
-              rect: r,
+              rect: _shownIn(p.place.id, r),
               child: OverflowTile(
                 key: Key('hmore-${p.place.slug}'),
                 count: p.overflow + 1,
               ),
             ),
         ],
+        // Жетоны — поверх дверей; поднятые и летящие — поверх всех.
+        for (final (t, hue) in _ordered(context))
+          AnimatedPositioned.fromRect(
+            key: ValueKey('tk-${t.id}'),
+            rect: _shown(t),
+            duration: _flyTime(t.id),
+            curve: Curves.easeInOutCubic,
+            child: _token(t, hue),
+          ),
       ],
     );
+  }
+
+  /// Жетоны уровня с цветом их места: поднятый и летящие — в конце, чтобы быть сверху.
+  List<(HolstToken, Color)> _ordered(BuildContext context) {
+    final all = [
+      for (final p in _scene.places)
+        for (final t in p.tokens) (t, placeHue(context, p.place)),
+    ];
+    bool top((HolstToken, Color) x) =>
+        _lift?.id == x.$1.id || _flying.containsKey(x.$1.id);
+    return [...all.where((x) => !top(x)), ...all.where(top)];
   }
 
   /// Жетон на холсте или на полке: касание — выбрать, его нити светятся, остальное гаснет.
@@ -231,6 +265,17 @@ extension _Canvas on _HolstState {
           onPanCancel: _mode == HolstMode.build
               ? () => _set(() => _drag = null)
               : null,
+          // Держать — поднять и перенести (только объекты мест, не полки).
+          onLongPressStart:
+              _mode == HolstMode.build && t.placeId != null && width != null
+              ? (d) => _liftStart(t.id, false, t.rect, d.globalPosition)
+              : null,
+          onLongPressMoveUpdate: _mode == HolstMode.build && width != null
+              ? (d) => _liftMove(d.globalPosition)
+              : null,
+          onLongPressEnd: _mode == HolstMode.build && width != null
+              ? (_) => _liftEnd()
+              : null,
           child: TokenTile(
             token: t,
             hue: hue,
@@ -238,7 +283,12 @@ extension _Canvas on _HolstState {
             selected: _sel == t.id,
             mark: _marks[t.id] ?? Mark.none,
             warn: _warns.containsKey(t.id),
+            onWarn: () {
+              _hideSnack();
+              _set(() => _markOpen = t.id);
+            },
             target: _drag?.over == t.id,
+            lifted: _lift?.id == t.id || (_flying[t.id] ?? 0) > _flyNear,
           ),
         ),
       ),

@@ -5,9 +5,12 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/check/world_check.dart';
 import 'package:rpg_builder/content/content_repo.dart';
+import 'package:rpg_builder/content/manual_edit.dart';
 import 'package:rpg_builder/map/gesture_create.dart';
 import 'package:rpg_builder/map/gesture_link.dart';
+import 'package:rpg_builder/map/gesture_move.dart';
 import 'package:rpg_builder/map/gesture_path.dart';
 import 'package:rpg_builder/worlds/world.dart';
 import 'package:rpg_builder/worlds/worlds_repo.dart';
@@ -142,5 +145,45 @@ void main() {
     expect(back.quests.first.steps, hasLength(steps));
     expect(back.events.where((x) => x.id == ev), isEmpty);
     expect(back.characters.where((x) => x.id == enemy || x.id == npc), isEmpty);
+  });
+
+  test('перенос жестом: житель и событие в другое место, место внутрь места — и откат', () async {
+    final w = await repo.snapshot(world.id);
+    final shaft = w.locations.firstWhere((l) => l.slug == 'shtolnya_3');
+    final market = w.locations.firstWhere((l) => l.slug == 'rynok');
+    final ev = createByGesture(world.id, w, NewKind.event, placeId: shaft.id);
+    final made = await applyGesture(repo, world.id, w, ev.edit);
+    expect(made.applied, isTrue, reason: made.reason);
+    var cur = await repo.snapshot(world.id);
+    final npc = cur.characters.firstWhere((c) => c.slug == 'brigadir');
+    final from = npc.locationId;
+    final sets = <String>[];
+    Future<void> go(ManualEdit Function(WorldSnapshot) edit) async {
+      final r = await applyGesture(repo, world.id, cur, edit(cur));
+      expect(r.applied, isTrue, reason: r.reason);
+      sets.add(r.setId!);
+      cur = await repo.snapshot(world.id);
+    }
+
+    final to = from == market.id ? shaft.id : market.id;
+    await go((s) => moveObject(world.id, s, npc.id, to));
+    await go((s) => moveObject(world.id, s, ev.id, market.id));
+    await go((s) => movePlace(world.id, s, market.id, shaft.id));
+    expect(cur.characters.firstWhere((c) => c.id == npc.id).locationId, to);
+    expect(cur.events.firstWhere((e) => e.id == ev.id).locationId, market.id);
+    expect(
+      cur.locations.firstWhere((l) => l.id == market.id).parentId,
+      shaft.id,
+    );
+    for (final id in [...sets.reversed, made.setId!]) {
+      expect(await undoGesture(repo, world.id, id), isNull);
+    }
+    final back = await repo.snapshot(world.id);
+    expect(back.characters.firstWhere((c) => c.id == npc.id).locationId, from);
+    expect(
+      back.locations.firstWhere((l) => l.id == market.id).parentId,
+      isNull,
+    );
+    expect(back.events.where((e) => e.id == ev.id), isEmpty);
   });
 }

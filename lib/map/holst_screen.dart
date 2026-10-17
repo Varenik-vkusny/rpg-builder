@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
@@ -18,6 +20,7 @@ import '../ui/theme.dart';
 import '../worlds/world.dart';
 import 'gesture_create.dart';
 import 'gesture_link.dart';
+import 'gesture_move.dart';
 import 'gesture_path.dart';
 import 'holst_bars.dart';
 import 'holst_doors.dart';
@@ -34,6 +37,7 @@ import 'map_parts.dart' show DotGrid;
 part 'holst_build.dart';
 part 'holst_canvas.dart';
 part 'holst_link.dart';
+part 'holst_move.dart';
 
 class HolstScreen extends StatefulWidget {
   const HolstScreen({
@@ -85,7 +89,14 @@ class _HolstState extends State<HolstScreen>
   PendingLink? _link;
 
   /// Жёлтые метки: объект с новым предупреждением — текст и набор, который откатить.
-  final _warns = <String, ({String text, String setId})>{};
+  final _warns = <String, ({String text, String setId, String undone})>{};
+
+  /// Открыто окно жёлтой метки этого объекта.
+  String? _markOpen;
+
+  /// Поднятый блок и блоки в перелёте (сколько миллисекунд летят).
+  Lift? _lift;
+  final _flying = <String, int>{};
 
   final _view = TransformationController();
   late final _fly = AnimationController(
