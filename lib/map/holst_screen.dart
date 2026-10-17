@@ -38,6 +38,7 @@ import 'holst_plan_sheet.dart';
 import 'holst_route.dart';
 import 'holst_scene.dart';
 import 'holst_snack.dart';
+import 'holst_tags.dart';
 import 'holst_threads.dart';
 import 'holst_view.dart';
 import 'map_parts.dart' show DotGrid;

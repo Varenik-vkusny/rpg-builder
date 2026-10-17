@@ -100,6 +100,25 @@ extension _Canvas on _HolstState {
                         ),
                       ),
                     ),
+                  // Метки связей выбранного — поверх холста и полки.
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        key: const Key('holst-tags'),
+                        painter: TagPainter(
+                          tags: _tags,
+                          ink: s.surfaceContainerLowest,
+                          paper: s.onSurface,
+                          textStyle: const TextStyle(
+                            fontFamily: 'GolosText',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          repaint: repaint,
+                        ),
+                      ),
+                    ),
+                  ),
                   ?_linkPopup(),
                   ?_markSheet(),
                   if (_snack case final sn?)

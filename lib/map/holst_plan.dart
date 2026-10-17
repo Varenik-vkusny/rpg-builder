@@ -200,10 +200,7 @@ String? targetOf(PlanOp op, WorldSnapshot w) {
 
 /// Сколько изменённых объектов лежит внутри места [doorId] (на любой глубине).
 int changesInside(WorldSnapshot w, String doorId, Iterable<String> changed) {
-  final places = {
-    doorId,
-    for (final l in descendantsOf(w.locations, doorId)) l.id,
-  };
+  final places = placeAndInside(w.locations, doorId);
   var n = 0;
   for (final id in changed) {
     final placeOf =

@@ -6,9 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/map/holst_route.dart';
 import 'package:rpg_builder/map/holst_threads.dart';
 
-import 'holst_fixture.dart';
-import 'holst_look_test.dart' show drawnThreads, token;
-
 /// Отрезок [p]–[q] проходит сквозь прямоугольник [r] (по его внутренности).
 bool crosses(Offset p, Offset q, Rect r) {
   final inner = r.deflate(1);
@@ -100,29 +97,6 @@ void main() {
         // Центр подписи — на ветке своей нити (горизонталь), а не на общем стволе x=100.
         expect(spot.center.dx, isNot(100), reason: t.label);
         expect(spot.center.dy, t.route!.last.dy, reason: t.label);
-      }
-    },
-  );
-
-  testWidgets(
-    'выбран Обвал: нить к Слизню не идёт сквозь Бригадира, Засаду и Сторожа',
-    (t) async {
-      await pumpHolst(t, await ashMines());
-      await t.tap(token('obval'));
-      await t.pumpAndSettle();
-      final canvas = t.getTopLeft(find.byKey(const Key('holst-canvas')));
-      final threads = drawnThreads(t);
-      final slime = t.getRect(token('slizen')).shift(-canvas);
-      final toSlime = threads.firstWhere(
-        (x) => x.b.overlaps(slime) || x.a.overlaps(slime),
-      );
-      expect(toSlime.route, isNotNull);
-      for (final other in ['brigadir', 'zasada', 'storozh']) {
-        final r = t.getRect(token(other)).shift(-canvas);
-        final route = toSlime.route!;
-        for (var i = 1; i < route.length; i++) {
-          expect(crosses(route[i - 1], route[i], r), isFalse, reason: other);
-        }
       }
     },
   );

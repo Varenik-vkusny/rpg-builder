@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/map/gesture_link.dart';
 import 'package:rpg_builder/map/holst_links.dart';
 import 'package:rpg_builder/map/holst_scene.dart';
+import 'package:rpg_builder/map/holst_tags.dart';
 import 'package:rpg_builder/map/holst_threads.dart';
 
 import 'holst_fixture.dart';
@@ -28,6 +29,17 @@ List<ThreadSpec> drawnThreads(WidgetTester t) {
   expect(painters, hasLength(1));
   return painters.single.threads();
 }
+
+/// Метки связей выбранного (слой меток холста).
+HolstTags drawnTags(WidgetTester t) {
+  final w = t.widget<CustomPaint>(find.byKey(const Key('holst-tags')));
+  return (w.painter! as TagPainter).tags();
+}
+
+/// Метки на объектах: id объекта → слова.
+Map<String, String> tagTexts(WidgetTester t) => {
+  for (final x in drawnTags(t).tags) x.id: x.text,
+};
 
 /// Плитки связей нижней строки: имя объекта → как связаны.
 Map<String, String> linkTiles(WidgetTester t) {
@@ -120,26 +132,30 @@ void main() {
       expect(drawnThreads(t), isEmpty, reason: 'в покое нитей нет');
       await t.tap(token('slizen'));
       await t.pumpAndSettle();
-      // Три нити Слизня: квест и ключ на полке, Засада рядом; добыча — пунктиром.
-      final threads = drawnThreads(t);
-      expect(threads.map((x) => x.label).toSet(), {
-        'убить ×3',
-        'роняет 35%',
-        'в сцене ×3',
-      });
-      expect(threads.where((x) => x.loot).single.label, 'роняет 35%');
-      final slime = t.getRect(token('slizen'));
+      // Связи выбранного — метками на самих объектах, без нитей (выбор владельца 17.10).
+      expect(drawnThreads(t), isEmpty, reason: 'у выбранного нитей нет');
+      final w = await (await (() async => ashMines())()).snapshotOf(
+        holstWorld.id,
+      );
+      String id(String slug) => [
+        ...w.characters.where((x) => x.slug == slug).map((x) => x.id),
+        ...w.events.where((x) => x.slug == slug).map((x) => x.id),
+        ...w.items.where((x) => x.slug == slug).map((x) => x.id),
+        ...w.quests.where((x) => x.slug == slug).map((x) => x.id),
+      ].single;
+      final tags = tagTexts(t);
+      expect(tags[id('zasada')], 'в сцене ×3');
+      // Метка — у самого объекта, над ним.
       final canvas = t.getTopLeft(find.byKey(const Key('holst-canvas')));
-      for (final x in threads) {
-        expect(x.tone, ThreadTone.hot);
-        // Один конец — у Слизня.
-        final ends = [x.a.shift(canvas).center, x.b.shift(canvas).center];
-        expect(
-          ends.any((e) => (e - slime.center).distance < 1),
-          isTrue,
-          reason: x.label,
-        );
-      }
+      final ambush = t.getRect(token('zasada')).shift(-canvas);
+      final spec = drawnTags(t).tags.firstWhere((x) => x.id == id('zasada'));
+      expect(spec.rect, ambush);
+      // Квест и ключ — на полке: видны — метка, за краем — маленькая метка у края.
+      final all = {...tags.keys, for (final e in drawnTags(t).edges) e.id};
+      expect(
+        all,
+        containsAll([id('obval'), id('klyuch_ot_lebedki'), id('zasada')]),
+      );
       // Связи — плитками: объект и как связан; ни точек, ни косых черт, ни «житель · место».
       expect(linkTiles(t), {
         'Обвал': 'убить ×3',
@@ -363,8 +379,8 @@ void main() {
       await t.tap(token('kirka'));
       await t.pumpAndSettle();
       expect(linkTiles(t), {'Обвал': 'награда за квест'});
-      // Нить у выбранного подписана теми же словами.
-      expect(drawnThreads(t).single.label, 'награда за квест');
+      // Метка на Обвале — теми же словами.
+      expect(tagTexts(t).values, ['награда за квест']);
     },
   );
 }

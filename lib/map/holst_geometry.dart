@@ -17,8 +17,14 @@ extension _Geometry on _HolstState {
         return (rect: toScreen(_view.value, head), shelf: false);
       }
     }
-    final box = _shelfKeys[id]?.currentContext?.findRenderObject();
-    final canvas = _canvasKey.currentContext?.findRenderObject();
+    RenderObject? box, canvas;
+    try {
+      box = _shelfKeys[id]?.currentContext?.findRenderObject();
+      canvas = _canvasKey.currentContext?.findRenderObject();
+    } catch (_) {
+      // Жетон полки, ушедший за край, уже снят с дерева — его нет на экране.
+      return null;
+    }
     if (box is! RenderBox || canvas is! RenderBox || !box.attached) return null;
     final o = canvas.globalToLocal(box.localToGlobal(Offset.zero));
     return (rect: o & box.size, shelf: true);
@@ -112,24 +118,72 @@ extension _Geometry on _HolstState {
               loot: l.loot,
               tone: ThreadTone.isNew,
             ),
-      if (_sel != null)
-        for (final l in _links)
-          if (l.touches(_sel!))
-            if ((_rectOf(l.a), _rectOf(l.b)) case (final a?, final b?))
-              ThreadSpec(
-                a: a.rect,
-                b: b.rect,
-                aShelf: a.shelf,
-                bShelf: b.shelf,
-                // Слова — глазами выбранного: у Обвала Кирка «в награду».
-                label: l.wordFor(_sel),
-                loot: l.loot,
-                tone: ThreadTone.hot,
-              ),
     ];
   }
 
   /// Подпись не ложится на блоки: жетоны, двери и полку целиком.
+  /// Связи выбранного — метками на объектах; невидимые — меткой у края; за дверью — на двери.
+  HolstTags _tags() {
+    final sel = _sel;
+    if (_far || sel == null) {
+      return (tags: const [], edges: const [], doors: const []);
+    }
+    final shelfTop = _vp.height - HolstShelf.height;
+    final canvasView = Rect.fromLTWH(0, 0, _vp.width, shelfTop);
+    final shelfView = Rect.fromLTWH(
+      28,
+      shelfTop,
+      _vp.width - 28,
+      HolstShelf.height,
+    );
+    final shelfIds = [for (final t in _scene.shelf) t.id];
+    final seen = [
+      for (final (i, id) in shelfIds.indexed)
+        if (_rectOf(id) case final r? when shelfView.overlaps(r.rect)) i,
+    ];
+    final tags = <TagSpec>[], edges = <EdgeSpec>[], doors = <Rect>[];
+    for (final g in linkGroups(sel, _links)) {
+      final r = _rectOf(g.other);
+      final i = shelfIds.indexOf(g.other);
+      if (r == null && i >= 0) {
+        // Жетон полки не построен — он за краем полки: метка с той стороны.
+        final left = seen.isNotEmpty && i < seen.first;
+        edges.add((
+          id: g.other,
+          at: Offset(
+            left ? shelfView.left + 8 : shelfView.right - 8,
+            shelfView.top + 8,
+          ),
+        ));
+        continue;
+      }
+      if (r == null) {
+        if (_doorWith(g.other) case final d?) doors.add(d);
+        continue;
+      }
+      final view = r.shelf ? shelfView : canvasView;
+      if (view.contains(r.rect.center)) {
+        tags.add((id: g.other, rect: r.rect, text: g.words.join(', ')));
+      } else {
+        edges.add((id: g.other, at: edgePoint(view, r.rect)));
+      }
+    }
+    return (tags: tags, edges: edges, doors: doors);
+  }
+
+  /// Дверь, за которой (на любой глубине) стоит объект [id]; на экране.
+  Rect? _doorWith(String id) {
+    final placeId = _scene.all[id]?.placeId ?? id;
+    for (final p in _scene.places) {
+      for (final d in p.doors) {
+        if (placeAndInside(_w.locations, d.place.id).contains(placeId)) {
+          return toScreen(_view.value, d.rect);
+        }
+      }
+    }
+    return null;
+  }
+
   /// Те же блоки, что обходит нить, и полка целиком.
   List<Rect> _obstacles() {
     return [
