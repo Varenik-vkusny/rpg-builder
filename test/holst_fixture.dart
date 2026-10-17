@@ -133,6 +133,7 @@ Future<void> pumpHolst(
   FakeContent c, {
   Size size = const Size(380, 800),
   GlobalKey? wrap,
+  Widget Function(Widget app)? around,
 }) async {
   t.view.physicalSize = size;
   t.view.devicePixelRatio = 1;
@@ -143,6 +144,11 @@ Future<void> pumpHolst(
     theme: appTheme(Brightness.dark),
     home: HolstScreen(world: holstWorld, repo: c, snapshot: snapshot),
   );
+  if (around != null) {
+    await t.pumpWidget(around(app));
+    await t.pumpAndSettle();
+    return;
+  }
   await t.pumpWidget(
     wrap == null ? app : RepaintBoundary(key: wrap, child: app),
   );
