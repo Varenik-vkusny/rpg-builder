@@ -17,11 +17,13 @@ import '../help/help.dart';
 import '../ui/theme.dart';
 import '../worlds/world.dart';
 import 'gesture_create.dart';
+import 'gesture_link.dart';
 import 'gesture_path.dart';
 import 'holst_bars.dart';
 import 'holst_doors.dart';
 import 'holst_links.dart';
 import 'holst_modes.dart';
+import 'holst_pops.dart';
 import 'holst_parts.dart';
 import 'holst_scene.dart';
 import 'holst_snack.dart';
@@ -31,6 +33,7 @@ import 'map_parts.dart' show DotGrid;
 
 part 'holst_build.dart';
 part 'holst_canvas.dart';
+part 'holst_link.dart';
 
 class HolstScreen extends StatefulWidget {
   const HolstScreen({
@@ -73,6 +76,13 @@ class _HolstState extends State<HolstScreen>
 
   /// Подсветка после жеста: новое — зелёным, изменённое — пурпуром (до следующего жеста).
   final _marks = <String, Mark>{};
+
+  /// Связи, проведённые последним жестом: их нити видны и в покое (зелёные).
+  final _threadMarks = <String>{};
+
+  /// Нить под пальцем и связь, которую задают колёсиком или меню.
+  DragThread? _drag;
+  PendingLink? _link;
 
   /// Жёлтые метки: объект с новым предупреждением — текст и набор, который откатить.
   final _warns = <String, ({String text, String setId})>{};

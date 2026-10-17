@@ -85,6 +85,19 @@ extension _Canvas on _HolstState {
                       chip: (t) => _token(t, null, width: null),
                     ),
                   ),
+                  if (_drag case final g?)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: TempLine(
+                            from: _rectOf(g.from)?.rect.center ?? g.at,
+                            to: g.at,
+                            color: s.onSurface,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ?_linkPopup(),
                   if (_snack case final sn?)
                     Positioned(
                       left: 8,
@@ -209,6 +222,15 @@ extension _Canvas on _HolstState {
         child: GestureDetector(
           key: Key('token-${t.slug}'),
           onTap: () => _tapToken(t.id),
+          // В «Строить» палец, поведённый от объекта, тянет нить.
+          onPanStart: _mode == HolstMode.build
+              ? (d) => _threadStart(t.id, d)
+              : null,
+          onPanUpdate: _mode == HolstMode.build ? _threadMove : null,
+          onPanEnd: _mode == HolstMode.build ? (_) => _threadEnd() : null,
+          onPanCancel: _mode == HolstMode.build
+              ? () => _set(() => _drag = null)
+              : null,
           child: TokenTile(
             token: t,
             hue: hue,
@@ -216,6 +238,7 @@ extension _Canvas on _HolstState {
             selected: _sel == t.id,
             mark: _marks[t.id] ?? Mark.none,
             warn: _warns.containsKey(t.id),
+            target: _drag?.over == t.id,
           ),
         ),
       ),
@@ -245,10 +268,13 @@ extension _Canvas on _HolstState {
 
   /// Нити по требованию: в покое их нет, видны только у выбранного объекта.
   List<ThreadSpec> _threads() {
-    if (_far || _sel == null) return const [];
+    if (_far) return const [];
     return [
+      ?_pendingThread(),
+      // Связь последнего жеста — зелёная и в покое.
       for (final l in _links)
-        if (l.touches(_sel!))
+        if (_threadMarks.contains('${l.a}>${l.b}') &&
+            !(_sel != null && l.touches(_sel!)))
           if ((_rectOf(l.a), _rectOf(l.b)) case (final a?, final b?))
             ThreadSpec(
               a: a.rect,
@@ -257,8 +283,21 @@ extension _Canvas on _HolstState {
               bShelf: b.shelf,
               label: l.label,
               loot: l.loot,
-              tone: ThreadTone.hot,
+              tone: ThreadTone.isNew,
             ),
+      if (_sel != null)
+        for (final l in _links)
+          if (l.touches(_sel!))
+            if ((_rectOf(l.a), _rectOf(l.b)) case (final a?, final b?))
+              ThreadSpec(
+                a: a.rect,
+                b: b.rect,
+                aShelf: a.shelf,
+                bShelf: b.shelf,
+                label: l.label,
+                loot: l.loot,
+                tone: ThreadTone.hot,
+              ),
     ];
   }
 

@@ -76,6 +76,7 @@ extension _Build on _HolstState {
     ManualEdit edit, {
     required String done,
     required Map<String, Mark> marks,
+    Set<String> threads = const {},
     String failed = 'Не применено',
   }) async {
     _set(() => _busy = true);
@@ -102,6 +103,9 @@ extension _Build on _HolstState {
       _marks
         ..clear()
         ..addAll(marks);
+      _threadMarks
+        ..clear()
+        ..addAll(threads);
       for (final p in r.warnings) {
         if (setId != null) _warns[p.objectId] = (text: p.message, setId: setId);
       }
@@ -135,6 +139,7 @@ extension _Build on _HolstState {
     if (!mounted) return;
     _set(() {
       _marks.clear();
+      _threadMarks.clear();
       _warns.removeWhere((_, w) => w.setId == setId);
     });
     _say(SnackData(title: done, seconds: 2));

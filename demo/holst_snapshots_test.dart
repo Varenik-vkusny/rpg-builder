@@ -51,4 +51,49 @@ void main() {
     await g.up();
     await hi(t, 'holst-8-created', settle: false);
   });
+
+  testWidgets('холст: строить — связь жестом', (t) async {
+    await t.runAsync(loadFont);
+    final c = await ashMines();
+    await pumpHolst(t, c, wrap: frame);
+    await t.tap(find.byKey(const Key('holst-mode-build')));
+    await t.pumpAndSettle();
+    // Кирка на полке справа — полку чуть прокрутить.
+    await t.drag(
+      find.descendant(
+        of: find.byKey(const Key('holst-shelf')),
+        matching: find.byType(ListView),
+      ),
+      const Offset(-160, 0),
+    );
+    await t.pumpAndSettle();
+
+    Future<void> thread(String from, String to) async {
+      final a = t.getCenter(find.byKey(Key('token-$from')));
+      final b = t.getCenter(find.byKey(Key('token-$to')));
+      final g = await t.startGesture(a);
+      for (var i = 1; i <= 12; i++) {
+        await g.moveTo(Offset.lerp(a, b, i / 12)!);
+        await t.pump(const Duration(milliseconds: 16));
+      }
+      await g.up();
+      await t.pump(const Duration(milliseconds: 300));
+    }
+
+    await thread('slizen', 'kirka');
+    await t.drag(
+      find.byKey(const Key('holst-wheel-drum')),
+      const Offset(0, -144),
+    );
+    // Барабан докручивается до деления — дать доехать.
+    for (var i = 0; i < 10; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+    await hi(t, 'holst-9-wheel', settle: false);
+    await t.tap(find.byKey(const Key('holst-wheel-done')));
+    await hi(t, 'holst-10-linked', settle: false);
+
+    await thread('storozh', 'obval');
+    await hi(t, 'holst-11-menu', settle: false);
+  });
 }
