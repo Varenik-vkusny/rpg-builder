@@ -125,7 +125,7 @@ void main() {
       expect(threads.map((x) => x.label).toSet(), {
         'убить ×3',
         'роняет 35%',
-        'враги ×3',
+        'в сцене ×3',
       });
       expect(threads.where((x) => x.loot).single.label, 'роняет 35%');
       final slime = t.getRect(token('slizen'));
@@ -144,7 +144,8 @@ void main() {
       expect(linkTiles(t), {
         'Обвал': 'убить ×3',
         'Ключ от лебёдки': 'роняет 35%',
-        'Засада': 'враги ×3',
+        // Слизень стоит в сцене «Засада» — слова глазами Слизня.
+        'Засада': 'в сцене ×3',
       });
       for (final x in infoTexts(t)) {
         expect(x.contains('·') || x.contains(' / '), isFalse, reason: x);
@@ -227,7 +228,7 @@ void main() {
       'убить ×3',
       'пройти',
       'собрать ×1',
-      'награда',
+      'в награду',
       'роняет 35%',
       'враги ×3',
     ]);
@@ -302,15 +303,23 @@ void main() {
     },
   );
 
-  test('подпись нити не ложится на блок: места нет — подписи нет', () {
-    const mid = Offset(100, 100);
-    final wall = [const Rect.fromLTWH(0, 0, 400, 400)];
-    expect(labelSpot(mid, const Size(80, 22), wall, 400), isNull);
-    final free = labelSpot(mid, const Size(80, 22), const [], 400)!;
-    expect(free.center, mid);
-    final side = [Rect.fromCenter(center: mid, width: 60, height: 30)];
-    final moved = labelSpot(mid, const Size(80, 22), side, 400)!;
-    expect(moved.overlaps(side.first.inflate(3)), isFalse);
+  test('подпись нити — только на своей нити: нет места — подписи нет', () {
+    const p = Offset(100, 100), q = Offset(300, 100);
+    const size = Size(80, 22);
+    // Нить закрыта блоком целиком — подписи нет (а не рядом, на чужом месте).
+    final wall = [const Rect.fromLTWH(0, 80, 400, 40)];
+    expect(labelSpot(p, q, size, wall, 400), isNull);
+    // Свободно — на середине нити.
+    expect(
+      labelSpot(p, q, size, const [], 400)!.center,
+      const Offset(200, 100),
+    );
+    // Длинная нить: середина занята — подпись сдвигается вдоль неё.
+    final moved = labelSpot(p, const Offset(500, 100), size, [
+      Rect.fromCenter(center: const Offset(300, 100), width: 60, height: 30),
+    ], 600)!;
+    expect(moved.center.dy, 100);
+    expect(moved.center.dx, isNot(300));
   });
 
   test('связи по объекту: одна плитка, все виды связи в ней', () {
@@ -337,9 +346,25 @@ void main() {
     await pumpHolst(t, c);
     await t.tap(token('brigadir'));
     await t.pumpAndSettle();
-    expect(linkTiles(t), {'Обвал': 'выдаёт, поговорить'});
+    expect(linkTiles(t), {'Обвал': 'его квест, поговорить'});
     for (final x in infoTexts(t)) {
       expect(x.contains('·') || x.contains(' / '), isFalse, reason: x);
     }
   });
+
+  testWidgets(
+    'слова связи — глазами выбранного: Кирка у Обвала «в награду», Обвал у Кирки «награда за квест»',
+    (t) async {
+      await pumpHolst(t, await ashMines(), size: const Size(1100, 800));
+      await t.tap(token('obval'));
+      await t.pumpAndSettle();
+      expect(linkTiles(t)['Кирка'], 'в награду');
+      expect(linkTiles(t)['Бригадир'], 'выдаёт');
+      await t.tap(token('kirka'));
+      await t.pumpAndSettle();
+      expect(linkTiles(t), {'Обвал': 'награда за квест'});
+      // Нить у выбранного подписана теми же словами.
+      expect(drawnThreads(t).single.label, 'награда за квест');
+    },
+  );
 }

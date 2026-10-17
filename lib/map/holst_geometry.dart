@@ -66,7 +66,8 @@ extension _Geometry on _HolstState {
                 b: b.rect,
                 aShelf: a.shelf,
                 bShelf: b.shelf,
-                label: l.label,
+                // Слова — глазами выбранного: у Обвала Кирка «в награду».
+                label: l.wordFor(_sel),
                 loot: l.loot,
                 tone: ThreadTone.hot,
               ),

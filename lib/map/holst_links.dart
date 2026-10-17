@@ -3,15 +3,21 @@
 import '../check/world_check.dart';
 import '../content/quest.dart';
 
-/// Нить между объектами [a] и [b]: подпись словами автора («убить ×3», «роняет 35%»).
+/// Нить между объектами [a] и [b]. Слова — кем второй конец приходится выбранному:
+/// выбран [a] — [label] («Кирка — в награду»), выбран [b] — [back] («Обвал — награда за квест»).
 /// [loot] — добыча, рисуется пунктиром.
 class HolstLink {
-  const HolstLink(this.a, this.b, this.label, {this.loot = false});
+  const HolstLink(this.a, this.b, this.label, {String? back, this.loot = false})
+    : back = back ?? label;
 
   final String a;
   final String b;
   final String label;
+  final String back;
   final bool loot;
+
+  /// Слова связи глазами выбранного [id].
+  String wordFor(String? id) => id == b ? back : label;
 
   bool touches(String id) => a == id || b == id;
   String other(String id) => a == id ? b : a;
@@ -34,17 +40,31 @@ String stepLabel(QuestStep s) => switch (s.kind) {
 /// Все связи мира. Концы — id объектов; цель шага «прийти» — место.
 List<HolstLink> worldLinks(WorldSnapshot w) => [
   for (final q in w.quests) ...[
-    if (q.giverId case final g?) HolstLink(q.id, g, 'выдаёт'),
+    if (q.giverId case final g?)
+      HolstLink(q.id, g, 'выдаёт', back: 'его квест'),
     for (final s in q.steps) HolstLink(q.id, s.targetId, stepLabel(s)),
-    for (final r in q.rewardIds) HolstLink(q.id, r, 'награда'),
+    for (final r in q.rewardIds)
+      HolstLink(q.id, r, 'в награду', back: 'награда за квест'),
   ],
   for (final c in w.characters)
     for (final l in c.loot)
-      HolstLink(c.id, l.itemId, 'роняет ${_num(l.chance)}%', loot: true),
+      HolstLink(
+        c.id,
+        l.itemId,
+        'роняет ${_num(l.chance)}%',
+        back: 'выпадает ${_num(l.chance)}%',
+        loot: true,
+      ),
   for (final e in w.events) ...[
     for (final x in e.enemies)
-      HolstLink(e.id, x.characterId, 'враги ×${x.amount}'),
-    for (final i in e.itemIds) HolstLink(e.id, i, 'лежит'),
+      HolstLink(
+        e.id,
+        x.characterId,
+        'враги ×${x.amount}',
+        back: 'в сцене ×${x.amount}',
+      ),
+    for (final i in e.itemIds)
+      HolstLink(e.id, i, 'лежит', back: 'лежит в сцене'),
   ],
 ];
 
@@ -56,7 +76,9 @@ List<({String other, List<String> words})> linkGroups(
 ) {
   final out = <String, List<String>>{};
   for (final l in links) {
-    if (l.touches(id)) out.putIfAbsent(l.other(id), () => []).add(l.label);
+    if (l.touches(id)) {
+      out.putIfAbsent(l.other(id), () => []).add(l.wordFor(id));
+    }
   }
   return [for (final e in out.entries) (other: e.key, words: e.value)];
 }

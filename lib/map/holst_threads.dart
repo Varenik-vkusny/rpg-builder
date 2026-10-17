@@ -124,29 +124,22 @@ ThreadColors threadColors(BuildContext context) {
   );
 }
 
-/// Где встанет подпись: у середины нити и рядом, но не на блоках, не на других подписях
-/// и не за краем. Места нет — null.
-Rect? labelSpot(Offset mid, Size size, List<Rect> obstacles, double width) {
-  const cands = [
-    Offset(0, 0),
-    Offset(1, 0),
-    Offset(-1, 0),
-    Offset(0, -28),
-    Offset(0, 28),
-    Offset(1, -28),
-    Offset(1, 28),
-    Offset(-1, -28),
-    Offset(-1, 28),
-    Offset(0, -56),
-    Offset(0, 56),
-  ];
-  for (final c in cands) {
-    final dx = c.dx * (size.width / 2 + 10);
-    final r = Rect.fromLTWH(
-      mid.dx - size.width / 2 + dx,
-      mid.dy - size.height / 2 + c.dy,
-      size.width,
-      size.height,
+/// Где встанет подпись: прямо на средней части своей нити (от [p] до [q]) — в середине
+/// или ближе к концам, но не на блоках, не на других подписях и не за краем. Подпись
+/// не отходит от нити: места нет — подписи нет, связь написана в нижней строке.
+Rect? labelSpot(
+  Offset p,
+  Offset q,
+  Size size,
+  List<Rect> obstacles,
+  double width,
+) {
+  for (final k in const [.5, .35, .65, .2, .8]) {
+    final c = Offset.lerp(p, q, k)!;
+    final r = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
     );
     if (r.left < 4 || r.right > width - 4) continue;
     if (obstacles.any((o) => o.inflate(3).overlaps(r))) continue;
@@ -205,11 +198,13 @@ class ThreadPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
         maxLines: 1,
       )..layout();
-      final mid = Offset(
-        (pts[1].dx + pts[2].dx) / 2,
-        (pts[1].dy + pts[2].dy) / 2,
+      final spot = labelSpot(
+        pts[1],
+        pts[2],
+        Size(tp.width + 16, 22),
+        busy,
+        size.width,
       );
-      final spot = labelSpot(mid, Size(tp.width + 16, 22), busy, size.width);
       if (spot == null) continue;
       busy.add(spot);
       canvas.drawRect(spot, Paint()..color = color);

@@ -50,4 +50,15 @@ void main() {
       expect(k('holst-canvas'), findsNothing);
     },
   );
+
+  testWidgets('«Мои миры» — с тем же отступом слева, что карточки, не у края', (
+    t,
+  ) async {
+    await pumpApp(t, content: FakeContent());
+    await signUp(t, 'author@test.dev');
+    await createWorld(t, 'Пепельные копи');
+    final title = t.getTopLeft(find.text('Мои миры')).dx;
+    // Карточки миров и кнопка «Новый мир» стоят с полем 16 dp — заголовок там же.
+    expect(title, inInclusiveRange(16, 18));
+  });
 }

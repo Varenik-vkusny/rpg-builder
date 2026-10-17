@@ -52,6 +52,8 @@ class _WorldsScreenState extends State<WorldsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // Стрелки «назад» здесь нет — заголовок с тем же отступом, что карточки миров.
+        titleSpacing: 16,
         title: const Text('Мои миры'),
         actions: [
           IconButton(
