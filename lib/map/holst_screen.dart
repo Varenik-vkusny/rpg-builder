@@ -36,6 +36,7 @@ import 'map_parts.dart' show DotGrid;
 
 part 'holst_build.dart';
 part 'holst_canvas.dart';
+part 'holst_geometry.dart';
 part 'holst_link.dart';
 part 'holst_move.dart';
 
