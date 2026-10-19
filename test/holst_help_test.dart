@@ -40,7 +40,7 @@ void main() {
     },
   );
 
-  testWidgets('«?» — легенда: цвета, метки, жесты', (t) async {
+  testWidgets('«?» — легенда: цвета, объекты, метки, жесты', (t) async {
     await pumpHolst(t, await ashMines());
     await t.tap(k('help-screen-holst'));
     await t.pumpAndSettle();
@@ -48,8 +48,12 @@ void main() {
     for (final s in [
       'Легенда',
       'ЦВЕТА',
+      'ОБЪЕКТЫ',
       'МЕТКИ',
       'ЖЕСТЫ',
+      'Житель',
+      'Враг',
+      'Предмет',
       'Главное действие',
       'Изменено',
       'Новое',
@@ -68,6 +72,14 @@ void main() {
         find.descendant(of: sheet, matching: find.text(s)),
         findsWidgets,
         reason: s,
+      );
+    }
+    // Образцы рамок — те же формы, что на жетонах.
+    for (final shape in ['round', 'spiky', 'square']) {
+      expect(
+        find.descendant(of: sheet, matching: k('legend-frame-$shape')),
+        findsOneWidget,
+        reason: shape,
       );
     }
   });

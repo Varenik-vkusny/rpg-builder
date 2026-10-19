@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../help/help_texts.dart';
 import '../ui/theme.dart';
 import 'holst_threads.dart';
+import 'token_frame.dart';
 
 const _coachKey = 'holst-coach';
 
@@ -182,6 +183,26 @@ List<Widget> holstLegend(BuildContext context, ScreenHelp help) {
     swatch(c.ok, 'Новое'),
     swatch(c.warn, 'Предупреждение'),
     swatch(s.error, 'Ошибка'),
+    head('Объекты'),
+    for (final (shape, label) in [
+      (FrameShape.round, 'Житель'),
+      (FrameShape.spiky, 'Враг'),
+      (FrameShape.square, 'Предмет'),
+    ])
+      Row(
+        children: [
+          SizedBox(
+            width: 56,
+            height: 40,
+            child: CustomPaint(
+              key: Key('legend-frame-${shape.name}'),
+              painter: TokenFramePainter(shape, s.onSurfaceVariant),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(label),
+        ],
+      ),
     head('Метки'),
     tag(ThreadTone.hot, 'убить ×3', 'Связь выбранного'),
     tag(ThreadTone.isNew, 'роняет 35%', 'Новая связь'),

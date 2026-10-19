@@ -9,6 +9,7 @@ import '../content/location.dart';
 import '../ui/cover_card.dart';
 import '../ui/theme.dart';
 import 'holst_scene.dart';
+import 'token_frame.dart';
 
 /// Текст в жетоне растёт с шрифтом телефона только до предела: жетон фиксированного размера.
 const tokenTextScaleMax = 1.15;
@@ -270,16 +271,27 @@ class TokenTile extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(
-                  tokenIcon(t),
-                  size: 22,
-                  color: s.onSurface,
-                  fill: t.kind == TokenKind.event ? 1 : 0,
-                ),
+                if (frameOf(t.kind) case final shape?)
+                  CustomPaint(
+                    key: Key('frame-${t.slug}'),
+                    painter: TokenFramePainter(shape, s.onSurfaceVariant),
+                    child: SizedBox.square(
+                      dimension: 36,
+                      child: Icon(tokenIcon(t), size: 19, color: s.onSurface),
+                    ),
+                  )
+                else
+                  Icon(
+                    tokenIcon(t),
+                    size: 22,
+                    color: s.onSurface,
+                    fill: t.kind == TokenKind.event ? 1 : 0,
+                  ),
                 if (t.count case final n?)
+                  // В рамке значок 36 × 36: число садится на её нижний край.
                   Positioned(
-                    right: -9,
-                    bottom: -12,
+                    right: frameOf(t.kind) == null ? -9 : -6,
+                    bottom: frameOf(t.kind) == null ? -12 : -1,
                     child: Container(
                       color: s.surface,
                       padding: const EdgeInsets.symmetric(
