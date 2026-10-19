@@ -134,7 +134,8 @@ void main() {
         ...w.quests.where((x) => x.slug == slug).map((x) => x.id),
       ].single;
       final tags = tagTexts(t);
-      expect(tags[id('zasada')], 'в сцене ×3');
+      // Слово — про того, на ком метка: Засада — «враги ×3» (решение владельца 19.10).
+      expect(tags[id('zasada')], 'враги ×3');
       // Метка — у самого объекта, над ним.
       final canvas = t.getTopLeft(find.byKey(const Key('holst-canvas')));
       final ambush = t.getRect(token('zasada')).shift(-canvas);
@@ -148,10 +149,10 @@ void main() {
       );
       // Связи — плитками: объект и как связан; ни точек, ни косых черт, ни «житель · место».
       expect(linkTiles(t), {
-        'Обвал': 'убить ×3',
-        'Ключ от лебёдки': 'роняет 35%',
-        // Слизень стоит в сцене «Засада» — слова глазами Слизня.
-        'Засада': 'в сцене ×3',
+        'Обвал': 'шаг 1: убить ×3',
+        'Ключ от лебёдки': 'выпадает 35%',
+        // Под плиткой — кем объект плитки приходится выбранному.
+        'Засада': 'враги ×3',
       });
       for (final x in infoTexts(t)) {
         expect(x.contains('·') || x.contains(' / '), isFalse, reason: x);
@@ -226,20 +227,22 @@ void main() {
     }
   });
 
-  test('связи мира словами автора', () async {
-    final w = await (await ashMines()).snapshotOf(holstWorld.id);
-    final labels = worldLinks(w).map((l) => l.label).toList();
-    expect(labels, [
-      'выдаёт',
-      'убить ×3',
-      'пройти',
-      'собрать ×1',
-      'в награду',
-      'роняет 35%',
-      'враги ×3',
-    ]);
-    expect(worldLinks(w).where((l) => l.loot), hasLength(1));
-  });
+  test(
+    'связи мира словами автора: слово — про тот конец, на котором стоит',
+    () async {
+      final w = await (await ashMines()).snapshotOf(holstWorld.id);
+      final words = [for (final l in worldLinks(w)) (l.back, l.label, l.step)];
+      expect(words, [
+        ('его квест', 'выдаёт', null),
+        ('убить ×3', 'убить ×3', 1),
+        ('пройти', 'пройти', 2),
+        ('собрать ×1', 'собрать ×1', 3),
+        ('даёт в награду', 'в награду', null),
+        ('роняет 35%', 'выпадает 35%', null),
+        ('враги ×3', 'в сцене ×3', null),
+      ]);
+    },
+  );
 
   test('место растёт под жетоны; не влезло — «ещё N», не спрятано', () async {
     final w = await (await ashMines()).snapshotOf(holstWorld.id);
@@ -282,14 +285,14 @@ void main() {
     await pumpHolst(t, c);
     await t.tap(token('brigadir'));
     await t.pumpAndSettle();
-    expect(linkTiles(t), {'Обвал': 'его квест, поговорить'});
+    expect(linkTiles(t), {'Обвал': 'его квест, шаг 4: поговорить'});
     for (final x in infoTexts(t)) {
       expect(x.contains('·') || x.contains(' / '), isFalse, reason: x);
     }
   });
 
   testWidgets(
-    'слова связи — глазами выбранного: Кирка у Обвала «в награду», Обвал у Кирки «награда за квест»',
+    'слово — про объект, на котором стоит: Кирка у Обвала «в награду», Обвал у Кирки «даёт в награду»',
     (t) async {
       await pumpHolst(t, await ashMines(), size: const Size(1100, 800));
       await t.tap(token('obval'));
@@ -298,9 +301,9 @@ void main() {
       expect(linkTiles(t)['Бригадир'], 'выдаёт');
       await t.tap(token('kirka'));
       await t.pumpAndSettle();
-      expect(linkTiles(t), {'Обвал': 'награда за квест'});
+      expect(linkTiles(t), {'Обвал': 'даёт в награду'});
       // Метка на Обвале — теми же словами.
-      expect(tagTexts(t).values, ['награда за квест']);
+      expect(tagTexts(t).values, ['даёт в награду']);
     },
   );
 }

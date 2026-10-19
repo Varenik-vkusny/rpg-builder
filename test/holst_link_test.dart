@@ -39,12 +39,12 @@ void main() {
       await thread(t, 'slizen', 'kirka');
       expect(find.byKey(const Key('holst-wheel')), findsOneWidget);
       expect(find.text('Шанс'), findsOneWidget);
-      // Пока крутят — на Кирке уже зелёная метка с числом; нитей нет.
+      // Пока крутят — на Кирке зелёная метка: кто и с каким числом; нитей нет.
       final pickId = (await c.snapshotOf(holstWorld.id)).items
           .firstWhere((x) => x.slug == 'kirka')
           .id;
       expect(drawnTags(t).tags.single.id, pickId);
-      expect(drawnTags(t).tags.single.text, 'роняет 25%');
+      expect(drawnTags(t).tags.single.text, 'Слизень роняет 25%');
       expect(drawnTags(t).tags.single.tone, ThreadTone.isNew);
       // 25% → 40%: три деления вниз.
       await t.drag(
@@ -52,7 +52,7 @@ void main() {
         const Offset(0, -144),
       );
       await settle(t);
-      expect(drawnTags(t).tags.single.text, 'роняет 40%');
+      expect(drawnTags(t).tags.single.text, 'Слизень роняет 40%');
       expect(await sets(c), before, reason: 'до «Готово» мир не тронут');
       await t.tap(find.byKey(const Key('holst-wheel-done')));
       await settle(t);
@@ -67,7 +67,11 @@ void main() {
       final fresh = drawnTags(t).tags
           .where((x) => x.tone == ThreadTone.isNew)
           .single;
-      expect((fresh.id, fresh.text), (pick.id, 'роняет 40%'));
+      expect((fresh.id, fresh.text), (pick.id, 'Слизень роняет 40%'));
+      // Метка стоит — значков под ней нет, у соседей значки остались.
+      final badges = drawnTags(t).badges;
+      expect(badges.where((b) => b.rect == fresh.rect), isEmpty);
+      expect(badges, isNotEmpty);
       // «Отменить» — добычи нет.
       await t.tap(find.byKey(const Key('holst-snack-action')));
       await settle(t);
@@ -95,6 +99,10 @@ void main() {
       final q = (await c.snapshotOf(holstWorld.id)).quests.single;
       expect(q.steps, hasLength(4));
       expect(q.steps.last.kind, StepKind.talk);
+      // На Стороже — с кем и какой шаг: «Обвал, шаг 4: поговорить», со значком квеста.
+      final tag = drawnTags(t).tags.single;
+      expect(tag.text, 'Обвал, шаг 4: поговорить');
+      expect(tag.icon, isNotNull);
     },
   );
 

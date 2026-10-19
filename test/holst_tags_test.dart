@@ -24,19 +24,19 @@ void main() {
     await t.pumpAndSettle();
     expect(tagTexts(t), {
       id('brigadir'): 'выдаёт',
-      id('slizen'): 'убить ×3',
-      id('zasada'): 'пройти',
-      id('klyuch_ot_lebedki'): 'собрать ×1',
+      id('slizen'): 'шаг 1: убить ×3',
+      id('zasada'): 'шаг 2: пройти',
+      id('klyuch_ot_lebedki'): 'шаг 3: собрать ×1',
       id('kirka'): 'в награду',
     });
     expect(drawnTags(t).edges, isEmpty);
-    // Слизень: слова со стороны Слизня, добыча — «роняет».
+    // Слизень: слово про того, на ком метка — Ключ «выпадает», Засада «враги».
     await t.tap(token('slizen'));
     await t.pumpAndSettle();
     expect(tagTexts(t), {
-      w.quests.single.id: 'убить ×3',
-      id('klyuch_ot_lebedki'): 'роняет 35%',
-      id('zasada'): 'в сцене ×3',
+      w.quests.single.id: 'шаг 1: убить ×3',
+      id('klyuch_ot_lebedki'): 'выпадает 35%',
+      id('zasada'): 'враги ×3',
     });
   });
 
@@ -162,4 +162,27 @@ void main() {
       expect(edge.at.dx, greaterThan(shelf.center.dx));
     },
   );
+
+  testWidgets('в покое — значки, откуда связи; выбран объект — значков нет', (
+    t,
+  ) async {
+    final c = await ashMines();
+    final w = await c.snapshotOf(holstWorld.id);
+    await pumpHolst(t, c, size: const Size(1100, 800));
+    final canvas = t.getTopLeft(find.byKey(const Key('holst-canvas')));
+    Map<Rect, List<String>> chips() => {
+      for (final b in drawnTags(t).badges)
+        b.rect: [for (final x in b.chips) x.text],
+    };
+    Rect at(String slug) => t.getRect(token(slug)).shift(-canvas);
+    // Ключ: шаг 3 квеста и выпадает из Слизня 35%.
+    expect(chips()[at('klyuch_ot_lebedki')], ['3', '35%']);
+    // Слизень: шаг 1 квеста и ×3 в сцене Засады.
+    expect(chips()[at('slizen')], ['1', '×3']);
+    expect(chips()[at('kirka')], ['']);
+    expect(w.quests, hasLength(1));
+    await t.tap(token('obval'));
+    await t.pumpAndSettle();
+    expect(drawnTags(t).badges, isEmpty);
+  });
 }

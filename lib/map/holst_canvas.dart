@@ -75,6 +75,9 @@ extension _Canvas on _HolstState {
                         painter: TagPainter(
                           tags: _tags,
                           colors: colors,
+                          chipFill: s.surfaceContainerHighest,
+                          chipLine: s.outline,
+                          chipInk: s.onSurfaceVariant,
                           textStyle: const TextStyle(
                             fontFamily: 'GolosText',
                             fontSize: 12,

@@ -30,16 +30,24 @@ extension _Geometry on _HolstState {
     return (rect: o & box.size, shelf: true);
   }
 
-  /// Метки связей: у выбранного — белые на всех его соседях; план «Менять», связь
-  /// последнего жеста и связь под колёсиком — своим цветом на втором конце связи,
-  /// словами первого («убить ×3» на Утопленнике). Невидимый — метка у края, за дверью — на двери.
+  /// Метки связей. Выбран объект — белые метки на соседях: что сосед в связи («выдаёт»,
+  /// «шаг 4: поговорить»). Ничего не выбрано — план «Менять», связь последнего жеста и
+  /// связь под колёсиком метят второй конец именем первого: «Слизень роняет 35%».
+  /// Невидимый — метка у края, за дверью — на двери. В покое — значки откуда связи.
   HolstTags _tags() {
-    if (_far) return (tags: const [], edges: const [], doors: const []);
+    if (_far) {
+      return (
+        tags: const [],
+        edges: const [],
+        doors: const [],
+        badges: const [],
+      );
+    }
     final sel = _sel;
-    final groups = <String, ({List<String> words, ThreadTone tone})>{};
+    final groups = <String, _TagGroup>{};
     if (sel != null) {
       for (final g in linkGroups(sel, _links)) {
-        groups[g.other] = (words: g.words, tone: ThreadTone.hot);
+        groups[g.other] = (words: g.words, tone: ThreadTone.hot, icon: null);
       }
     }
     final pending = _pendingLink();
@@ -53,16 +61,67 @@ extension _Geometry on _HolstState {
           (l, tone),
       if (pending != null) (pending, ThreadTone.isNew),
     ]) {
-      if (sel != null && l.touches(sel)) continue;
-      final g = groups[l.b] ??= (words: [], tone: tone);
-      if (g.tone != ThreadTone.hot) g.words.add(l.label);
+      if (sel != null) continue;
+      final from = _scene.all[l.a];
+      final g = groups[l.b] ??= (
+        words: [],
+        tone: tone,
+        icon: from == null ? null : tokenIcon(from),
+      );
+      final word = l.wordOn(l.a), name = from?.title ?? '';
+      g.words.add(
+        l.step == null ? '$name $word' : '$name, шаг ${l.step}: $word',
+      );
     }
-    return _place(groups);
+    final placed = _place(groups);
+    return (
+      tags: placed.tags,
+      edges: placed.edges,
+      doors: placed.doors,
+      // Где уже стоит метка — она и объясняет связь; значки под ней не прячутся.
+      badges: sel == null && _plan == null
+          ? [
+              for (final b in _badges())
+                if (!placed.tags.any((x) => x.rect == b.rect)) b,
+            ]
+          : const [],
+    );
+  }
+
+  /// Значки в покое: на объекте — откуда его связи (значок второго конца и «35%», «×3»,
+  /// номер шага). Не больше трёх, остальное — «+N».
+  List<BadgeSpec> _badges() {
+    final into = <String, List<HolstLink>>{};
+    for (final l in _links) {
+      into.putIfAbsent(l.b, () => []).add(l);
+    }
+    return [
+      for (final MapEntry(key: id, value: ls) in into.entries)
+        if (_rectOf(id) case final r? when _visible(r))
+          (
+            rect: r.rect,
+            chips: [
+              for (final l in ls.take(ls.length > 3 ? 2 : 3))
+                if (_scene.all[l.a] case final from?)
+                  (icon: tokenIcon(from), text: l.chip),
+              if (ls.length > 3) (icon: null, text: '+${ls.length - 2}'),
+            ],
+          ),
+    ];
+  }
+
+  /// Жетон на экране целиком в своей области: полка — в полке, холст — над ней.
+  bool _visible(({Rect rect, bool shelf}) r) {
+    final shelfTop = _vp.height - HolstShelf.height;
+    final view = r.shelf
+        ? Rect.fromLTWH(28, shelfTop, _vp.width - 28, HolstShelf.height)
+        : Rect.fromLTWH(0, 0, _vp.width, shelfTop);
+    return view.contains(r.rect.center);
   }
 
   /// Где встают метки [groups]: на объекте, у края в его сторону или на двери.
-  HolstTags _place(
-    Map<String, ({List<String> words, ThreadTone tone})> groups,
+  ({List<TagSpec> tags, List<EdgeSpec> edges, List<DoorSpec> doors}) _place(
+    Map<String, _TagGroup> groups,
   ) {
     final shelfTop = _vp.height - HolstShelf.height;
     final canvasView = Rect.fromLTWH(0, 0, _vp.width, shelfTop);
@@ -105,6 +164,7 @@ extension _Geometry on _HolstState {
           rect: r.rect,
           text: g.words.join(', '),
           tone: g.tone,
+          icon: g.icon,
         ));
       } else {
         edges.add((id: id, at: edgePoint(view, r.rect), tone: g.tone));
@@ -126,3 +186,6 @@ extension _Geometry on _HolstState {
     return null;
   }
 }
+
+/// Слова метки одного объекта, её цвет и значок первого конца (у выбранного — без значка).
+typedef _TagGroup = ({List<String> words, ThreadTone tone, IconData? icon});
