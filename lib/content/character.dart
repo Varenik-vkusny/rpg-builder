@@ -41,6 +41,7 @@ class Character {
     this.level = 1,
     this.hp = 10,
     this.attack = 0,
+    this.icon,
   });
 
   final String id;
@@ -53,6 +54,9 @@ class Character {
   final int level;
   final int hp;
   final int attack;
+
+  /// Значок вида из набора (glyphs.dart); null — значок по роли.
+  final String? icon;
 
   /// «Враг · ур. 3 · здоровье 30 · атака 8 · Штольня №3 · роняет: Ключ от лебёдки 35%» — строка в списке мира.
   String summary(
@@ -79,6 +83,7 @@ class Character {
     level: row['level'] as int,
     hp: row['hp'] as int,
     attack: row['attack'] as int,
+    icon: row['icon'] as String?,
     loot: [
       for (final l in (row['loot'] as List? ?? const []))
         LootDrop.fromRow(l as Map<String, dynamic>),

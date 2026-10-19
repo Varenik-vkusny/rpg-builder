@@ -155,6 +155,7 @@ ManualEdit editItem(String worldId, Item old, NewItem now) {
         price: now.price,
         source: old.source,
         sourceRef: old.sourceRef,
+        icon: old.icon,
       ),
     ),
   );
@@ -224,6 +225,7 @@ ManualEdit editCharacter(
         level: now.level,
         hp: now.hp,
         attack: now.attack,
+        icon: old.icon,
       ),
     ),
   );

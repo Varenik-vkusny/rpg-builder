@@ -5,6 +5,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'glyphs.dart';
+import 'holst_parts.dart' show tokenIcon;
 import 'holst_scene.dart';
 
 enum FrameShape { round, spiky, square }
@@ -60,3 +62,28 @@ class TokenFramePainter extends CustomPainter {
   bool shouldRepaint(TokenFramePainter old) =>
       old.shape != shape || old.color != color;
 }
+
+/// Значок внутри рамки: выбранный автором, а если его нет в наборе — по роли или виду.
+Widget tokenGlyph(HolstToken t, double size, Color color) =>
+    t.glyph != null && glyphName(t.glyph!) != null
+    ? Glyph(t.glyph!, key: Key('glyph-${t.slug}'), size: size, color: color)
+    : Icon(tokenIcon(t), size: size, color: color);
+
+/// Значок в рамке типа 36 × 36; у события и квеста — просто значок.
+Widget framedGlyph(HolstToken t, Color frame, Color ink, {Key? key}) =>
+    switch (frameOf(t.kind)) {
+      final shape? => CustomPaint(
+        key: key,
+        painter: TokenFramePainter(shape, frame),
+        child: SizedBox.square(
+          dimension: 36,
+          child: Center(child: tokenGlyph(t, 19, ink)),
+        ),
+      ),
+      null => Icon(
+        tokenIcon(t),
+        size: 22,
+        color: ink,
+        fill: t.kind == TokenKind.event ? 1 : 0,
+      ),
+    };

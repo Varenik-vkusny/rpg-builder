@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import 'holst_parts.dart';
 import 'holst_scene.dart';
+import 'token_frame.dart';
 
 /// Шапка: назад (уровень вверх или выход), мир и путь, «вблизи / издалека».
 class HolstTopBar extends StatelessWidget {
@@ -185,11 +185,15 @@ class HolstInfo extends StatelessWidget {
     required this.token,
     required this.links,
     required this.onPage,
+    this.onGlyph,
   });
 
   final HolstToken token;
   final List<LinkTile> links;
   final VoidCallback onPage;
+
+  /// «Значок» — только у жителя, врага и предмета; null — кнопки нет.
+  final VoidCallback? onGlyph;
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +207,7 @@ class HolstInfo extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(tokenIcon(token), color: s.onSurfaceVariant),
+              framedGlyph(token, s.onSurfaceVariant, s.onSurface),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -215,6 +219,14 @@ class HolstInfo extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onGlyph != null) ...[
+                OutlinedButton(
+                  key: const Key('holst-glyph'),
+                  onPressed: onGlyph,
+                  child: const Text('Значок'),
+                ),
+                const SizedBox(width: 8),
+              ],
               OutlinedButton(
                 key: const Key('holst-page'),
                 onPressed: onPage,
@@ -267,12 +279,13 @@ class _LinkChip extends StatelessWidget {
             width: 40,
             color: s.surfaceContainerHighest,
             alignment: Alignment.center,
-            child: Icon(
-              t == null ? Symbols.location_on_rounded : tokenIcon(t),
-              size: 20,
-              color: s.onSurface,
-              fill: t?.kind == TokenKind.event ? 1 : 0,
-            ),
+            child: t == null
+                ? Icon(
+                    Symbols.location_on_rounded,
+                    size: 20,
+                    color: s.onSurface,
+                  )
+                : framedGlyph(t, s.onSurfaceVariant, s.onSurface),
           ),
           const SizedBox(width: 10),
           Column(

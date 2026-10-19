@@ -37,6 +37,7 @@ extension _Links on _Copy {
       level: c.level,
       hp: c.hp,
       attack: c.attack,
+      icon: c.icon,
     );
     return _diff({'chance': (before, after)});
   }

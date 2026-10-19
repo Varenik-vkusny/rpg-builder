@@ -35,6 +35,7 @@ class HolstToken {
     this.count,
     this.placeId,
     this.sub,
+    this.glyph,
     this.rect = Rect.zero,
   });
 
@@ -47,6 +48,9 @@ class HolstToken {
 
   /// Вид предмета (ItemKind.name) — по нему значок; у остальных null.
   final String? sub;
+
+  /// Значок вида, выбранный автором (glyphs.dart); null — значок по роли или виду.
+  final String? glyph;
 
   /// Где стоит в координатах холста (у полки — пусто: полку раскладывает экран).
   final Rect rect;
@@ -130,6 +134,7 @@ Map<String, HolstToken> worldTokens(WorldSnapshot w) {
         title: c.title,
         count: c.role == Role.enemy ? countOf(c) : null,
         placeId: c.locationId,
+        glyph: c.icon,
       ),
     for (final e in w.events)
       e.id: HolstToken(
@@ -146,6 +151,7 @@ Map<String, HolstToken> worldTokens(WorldSnapshot w) {
         kind: TokenKind.item,
         title: i.title,
         sub: i.kind.name,
+        glyph: i.icon,
       ),
     for (final q in w.quests)
       q.id: HolstToken(
@@ -165,6 +171,7 @@ HolstToken _at(HolstToken t, Rect r) => HolstToken(
   count: t.count,
   placeId: t.placeId,
   sub: t.sub,
+  glyph: t.glyph,
   rect: r,
 );
 

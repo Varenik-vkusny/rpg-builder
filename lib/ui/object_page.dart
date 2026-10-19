@@ -71,7 +71,8 @@ class PortraitCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final List<(IconData, String)> stats;
-  final String? caption; // одной строкой вместо чисел: в каком месте идёт событие
+  final String?
+  caption; // одной строкой вместо чисел: в каком месте идёт событие
   final VoidCallback? onTap;
 
   @override

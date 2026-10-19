@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_svg: ^2.3.0
   http: ^1.6.0
   image_picker: ^1.2.3
   material_symbols_icons: ^4.2960.0
@@ -29,6 +30,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/glyphs/
   fonts:
     - family: GolosText
       fonts:

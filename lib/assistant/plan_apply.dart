@@ -268,6 +268,7 @@ class _Copy {
       // Источник задаётся только при создании (импорт) и дальше не меняется.
       source: old == null ? op.str('source') : old.source,
       sourceRef: old == null ? op.str('source_ref') : old.sourceRef,
+      icon: old?.icon,
     );
     i < 0 ? items.add(it) : items[i] = it;
     return _diff({
@@ -307,6 +308,7 @@ class _Copy {
       level: _int(op, 'level', old?.level ?? 1, min: 1),
       hp: _int(op, 'hp', old?.hp ?? 10, min: 1),
       attack: _int(op, 'attack', old?.attack ?? 0),
+      icon: old?.icon,
     );
     i < 0 ? characters.add(ch) : characters[i] = ch;
     return _diff({

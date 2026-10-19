@@ -9,6 +9,7 @@ import 'package:rpg_builder/check/world_check.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/manual_edit.dart';
 import 'package:rpg_builder/map/gesture_create.dart';
+import 'package:rpg_builder/map/gesture_icon.dart';
 import 'package:rpg_builder/map/gesture_link.dart';
 import 'package:rpg_builder/map/gesture_move.dart';
 import 'package:rpg_builder/map/gesture_path.dart';
@@ -186,4 +187,41 @@ void main() {
     );
     expect(back.events.where((e) => e.id == ev.id), isEmpty);
   });
+
+  test(
+    'значок вида: врагу и предмету — в базе, плохое имя — отказ, откат снимает',
+    () async {
+      var cur = await repo.snapshot(world.id);
+      final slime = cur.characters.firstWhere((c) => c.slug == 'slizen');
+      final key = cur.items.firstWhere((i) => i.slug == 'klyuch');
+      final sets = <String>[];
+      for (final (id, icon) in [(slime.id, 'slime'), (key.id, 'key')]) {
+        final r = await applyGesture(
+          repo,
+          world.id,
+          cur,
+          editIcon(world.id, cur, id, icon)!,
+        );
+        expect(r.applied, isTrue, reason: r.reason);
+        sets.add(r.setId!);
+        cur = await repo.snapshot(world.id);
+      }
+      expect(cur.characters.firstWhere((c) => c.id == slime.id).icon, 'slime');
+      expect(cur.items.firstWhere((i) => i.id == key.id).icon, 'key');
+      // База сама не пускает имя не из набора по форме: пробелы, заглавные.
+      final bad = await applyGesture(
+        repo,
+        world.id,
+        cur,
+        editIcon(world.id, cur, slime.id, 'Bad Name')!,
+      );
+      expect(bad.applied, isFalse);
+      for (final id in sets.reversed) {
+        expect(await undoGesture(repo, world.id, id), isNull);
+      }
+      final back = await repo.snapshot(world.id);
+      expect(back.characters.firstWhere((c) => c.id == slime.id).icon, isNull);
+      expect(back.items.firstWhere((i) => i.id == key.id).icon, isNull);
+    },
+  );
 }

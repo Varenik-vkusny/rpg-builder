@@ -35,6 +35,7 @@ class Item {
     required this.price,
     this.source,
     this.sourceRef,
+    this.icon,
   });
 
   final String id;
@@ -51,6 +52,9 @@ class Item {
   final String? source;
   final String? sourceRef;
 
+  /// Значок вида из набора (glyphs.dart); null — значок по виду предмета.
+  final String? icon;
+
   factory Item.fromRow(Map<String, dynamic> row) => Item(
     id: row['id'] as String,
     slug: row['slug'] as String,
@@ -63,6 +67,7 @@ class Item {
     price: row['price'] as int,
     source: row['source'] as String?,
     sourceRef: row['source_ref'] as String?,
+    icon: row['icon'] as String?,
   );
 
   /// «Квестовый · Обычный · ур. 2 · 0 зол.» — строка под названием в списке.

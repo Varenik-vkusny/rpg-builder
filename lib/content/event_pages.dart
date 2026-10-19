@@ -33,8 +33,7 @@ String eventLine(WorldSnapshot c, Event e) {
   return [
     place == null ? '?' : pathOf(c.locations, place),
     // Неразрывные пробелы: «Слизень × 3» не рвётся между строками.
-    for (final x in e.enemies)
-      '${t[x.characterId] ?? '?'} × ${x.amount}',
+    for (final x in e.enemies) '${t[x.characterId] ?? '?'} × ${x.amount}',
     for (final id in e.itemIds) t[id] ?? '?',
   ].join(' · ');
 }
@@ -73,22 +72,22 @@ extension EventPages on WorldPages {
       title: 'События · ${here.length}',
       child: block(
         Rail([
-        for (final e in here)
-          PortraitCard(
-            key: Key('event-${e.slug}'),
-            icon: eventIcon,
-            title: e.title,
-            caption: e.locationId == l.id ? null : places[e.locationId],
-            // Сколько врагов в сцене всего; сцена без врагов — без числа.
-            stats: [
-              if (e.enemies.isNotEmpty)
-                (
-                  Symbols.skull_rounded,
-                  '${e.enemies.fold(0, (n, x) => n + x.amount)}',
-                ),
-            ],
-            onTap: () => openDeeper(context, event(e)),
-          ),
+          for (final e in here)
+            PortraitCard(
+              key: Key('event-${e.slug}'),
+              icon: eventIcon,
+              title: e.title,
+              caption: e.locationId == l.id ? null : places[e.locationId],
+              // Сколько врагов в сцене всего; сцена без врагов — без числа.
+              stats: [
+                if (e.enemies.isNotEmpty)
+                  (
+                    Symbols.skull_rounded,
+                    '${e.enemies.fold(0, (n, x) => n + x.amount)}',
+                  ),
+              ],
+              onTap: () => openDeeper(context, event(e)),
+            ),
         ]),
       ),
     );

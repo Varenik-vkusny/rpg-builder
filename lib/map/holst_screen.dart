@@ -23,10 +23,13 @@ import '../help/help.dart';
 import '../ui/theme.dart';
 import '../worlds/world.dart';
 import 'gesture_create.dart';
+import 'gesture_icon.dart';
 import 'gesture_link.dart';
 import 'gesture_move.dart';
 import 'gesture_path.dart';
 import 'holst_bars.dart';
+import 'glyph_picker.dart';
+import 'glyphs.dart';
 import 'holst_doors.dart';
 import 'holst_help.dart';
 import 'holst_links.dart';
@@ -40,12 +43,14 @@ import 'holst_snack.dart';
 import 'holst_tags.dart';
 import 'holst_threads.dart';
 import 'holst_view.dart';
+import 'token_frame.dart';
 import 'map_parts.dart' show DotGrid;
 
 part 'holst_build.dart';
 part 'holst_canvas.dart';
 part 'holst_change.dart';
 part 'holst_geometry.dart';
+part 'holst_glyph.dart';
 part 'holst_link.dart';
 part 'holst_move.dart';
 
@@ -352,6 +357,7 @@ class _HolstState extends State<HolstScreen>
                             ),
                         ],
                         onPage: _openPage,
+                        onGlyph: frameOf(sel.kind) == null ? null : _pickGlyph,
                       ),
                     ),
                   if (_plan == null)

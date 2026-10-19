@@ -41,6 +41,7 @@ ManualEdit moveObject(
           level: c.level,
           hp: c.hp,
           attack: c.attack,
+          icon: c.icon,
         ),
       ),
     );

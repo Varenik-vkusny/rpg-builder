@@ -271,22 +271,12 @@ class TokenTile extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                if (frameOf(t.kind) case final shape?)
-                  CustomPaint(
-                    key: Key('frame-${t.slug}'),
-                    painter: TokenFramePainter(shape, s.onSurfaceVariant),
-                    child: SizedBox.square(
-                      dimension: 36,
-                      child: Icon(tokenIcon(t), size: 19, color: s.onSurface),
-                    ),
-                  )
-                else
-                  Icon(
-                    tokenIcon(t),
-                    size: 22,
-                    color: s.onSurface,
-                    fill: t.kind == TokenKind.event ? 1 : 0,
-                  ),
+                framedGlyph(
+                  t,
+                  s.onSurfaceVariant,
+                  s.onSurface,
+                  key: Key('frame-${t.slug}'),
+                ),
                 if (t.count case final n?)
                   // В рамке значок 36 × 36: число садится на её нижний край.
                   Positioned(
