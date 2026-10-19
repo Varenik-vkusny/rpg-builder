@@ -87,25 +87,14 @@ class TagPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final t = tags();
     Paint fill(ThreadTone tone) => Paint()..color = colors.of(tone);
+    // Сначала где встанут метки: значок, на который легла метка, не рисуется обрезком.
+    final placed = [for (final tag in t.tags) (tag, _tagRect(tag, size))];
+    final covered = [for (final (_, p) in placed) p.rect];
     for (final b in t.badges) {
-      _badge(canvas, b);
+      _badge(canvas, b, covered);
     }
-    for (final tag in t.tags) {
-      final icon = tag.icon == null ? null : _glyph(tag.icon!, 14, colors.ink);
-      final lead = icon == null ? 0.0 : icon.width + 3;
-      final tp = _text(
-        tag.text,
-        textStyle.copyWith(color: colors.ink),
-        math.max(40, size.width - 16 - lead),
-      );
-      // Вкладка своего жетона: стоит на его верхней грани от левого края, а жетон обведён
-      // тем же цветом — метка и рамка одно целое, не спутать с соседом (владелец 19.10).
-      final w = lead + tp.width + 12, h = 20.0;
-      final double left = tag.rect.left.clamp(
-        4.0,
-        math.max(4.0, size.width - w - 4),
-      );
-      final r = Rect.fromLTWH(left, tag.rect.top - h + 1, w, h);
+    for (final (tag, p) in placed) {
+      final (rect: r, :icon, :tp, :lead) = p;
       canvas.drawRect(
         tag.rect.deflate(1),
         fill(tag.tone)
@@ -113,8 +102,14 @@ class TagPainter extends CustomPainter {
           ..strokeWidth = 2,
       );
       canvas.drawRect(r, fill(tag.tone));
-      icon?.paint(canvas, Offset(r.left + 5, r.top + (h - icon.height) / 2));
-      tp.paint(canvas, Offset(r.left + 6 + lead, r.top + (h - tp.height) / 2));
+      icon?.paint(
+        canvas,
+        Offset(r.left + 5, r.top + (r.height - icon.height) / 2),
+      );
+      tp.paint(
+        canvas,
+        Offset(r.left + 6 + lead, r.top + (r.height - tp.height) / 2),
+      );
     }
     // Маленькая метка у края: «там ещё есть».
     for (final e in t.edges) {
@@ -132,8 +127,34 @@ class TagPainter extends CustomPainter {
     }
   }
 
-  /// Значки у правого верхнего угла жетона, справа налево.
-  void _badge(Canvas canvas, BadgeSpec b) {
+  /// Где встанет метка. Вкладка своего жетона: сидит на его верхней грани от левого края,
+  /// в один ряд со значками; жетон обведён тем же цветом — одно целое (владелец 19.10).
+  ({Rect rect, TextPainter? icon, TextPainter tp, double lead}) _tagRect(
+    TagSpec tag,
+    Size size,
+  ) {
+    final icon = tag.icon == null ? null : _glyph(tag.icon!, 14, colors.ink);
+    final lead = icon == null ? 0.0 : icon.width + 3;
+    final tp = _text(
+      tag.text,
+      textStyle.copyWith(color: colors.ink),
+      math.max(40, size.width - 16 - lead),
+    );
+    final w = lead + tp.width + 12;
+    final double left = tag.rect.left.clamp(
+      4.0,
+      math.max(4.0, size.width - w - 4),
+    );
+    return (
+      rect: Rect.fromLTWH(left, tag.rect.top - 8, w, 18),
+      icon: icon,
+      tp: tp,
+      lead: lead,
+    );
+  }
+
+  /// Значки у правого верхнего угла жетона, справа налево; под меткой — не рисуются.
+  void _badge(Canvas canvas, BadgeSpec b, List<Rect> covered) {
     const h = 18.0;
     var right = b.rect.right + 1;
     final style = textStyle.copyWith(fontSize: 10, color: chipInk);
@@ -142,6 +163,8 @@ class TagPainter extends CustomPainter {
       final tp = _text(c.text, style, 60);
       final w = 6.0 + (icon?.width ?? 0) + (c.text.isEmpty ? 0 : tp.width + 1);
       final r = Rect.fromLTWH(right - w, b.rect.top - 8, w, h);
+      right = r.left - 2;
+      if (covered.any((x) => x.overlaps(r))) continue;
       canvas.drawRect(r, Paint()..color = chipFill);
       canvas.drawRect(
         r.deflate(.5),
@@ -155,7 +178,6 @@ class TagPainter extends CustomPainter {
         x += icon.width + 1;
       }
       tp.paint(canvas, Offset(x, r.top + (h - tp.height) / 2));
-      right = r.left - 2;
     }
   }
 
