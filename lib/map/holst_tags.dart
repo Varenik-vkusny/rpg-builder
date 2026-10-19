@@ -19,8 +19,9 @@ typedef TagSpec = ({
   IconData? icon,
 });
 
-/// Метка у края: объект не виден, [at] — точка у края в его сторону.
-typedef EdgeSpec = ({String id, Offset at, ThreadTone tone});
+/// Метка у края: объект не виден. [at] — середина стрелки у края, [dir] — куда она
+/// смотрит (на полке — по диагонали вниз в сторону спрятанного, владелец 19.10).
+typedef EdgeSpec = ({String id, Offset at, Offset dir, ThreadTone tone});
 
 /// Метка на двери: за ней связанный объект.
 typedef DoorSpec = ({Rect rect, ThreadTone tone});
@@ -40,9 +41,15 @@ typedef HolstTags = ({
 Offset edgePoint(Rect view, Rect r) {
   final c = r.center;
   return Offset(
-    c.dx.clamp(view.left + 8, view.right - 8),
-    c.dy.clamp(view.top + 8, view.bottom - 8),
+    c.dx.clamp(view.left + 14, view.right - 14),
+    c.dy.clamp(view.top + 14, view.bottom - 14),
   );
+}
+
+/// Единичный вектор от [from] к [to]; совпали — вверх.
+Offset towards(Offset from, Offset to) {
+  final d = to - from;
+  return d.distance < 1 ? const Offset(0, -1) : d / d.distance;
 }
 
 class TagPainter extends CustomPainter {
@@ -111,12 +118,9 @@ class TagPainter extends CustomPainter {
         Offset(r.left + 6 + lead, r.top + (r.height - tp.height) / 2),
       );
     }
-    // Маленькая метка у края: «там ещё есть».
+    // Стрелка у края: «там ещё есть» — с тёмной обводкой, чтобы читалась на любом фоне.
     for (final e in t.edges) {
-      canvas.drawRect(
-        Rect.fromCenter(center: e.at, width: 10, height: 10),
-        fill(e.tone),
-      );
+      _arrow(canvas, e.at, e.dir, colors.of(e.tone));
     }
     for (final d in t.doors) {
       final r = d.rect;
@@ -125,6 +129,33 @@ class TagPainter extends CustomPainter {
         fill(d.tone),
       );
     }
+  }
+
+  /// Стрелка длиной 16 с острием по [dir]: обводка цвета текста меток, сверху цвет связи.
+  void _arrow(Canvas canvas, Offset at, Offset dir, Color color) {
+    final tip = at + dir * 8, tail = at - dir * 8;
+    Offset turn(double a) => Offset(
+      dir.dx * math.cos(a) - dir.dy * math.sin(a),
+      dir.dx * math.sin(a) + dir.dy * math.cos(a),
+    );
+    final path = Path()
+      ..moveTo(tail.dx, tail.dy)
+      ..lineTo(tip.dx, tip.dy);
+    for (final a in const [2.5, -2.5]) {
+      final h = tip + turn(a) * 7;
+      path
+        ..moveTo(tip.dx, tip.dy)
+        ..lineTo(h.dx, h.dy);
+    }
+    Paint line(Color c, double w) => Paint()
+      ..color = c
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas
+      ..drawPath(path, line(colors.ink, 6))
+      ..drawPath(path, line(color, 2.5));
   }
 
   /// Где встанет метка. Вкладка своего жетона: сидит на его верхней грани от левого края,

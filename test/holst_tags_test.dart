@@ -41,7 +41,7 @@ void main() {
   });
 
   testWidgets(
-    'полка прокручена: связанный слева далеко за краем — метка у левого края',
+    'полка прокручена: связанный слева далеко за краем — стрелка на левом углу',
     (t) async {
       // Длинная полка: Обвал после прокрутки до конца уже не построен вовсе.
       final c = await ashMines();
@@ -84,11 +84,14 @@ void main() {
           .getRect(find.byKey(const Key('holst-shelf')))
           .shift(-canvas);
       expect(edge.at.dx, lessThan(box.center.dx));
+      // Стрелка висит на верхнем левом углу полки и смотрит вниз-влево.
+      expect((edge.at.dy - box.top).abs(), lessThanOrEqualTo(4));
+      expect(edge.dir.dx < 0 && edge.dir.dy > 0, isTrue, reason: '${edge.dir}');
     },
   );
 
   testWidgets(
-    'связанный объект за краем полки — маленькая белая метка с той стороны',
+    'связанный объект за краем полки — стрелка на верхнем углу полки с той стороны',
     (t) async {
       // Узкий экран и шрифт тестов: Кирка на полке за правым краем.
       await pumpHolst(t, await ashMines(), size: const Size(360, 760));
@@ -99,8 +102,11 @@ void main() {
       final edge = drawnTags(t).edges.where((e) => e.id == pick).single;
       final shelf = t.getRect(find.byKey(const Key('holst-shelf')));
       final canvas = t.getTopLeft(find.byKey(const Key('holst-canvas')));
-      expect(edge.at.dx, greaterThan(shelf.shift(-canvas).center.dx));
-      expect(edge.at.dy, greaterThanOrEqualTo(shelf.shift(-canvas).top));
+      final box = shelf.shift(-canvas);
+      expect(edge.at.dx, greaterThan(box.center.dx));
+      // Висит на верхнем правом углу полки (владелец 19.10) и смотрит вниз-вправо.
+      expect((edge.at.dy - box.top).abs(), lessThanOrEqualTo(4));
+      expect(edge.dir.dx > 0 && edge.dir.dy > 0, isTrue, reason: '${edge.dir}');
       expect(tagTexts(t).containsKey(pick), isFalse);
     },
   );

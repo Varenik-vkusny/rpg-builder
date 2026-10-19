@@ -140,15 +140,22 @@ extension _Geometry on _HolstState {
     for (final MapEntry(key: id, value: g) in groups.entries) {
       final r = _rectOf(id);
       final i = shelfIds.indexOf(id);
-      if (r == null && i >= 0) {
-        // Жетон полки не построен — он за краем полки: метка с той стороны.
-        final left = seen.isNotEmpty && i < seen.first;
+      final hidden = r == null
+          ? i >= 0
+          : r.shelf && !shelfView.contains(r.rect.center);
+      if (hidden) {
+        // Жетон полки за её краем (не построен или обрезан): стрелка висит на верхнем
+        // углу полки с той стороны и смотрит по диагонали вниз, туда (владелец 19.10).
+        final left = r == null
+            ? seen.isNotEmpty && i < seen.first
+            : r.rect.center.dx < shelfView.center.dx;
         edges.add((
           id: id,
           at: Offset(
-            left ? shelfView.left + 8 : shelfView.right - 8,
-            shelfView.top + 8,
+            left ? shelfView.left + 16 : shelfView.right - 16,
+            shelfView.top - 2,
           ),
+          dir: Offset(left ? -1 : 1, 1) / math.sqrt2,
           tone: g.tone,
         ));
         continue;
@@ -167,7 +174,13 @@ extension _Geometry on _HolstState {
           icon: g.icon,
         ));
       } else {
-        edges.add((id: id, at: edgePoint(view, r.rect), tone: g.tone));
+        final at = edgePoint(view, r.rect);
+        edges.add((
+          id: id,
+          at: at,
+          dir: towards(at, r.rect.center),
+          tone: g.tone,
+        ));
       }
     }
     return (tags: tags, edges: edges, doors: doors);
