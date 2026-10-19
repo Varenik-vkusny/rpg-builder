@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/map/gesture_link.dart';
+import 'package:rpg_builder/map/holst_threads.dart' show ThreadTone;
 
 import 'holst_fixture.dart';
 import 'holst_look_test.dart' show drawnTags, tagTexts, token;
@@ -118,7 +119,7 @@ void main() {
     await t.pumpAndSettle();
     final canvas = t.getTopLeft(find.byKey(const Key('holst-canvas')));
     final door = t.getRect(find.byKey(const Key('hdoor-zaboy'))).shift(-canvas);
-    expect(drawnTags(t).doors, [door]);
+    expect(drawnTags(t).doors, [(rect: door, tone: ThreadTone.hot)]);
   });
 
   testWidgets(

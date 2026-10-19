@@ -81,7 +81,7 @@ bool linked(WorldSnapshot w, LinkKind kind, String from, String to) =>
       ),
     };
 
-/// Подпись нити со значением колёсика: «роняет 25%», «убить ×3», «пройти».
+/// Слова связи со значением колёсика: «роняет 25%», «убить ×3», «пройти».
 String linkLabel(LinkKind k, int value) => switch (wheelOf(k)) {
   Wheel.chance => '${linkWord(k)} $value%',
   Wheel.count => '${linkWord(k)} ×$value',

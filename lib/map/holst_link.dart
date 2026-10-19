@@ -159,20 +159,10 @@ extension _Link on _HolstState {
     );
   }
 
-  /// Нить, которую задают колёсиком: зелёная, с числом.
-  ThreadSpec? _pendingThread() {
+  /// Связь, которую задают колёсиком: метка с числом, ещё не в мире.
+  HolstLink? _pendingLink() {
     final p = _link;
     if (p == null || p.kind == null) return null;
-    final a = _rectOf(p.from), b = _rectOf(p.to);
-    if (a == null || b == null) return null;
-    return ThreadSpec(
-      a: a.rect,
-      b: b.rect,
-      aShelf: a.shelf,
-      bShelf: b.shelf,
-      label: linkLabel(p.kind!, p.value),
-      loot: p.kind == LinkKind.loot,
-      tone: ThreadTone.isNew,
-    );
+    return HolstLink(p.from, p.to, linkLabel(p.kind!, p.value));
   }
 }

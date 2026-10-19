@@ -1,5 +1,5 @@
-// Холст мира (5е): слои холста — сетка, места, нити, жетоны и двери, подписи, полка.
-// Нити считаются в координатах экрана: полка не масштабируется вместе с миром.
+// Холст мира (5е): слои холста — сетка, места, жетоны и двери, метки связей, полка.
+// Метки считаются в координатах экрана: полка не масштабируется вместе с миром.
 part of 'holst_screen.dart';
 
 extension _Canvas on _HolstState {
@@ -25,7 +25,6 @@ extension _Canvas on _HolstState {
               onTap: () => _setSel(null),
               onScaleStart: _scaleStart,
               onScaleUpdate: _scaleUpdate,
-              onScaleEnd: (_) => _setMoving(false),
               child: Stack(
                 key: _canvasKey,
                 children: [
@@ -35,39 +34,7 @@ extension _Canvas on _HolstState {
                     ),
                   ),
                   _layer(_placesLayer(context)),
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: ThreadPainter(
-                          threads: _threads,
-                          colors: colors,
-                          labels: false,
-                          obstacles: () => const [],
-                          textStyle: const TextStyle(),
-                          repaint: repaint,
-                        ),
-                      ),
-                    ),
-                  ),
                   if (!_far) _layer(_tokensLayer(context)),
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: ThreadPainter(
-                          threads: _threads,
-                          colors: colors,
-                          labels: true,
-                          obstacles: _obstacles,
-                          textStyle: const TextStyle(
-                            fontFamily: 'GolosText',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          repaint: repaint,
-                        ),
-                      ),
-                    ),
-                  ),
                   // Пустой мир — три быстрых старта вместо пустого поля.
                   if (_scene.places.isEmpty && _path.isEmpty && _plan == null)
                     Positioned.fill(
@@ -100,15 +67,14 @@ extension _Canvas on _HolstState {
                         ),
                       ),
                     ),
-                  // Метки связей выбранного — поверх холста и полки.
+                  // Метки связей — поверх холста и полки.
                   Positioned.fill(
                     child: IgnorePointer(
                       child: CustomPaint(
                         key: const Key('holst-tags'),
                         painter: TagPainter(
                           tags: _tags,
-                          ink: s.surfaceContainerLowest,
-                          paper: s.onSurface,
+                          colors: colors,
                           textStyle: const TextStyle(
                             fontFamily: 'GolosText',
                             fontSize: 12,
@@ -278,7 +244,7 @@ extension _Canvas on _HolstState {
     return [...all.where((x) => !top(x)), ...all.where(top)];
   }
 
-  /// Жетон на холсте или на полке: касание — выбрать, его нити светятся, остальное гаснет.
+  /// Жетон на холсте или на полке: касание — выбрать, на связанных — метки, остальное гаснет.
   Widget _token(HolstToken t, Color? hue, {double? width = 148}) {
     final near = _near;
     return AnimatedOpacity(
@@ -333,7 +299,6 @@ extension _Canvas on _HolstState {
   // Сдвиг одним пальцем и масштаб двумя — вокруг точки между пальцами.
   void _scaleStart(ScaleStartDetails d) {
     _fly.stop();
-    _setMoving(true);
     _start = _view.value.clone();
     _focal0 = d.localFocalPoint;
   }

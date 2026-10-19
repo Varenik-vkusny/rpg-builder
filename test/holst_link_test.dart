@@ -1,15 +1,15 @@
 // Прибор 5е.4 «Строить: связь жестом»: провёл от объекта к объекту — связь нужного вида;
-// число — колёсиком на нити; квест → житель — меню «Поговорить / Убить». Каждая связь —
+// число — колёсиком, связь видна меткой; квест → житель — меню «Поговорить / Убить». Каждая связь —
 // через проверку и историю; несвязуемые пары и повтор — отказ, мир не тронут.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/quest.dart';
-import 'package:rpg_builder/map/holst_threads.dart';
+import 'package:rpg_builder/map/holst_threads.dart' show ThreadTone;
 
 import 'fakes.dart';
 import 'holst_build_test.dart' show build, settle, snack;
 import 'holst_fixture.dart';
-import 'holst_look_test.dart' show drawnThreads, token;
+import 'holst_look_test.dart' show drawnTags, token;
 
 /// Широкий экран: в тестах шрифт шире настоящего, а полка должна быть видна целиком.
 const wide = Size(1100, 800);
@@ -39,16 +39,20 @@ void main() {
       await thread(t, 'slizen', 'kirka');
       expect(find.byKey(const Key('holst-wheel')), findsOneWidget);
       expect(find.text('Шанс'), findsOneWidget);
-      // Пока крутят — нить уже видна зелёной, с числом.
-      expect(drawnThreads(t).single.label, 'роняет 25%');
-      expect(drawnThreads(t).single.tone, ThreadTone.isNew);
+      // Пока крутят — на Кирке уже зелёная метка с числом; нитей нет.
+      final pickId = (await c.snapshotOf(holstWorld.id)).items
+          .firstWhere((x) => x.slug == 'kirka')
+          .id;
+      expect(drawnTags(t).tags.single.id, pickId);
+      expect(drawnTags(t).tags.single.text, 'роняет 25%');
+      expect(drawnTags(t).tags.single.tone, ThreadTone.isNew);
       // 25% → 40%: три деления вниз.
       await t.drag(
         find.byKey(const Key('holst-wheel-drum')),
         const Offset(0, -144),
       );
       await settle(t);
-      expect(drawnThreads(t).single.label, 'роняет 40%');
+      expect(drawnTags(t).tags.single.text, 'роняет 40%');
       expect(await sets(c), before, reason: 'до «Готово» мир не тронут');
       await t.tap(find.byKey(const Key('holst-wheel-done')));
       await settle(t);
@@ -59,11 +63,11 @@ void main() {
       final slime = w.characters.firstWhere((x) => x.slug == 'slizen');
       final pick = w.items.firstWhere((x) => x.slug == 'kirka');
       expect(slime.loot.where((l) => l.itemId == pick.id).single.chance, 40);
-      // Новая связь видна и в покое — зелёной нитью.
-      expect(
-        drawnThreads(t).where((x) => x.tone == ThreadTone.isNew).single.label,
-        'роняет 40%',
-      );
+      // Новая связь видна и в покое — зелёной меткой на Кирке.
+      final fresh = drawnTags(t).tags
+          .where((x) => x.tone == ThreadTone.isNew)
+          .single;
+      expect((fresh.id, fresh.text), (pick.id, 'роняет 40%'));
       // «Отменить» — добычи нет.
       await t.tap(find.byKey(const Key('holst-snack-action')));
       await settle(t);
@@ -72,7 +76,7 @@ void main() {
         back.characters.firstWhere((x) => x.slug == 'slizen').loot,
         hasLength(1),
       );
-      expect(drawnThreads(t), isEmpty);
+      expect(drawnTags(t).tags, isEmpty);
     },
   );
 

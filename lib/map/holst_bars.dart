@@ -101,7 +101,7 @@ class HolstShelf extends StatelessWidget {
 
   final List<HolstToken> tokens;
 
-  /// Ключи жетонов — по ним слой нитей находит, где стоит жетон полки.
+  /// Ключи жетонов — по ним слой меток находит, где стоит жетон полки.
   final Map<String, GlobalKey> keys;
   final ScrollController controller;
   final Widget Function(HolstToken) chip;

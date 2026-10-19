@@ -14,7 +14,7 @@ import 'assistant_fixtures.dart';
 import 'fakes.dart';
 import 'holst_build_test.dart' show settle, snack;
 import 'holst_fixture.dart';
-import 'holst_look_test.dart' show token;
+import 'holst_look_test.dart' show drawnTags, token;
 
 Finder k(String key) => find.byKey(Key(key));
 
@@ -100,6 +100,13 @@ void main() {
       );
       expect(t.widget<TokenTile>(drowned).mark, Mark.isNew);
       expect(t.widget<PlaceCard>(k('hplace-shtolnya_3')).mark, Mark.changed);
+      // Новая связь плана — зелёной меткой на Утопленнике, без нитей (решение 19.10).
+      final kill = drawnTags(t).tags
+          .where((x) => x.text.contains('убить ×3'))
+          .single;
+      expect(kill.tone, ThreadTone.isNew);
+      final canvas = t.getTopLeft(k('holst-canvas'));
+      expect(kill.rect, t.getRect(token('utoplennik')).shift(-canvas));
       expect(
         (await c.snapshotOf(holstWorld.id)).characters
             .any((x) => x.slug == 'utoplennik'),
@@ -232,7 +239,7 @@ void main() {
     expect(shaft.now, 'затоплена по пояс');
   });
 
-  test('нити плана: две связи одной пары не путаются', () async {
+  test('метки плана: две связи одной пары не путаются', () async {
     final c = await mines();
     final w = await c.snapshotOf(holstWorld.id);
     final copy = applyToCopy(w, floodPlan()).$1;
@@ -245,5 +252,28 @@ void main() {
         .firstWhere((x) => x.slug == 'utoplennik')
         .id;
     expect(tones['$quest>$drowned'], ThreadTone.isNew);
+  });
+
+  test('метки плана: связь пары изменилась — пурпурная', () async {
+    final c = await mines();
+    final w = await c.snapshotOf(holstWorld.id);
+    // Шанс Ключа у Слизня 35% → 50%: пара та же, связь другая.
+    final drop = (floodPlanJson()['ops'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((o) => o['type'] == 'loot' && o['action'] == 'delete');
+    final plan = Plan.fromJson({
+      'summary': 'шанс выше',
+      'ops': [
+        {
+          ...drop,
+          'action': 'update',
+          'fields': {...drop['fields'] as Map<String, dynamic>, 'chance': 50},
+        },
+      ],
+    });
+    final copy = applyToCopy(w, plan).$1;
+    final slime = copy.characters.firstWhere((x) => x.slug == 'slizen').id;
+    final key = copy.items.firstWhere((x) => x.slug == 'klyuch').id;
+    expect(planThreads(w, copy), {'$slime>$key': ThreadTone.changed});
   });
 }

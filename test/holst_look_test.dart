@@ -1,12 +1,12 @@
 // Прибор 5е.2 «Смотреть»: холст уровня в виде «плашка» — места с жетонами внутри, двери,
-// полка; нажал объект — его нити и связи, остальное гаснет; издалека — числа, вблизи — объекты.
+// полка; нажал объект — метки на связанных, остальное гаснет; издалека — числа, вблизи — объекты.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/map/gesture_link.dart';
 import 'package:rpg_builder/map/holst_links.dart';
 import 'package:rpg_builder/map/holst_scene.dart';
 import 'package:rpg_builder/map/holst_tags.dart';
-import 'package:rpg_builder/map/holst_threads.dart';
+import 'package:rpg_builder/map/holst_threads.dart' show ThreadTone;
 
 import 'holst_fixture.dart';
 
@@ -20,17 +20,7 @@ double opacityOf(WidgetTester t, String slug) => t
     )
     .opacity;
 
-/// Нити, которые сейчас рисует слой нитей (не подписей).
-List<ThreadSpec> drawnThreads(WidgetTester t) {
-  final painters = [
-    for (final w in t.widgetList<CustomPaint>(find.byType(CustomPaint)))
-      if (w.painter case final ThreadPainter p when !p.labels) p,
-  ];
-  expect(painters, hasLength(1));
-  return painters.single.threads();
-}
-
-/// Метки связей выбранного (слой меток холста).
+/// Метки связей (слой меток холста).
 HolstTags drawnTags(WidgetTester t) {
   final w = t.widget<CustomPaint>(find.byKey(const Key('holst-tags')));
   return (w.painter! as TagPainter).tags();
@@ -129,11 +119,11 @@ void main() {
     (t) async {
       await pumpHolst(t, await ashMines());
       expect(find.byKey(const Key('holst-info')), findsNothing);
-      expect(drawnThreads(t), isEmpty, reason: 'в покое нитей нет');
+      expect(drawnTags(t).tags, isEmpty, reason: 'в покое меток нет');
       await t.tap(token('slizen'));
       await t.pumpAndSettle();
-      // Связи выбранного — метками на самих объектах, без нитей (выбор владельца 17.10).
-      expect(drawnThreads(t), isEmpty, reason: 'у выбранного нитей нет');
+      // Связи выбранного — белыми метками на самих объектах (выбор владельца 17.10).
+      expect(drawnTags(t).tags.map((x) => x.tone).toSet(), {ThreadTone.hot});
       final w = await (await (() async => ashMines())()).snapshotOf(
         holstWorld.id,
       );
@@ -178,7 +168,7 @@ void main() {
       await t.pumpAndSettle();
       expect(find.byKey(const Key('holst-info')), findsNothing);
       expect(opacityOf(t, 'brigadir'), 1);
-      expect(drawnThreads(t), isEmpty);
+      expect(drawnTags(t).tags, isEmpty);
     },
   );
 
@@ -266,76 +256,6 @@ void main() {
       expect(p.rect.contains(x.rect.center), isTrue);
       expect(x.rect.overlaps(p.overflowRect!), isFalse);
     }
-  });
-
-  test(
-    'нить — под прямым углом: каждый отрезок по горизонтали или вертикали',
-    () {
-      for (final (a, b, sa, sb) in [
-        (
-          const Rect.fromLTWH(0, 0, 148, 48),
-          const Rect.fromLTWH(300, 200, 148, 48),
-          false,
-          false,
-        ),
-        (
-          const Rect.fromLTWH(0, 0, 148, 48),
-          const Rect.fromLTWH(20, 400, 100, 48),
-          false,
-          true,
-        ),
-        (
-          const Rect.fromLTWH(0, 600, 90, 48),
-          const Rect.fromLTWH(200, 600, 90, 48),
-          true,
-          true,
-        ),
-      ]) {
-        final pts = threadPoints(
-          ThreadSpec(
-            a: a,
-            b: b,
-            label: '',
-            tone: ThreadTone.hot,
-            aShelf: sa,
-            bShelf: sb,
-          ),
-        );
-        for (var i = 1; i < pts.length; i++) {
-          final d = pts[i] - pts[i - 1];
-          expect(d.dx == 0 || d.dy == 0, isTrue, reason: '$pts');
-        }
-        // Концы — на гранях блоков, не внутри.
-        expect(
-          a.inflate(.01).contains(pts.first) &&
-              !a.deflate(1).contains(pts.first),
-          isTrue,
-        );
-        expect(
-          b.inflate(.01).contains(pts.last) && !b.deflate(1).contains(pts.last),
-          isTrue,
-        );
-      }
-    },
-  );
-
-  test('подпись нити — только на своей нити: нет места — подписи нет', () {
-    const p = Offset(100, 100), q = Offset(300, 100);
-    const size = Size(80, 22);
-    // Нить закрыта блоком целиком — подписи нет (а не рядом, на чужом месте).
-    final wall = [const Rect.fromLTWH(0, 80, 400, 40)];
-    expect(labelSpot(p, q, size, wall, 400), isNull);
-    // Свободно — на середине нити.
-    expect(
-      labelSpot(p, q, size, const [], 400)!.center,
-      const Offset(200, 100),
-    );
-    // Длинная нить: середина занята — подпись сдвигается вдоль неё.
-    final moved = labelSpot(p, const Offset(500, 100), size, [
-      Rect.fromCenter(center: const Offset(300, 100), width: 60, height: 30),
-    ], 600)!;
-    expect(moved.center.dy, 100);
-    expect(moved.center.dx, isNot(300));
   });
 
   test('связи по объекту: одна плитка, все виды связи в ней', () {

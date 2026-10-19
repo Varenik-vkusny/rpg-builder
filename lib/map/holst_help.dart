@@ -1,5 +1,5 @@
 // Холст мира (5е), понятно без обучения: подсказка при первом входе (3 строки), «?» —
-// легенда цветов, нитей и жестов, пустой мир — три быстрых старта. Тексты — одно-два слова.
+// легенда цветов, меток и жестов, пустой мир — три быстрых старта. Тексты — одно-два слова.
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -126,7 +126,7 @@ const _buildGestures = [
   (Symbols.undo_rounded, 'Отменить — 5 секунд после жеста'),
 ];
 
-/// Легенда в шторке «?»: цвета, нити, жесты (строки жестов — из справки «holst»).
+/// Легенда в шторке «?»: цвета, метки, жесты (строки жестов — из справки «holst»).
 List<Widget> holstLegend(BuildContext context, ScreenHelp help) {
   final s = Theme.of(context).colorScheme;
   final c = AppColors.of(context);
@@ -149,17 +149,30 @@ List<Widget> holstLegend(BuildContext context, ScreenHelp help) {
       Text(label),
     ],
   );
-  Widget line(ThreadTone? tone, String label, {bool loot = false}) => Row(
+  final tones = threadColors(context);
+  // Образец метки: как на холсте — плашка цвета связи со словами.
+  Widget tag(ThreadTone tone, String word, String label) => Row(
     children: [
-      CustomPaint(
-        size: const Size(56, 24),
-        painter: _LineSample(
-          tone == null ? s.outline : threadColors(context).of(tone),
-          loot,
+      SizedBox(
+        width: 96,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            color: tones.of(tone),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: Text(
+              word,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: tones.ink,
+              ),
+            ),
+          ),
         ),
       ),
       const SizedBox(width: 10),
-      Text(label),
+      Expanded(child: Text(label)),
     ],
   );
   return [
@@ -169,11 +182,23 @@ List<Widget> holstLegend(BuildContext context, ScreenHelp help) {
     swatch(c.ok, 'Новое'),
     swatch(c.warn, 'Предупреждение'),
     swatch(s.error, 'Ошибка'),
-    head('Нити'),
-    line(null, 'Связь'),
-    line(null, 'Добыча', loot: true),
-    line(ThreadTone.hot, 'Выбрано'),
-    line(ThreadTone.changed, 'Изменено'),
+    head('Метки'),
+    tag(ThreadTone.hot, 'убить ×3', 'Связь выбранного'),
+    tag(ThreadTone.isNew, 'роняет 35%', 'Новая связь'),
+    tag(ThreadTone.changed, 'пройти', 'Изменённая связь'),
+    Row(
+      children: [
+        SizedBox(
+          width: 96,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Container(width: 10, height: 10, color: tones.hot),
+          ),
+        ),
+        const SizedBox(width: 10),
+        const Expanded(child: Text('Ещё связь — за краем или за дверью')),
+      ],
+    ),
     head('Жесты'),
     for (final (icon, text) in [
       for (final (i, l) in help.lines.indexed)
@@ -188,40 +213,6 @@ List<Widget> holstLegend(BuildContext context, ScreenHelp help) {
         ],
       ),
   ];
-}
-
-/// Образец нити: под прямым углом, скосы, квадратики на концах.
-class _LineSample extends CustomPainter {
-  const _LineSample(this.color, this.loot);
-
-  final Color color;
-  final bool loot;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = chamferPath(const [
-      Offset(4, 20),
-      Offset(4, 8),
-      Offset(52, 8),
-      Offset(52, 20),
-    ]);
-    canvas.drawPath(
-      loot ? dashed(path) : path,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-    for (final e in const [Offset(4, 20), Offset(52, 20)]) {
-      canvas.drawRect(
-        Rect.fromCenter(center: e, width: 7, height: 7),
-        Paint()..color = color,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_LineSample old) => old.color != color || old.loot != loot;
 }
 
 /// Пустой мир: первое место, попросить ассистента, справочник — позже.

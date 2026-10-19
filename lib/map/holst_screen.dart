@@ -1,4 +1,4 @@
-// Холст мира (5е) — места уровня с объектами внутри, полка у края, нити выбранного.
+// Холст мира (5е) — места уровня с объектами внутри, полка у края, метки связей.
 // Сдвиг и масштаб пальцами; издалека места с числами, вблизи — объекты; дверь ведёт
 // уровнем ниже. Формы и страницы объектов остаются запасным путём («Страница»).
 import 'dart:async';
@@ -35,7 +35,6 @@ import 'holst_pops.dart';
 import 'holst_parts.dart';
 import 'holst_plan.dart';
 import 'holst_plan_sheet.dart';
-import 'holst_route.dart';
 import 'holst_scene.dart';
 import 'holst_snack.dart';
 import 'holst_tags.dart';
@@ -108,7 +107,7 @@ class _HolstState extends State<HolstScreen>
   /// Подсветка после жеста: новое — зелёным, изменённое — пурпуром (до следующего жеста).
   final _marks = <String, Mark>{};
 
-  /// Связи, проведённые последним жестом: их нити видны и в покое (зелёные).
+  /// Связи, проведённые последним жестом: их метки видны и в покое (зелёные).
   final _threadMarks = <String>{};
 
   /// Нить под пальцем и связь, которую задают колёсиком или меню.
@@ -145,16 +144,7 @@ class _HolstState extends State<HolstScreen>
   final _shelfKeys = <String, GlobalKey>{};
   final _shelfScroll = ScrollController();
 
-  /// Холст едет (палец, перелёт кадра): нити — простой ломаной, обход — когда встал.
-  bool _moving = false;
-  void _setMoving(bool v) {
-    if (v != _moving && mounted) setState(() => _moving = v);
-  }
-
-  /// Проложенные пути нитей (ключ — концы и блоки на экране).
-  final _routes = <int, List<List<Offset>?>>{};
-
-  // Сцена, нити и проблемы — пересчитываются при смене мира или уровня.
+  // Сцена, связи и проблемы — пересчитываются при смене мира или уровня.
   late HolstScene _scene;
   late List<HolstLink> _links;
   late List<Problem> _problems;
@@ -165,12 +155,6 @@ class _HolstState extends State<HolstScreen>
     _rebuild();
     _fly.addListener(() {
       if (_flight case final f?) _view.value = f.value;
-    });
-    _fly.addStatusListener((s) {
-      if (s == AnimationStatus.forward) _setMoving(true);
-      if (s == AnimationStatus.completed || s == AnimationStatus.dismissed) {
-        _setMoving(false);
-      }
     });
     _view.addListener(_onView);
     coachSeen().then((seen) {
