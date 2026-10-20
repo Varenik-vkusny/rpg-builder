@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:supabase/supabase.dart';
 
 /// Образец предмета из Open5e — ровно то, что нужно для импорта и атрибуции.
 class Open5eItem {
@@ -110,14 +111,20 @@ class Open5eCreature {
   }
 }
 
-/// Поиск образцов. Подменяется в тестах — сеть там не нужна.
+/// Поиск образцов и перевод их названий. Подменяется в тестах — сеть там не нужна.
 abstract class Open5eApi {
   Future<List<Open5eItem>> searchItems(String query);
   Future<List<Open5eCreature>> searchCreatures(String query);
+
+  /// Названия на язык [to] ('ru' или 'en'), столько же и по порядку. Не вышло — Open5eError.
+  Future<List<String>> translate(List<String> texts, String to);
 }
 
 class HttpOpen5e implements Open5eApi {
-  const HttpOpen5e();
+  const HttpOpen5e({this.client});
+
+  /// Для перевода (серверная функция); нет — перевод недоступен, названия по-английски.
+  final SupabaseClient? client;
 
   static const _base = 'https://api.open5e.com/v2';
 
@@ -133,6 +140,33 @@ class HttpOpen5e implements Open5eApi {
   Future<List<Open5eCreature>> searchCreatures(String query) async => [
     for (final r in await _get('creatures', query)) Open5eCreature.fromJson(r),
   ];
+
+  /// Серверная функция «translate» — не модель защиты (VISION.md, 09.10).
+  @override
+  Future<List<String>> translate(List<String> texts, String to) async {
+    final c = client;
+    if (c == null) throw const Open5eError('перевод недоступен: нет сервера');
+    try {
+      final res = await c.functions.invoke(
+        'translate',
+        body: {'texts': texts, 'to': to},
+      );
+      // Ответ не той формы — тоже «перевод недоступен», а не падение экрана.
+      final data = res.data;
+      final texts0 = data is Map ? data['texts'] : null;
+      if (texts0 is! List) throw const Open5eError('перевод не той формы');
+      final out = [for (final t in texts0) '$t'];
+      if (out.length != texts.length) {
+        throw const Open5eError('перевод не той длины');
+      }
+      return out;
+    } on FunctionException catch (e) {
+      final d = e.details;
+      throw Open5eError(
+        'перевод недоступен: ${d is Map ? d['error'] : e.status}',
+      );
+    }
+  }
 
   Future<List<Open5eItem>> _search(String kind, String query) async => [
     for (final r in await _get(kind, query)) Open5eItem.fromJson(r),

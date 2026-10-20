@@ -1,4 +1,5 @@
-// ПОКАЗ, а не проверка (5д): враг из Open5e — поиск, карточка «каким станет враг».
+// ПОКАЗ, а не проверка (5д): враг из Open5e — поиск по-русски, карточка «каким станет враг»,
+// поиск без перевода (сервер не ответил).
 // Запуск: flutter test --no-pub demo/open5e_enemy_snapshots_test.dart
 // → build/snapshots/enemy-*.png
 import 'package:flutter/material.dart';
@@ -23,6 +24,11 @@ void main() {
       open5e: FakeOpen5e(
         const [],
         creatures: [creature('skeleton'), creature('ochre_jelly')],
+        words: {
+          'skeleton': 'скелет',
+          'Skeleton': 'Скелет',
+          'Ochre Jelly': 'Охряная слизь',
+        },
       ),
       wrap: frame,
     );
@@ -37,7 +43,7 @@ void main() {
     await tapButton(t, 'open5e-open');
     await t.tap(find.text('Враги'));
     await t.pumpAndSettle();
-    await t.enterText(find.byKey(const Key('open5e-query')), 'skeleton');
+    await t.enterText(find.byKey(const Key('open5e-query')), 'скелет');
     await tapShown(t, find.byKey(const Key('open5e-search')));
     await shot(t, 'enemy-1-search', ratio: 3);
     await tapShown(t, find.byKey(const Key('open5e-srd_skeleton')));

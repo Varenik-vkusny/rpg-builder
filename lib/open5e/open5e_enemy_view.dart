@@ -15,23 +15,31 @@ String _cr(double cr) => switch (cr) {
   _ => '${cr.round()}',
 };
 
-/// Строка находки: имя; опасность и здоровье; документ.
-Widget enemyTile(Open5eCreature c, VoidCallback onTap) => ListTile(
-  key: Key('open5e-${c.key}'),
-  title: Text(c.name),
-  // Без точек-разделителей: числа одной строкой, документ — второй.
-  subtitle: Text(
-    'опасность ${_cr(c.challenge)}, здоровье ${c.hp}\n${c.document}',
-  ),
-  isThreeLine: true,
-  onTap: onTap,
-);
+/// Строка находки: имя по-русски [title]; оригинал (без перевода — документ); числа.
+Widget enemyTile(Open5eCreature c, String title, VoidCallback onTap) =>
+    ListTile(
+      key: Key('open5e-${c.key}'),
+      title: Text(title),
+      // Без точек-разделителей: оригинал одной строкой, числа — второй.
+      subtitle: Text(
+        '${title == c.name ? c.document : c.name}\n'
+        'опасность ${_cr(c.challenge)}, здоровье ${c.hp}',
+      ),
+      isThreeLine: true,
+      onTap: onTap,
+    );
 
-/// Каким враг придёт в мир; [problems] — что появится в мире после импорта.
+/// Каким враг придёт в мир под именем [title]; [problems] — что появится в мире после импорта.
 class EnemyPreview extends StatelessWidget {
-  const EnemyPreview({super.key, required this.c, required this.problems});
+  const EnemyPreview({
+    super.key,
+    required this.c,
+    required this.title,
+    required this.problems,
+  });
 
   final Open5eCreature c;
+  final String title;
   final List<Problem> problems;
 
   @override
@@ -60,7 +68,7 @@ class EnemyPreview extends StatelessWidget {
             ],
             Expanded(
               child: Text(
-                c.name,
+                title,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -69,6 +77,7 @@ class EnemyPreview extends StatelessWidget {
             ),
           ],
         ),
+        if (title != c.name) row('Оригинал', c.name),
         row('Враг, уровень', '${levelOfChallenge(c.challenge)}'),
         row('Здоровье', '${c.hp}'),
         row('Атака', '${attackOf(c)}'),

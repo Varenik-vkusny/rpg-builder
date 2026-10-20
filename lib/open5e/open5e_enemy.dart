@@ -100,17 +100,20 @@ String? glyphOf(Open5eCreature c) {
 }
 
 /// Импорт врага: строка «создать» с числами, значком, источником и карточкой оригинала.
+/// [title] — имя в мире (перевод); slug — от оригинала: `skeleton` понятнее коду игры.
 ({ManualEdit edit, String id}) importEnemy(
   String worldId,
   WorldSnapshot w,
-  Open5eCreature c,
-) {
+  Open5eCreature c, {
+  String? title,
+}) {
   final id = newId();
+  final name = title ?? c.name;
   final slug = uniqueSlug(c.name, w.characters.map((x) => x.slug));
   final enemy = Character(
     id: id,
     slug: slug,
-    title: c.name,
+    title: name,
     description: '',
     role: Role.enemy,
     locationId: null,
@@ -124,14 +127,14 @@ String? glyphOf(Open5eCreature c) {
   return (
     id: id,
     edit: ManualEdit(
-      title: 'Импорт из Open5e: ${c.name}',
+      title: 'Импорт из Open5e: $name',
       slug: slug,
       ops: [
         rowOp('create', 'character', slug, {
           'id': id,
           'project_id': worldId,
           'slug': slug,
-          'title': c.name,
+          'title': name,
           'description': '',
           'role': 'enemy',
           'level': enemy.level,

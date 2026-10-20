@@ -31,10 +31,23 @@ const potion = Open5eItem(
 );
 
 class FakeOpen5e implements Open5eApi {
-  FakeOpen5e(this.result, {this.creatures = const []});
+  FakeOpen5e(this.result, {this.creatures = const [], this.words});
   final Object result;
   final List<Open5eCreature> creatures;
   final queries = <String>[];
+
+  /// Словарь переводчика в обе стороны; нет — перевод недоступен, как без сервера.
+  final Map<String, String>? words;
+  final translated = <(List<String>, String)>[];
+
+  @override
+  Future<List<String>> translate(List<String> texts, String to) async {
+    translated.add((texts, to));
+    final w = words;
+    if (w == null) throw const Open5eError('перевод недоступен');
+    final back = {for (final e in w.entries) e.value: e.key};
+    return [for (final t in texts) (to == 'ru' ? w[t] : back[t]) ?? t];
+  }
 
   @override
   Future<List<Open5eCreature>> searchCreatures(String query) async {

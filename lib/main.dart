@@ -6,6 +6,7 @@ import 'assistant/assistant_service.dart';
 import 'auth/auth_service.dart';
 import 'config.dart';
 import 'content/content_repo.dart';
+import 'open5e/open5e_api.dart';
 import 'worlds/worlds_repo.dart';
 
 Future<void> main() async {
@@ -40,6 +41,7 @@ Future<void> main() async {
       worlds: SupabaseWorldsRepo(client),
       content: SupabaseContentRepo(client),
       assistant: SupabaseAssistantService(client),
+      open5e: HttpOpen5e(client: client),
     ),
   );
 }

@@ -34,18 +34,20 @@ Rarity rarityOf(Open5eItem o) => switch (o.rarity) {
 };
 
 /// План из одной операции: создать предмет по образцу, с новым slug и источником.
-Plan importPlan(Open5eItem o, WorldSnapshot world) {
+/// [title] — название в мире (перевод); slug — от оригинала, как у врага.
+Plan importPlan(Open5eItem o, WorldSnapshot world, {String? title}) {
   final kind = kindOf(o);
+  final name = title ?? o.name;
   final slug = uniqueSlug(o.name, world.items.map((i) => i.slug));
   return Plan(
-    summary: 'Импорт из Open5e: ${o.name}',
+    summary: 'Импорт из Open5e: $name',
     ops: [
       PlanOp(
         action: OpAction.create,
         type: OpType.item,
         slug: slug,
         fields: {
-          'title': o.name,
+          'title': name,
           'kind': kind.name,
           'rarity': rarityOf(o).name,
           'level': 1,

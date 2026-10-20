@@ -51,10 +51,20 @@ class _Open5eScreenState extends State<Open5eScreen> {
   bool _busy = false;
   String? _error;
 
+  /// Русские названия находок: ключ образца → перевод. Нет перевода — оригинал.
+  Map<String, String> _ru = const {};
+
+  /// Перевод не удался — находки по-английски, автору сказано почему.
+  bool _untranslated = false;
+
+  static final _cyrillic = RegExp('[а-яё]', caseSensitive: false);
+
+  String _title(String key, String name) => _ru[key] ?? name;
+
   Future<void> _search() async {
     final q = _query.text.trim();
     if (q.isEmpty) {
-      setState(() => _error = 'Напиши, что искать, — название по-английски');
+      setState(() => _error = 'Напиши, что искать: «скелет» или «skeleton»');
       return;
     }
     setState(() {
@@ -64,13 +74,32 @@ class _Open5eScreenState extends State<Open5eScreen> {
       _creature = null;
     });
     try {
-      if (_enemies) {
-        final found = await widget.api.searchCreatures(q);
-        if (mounted) setState(() => _creatures = found);
-      } else {
-        final found = await widget.api.searchItems(q);
-        if (mounted) setState(() => _found = found);
+      // Справочник ищет только по-английски: русский запрос сначала переводим.
+      var en = q;
+      if (_cyrillic.hasMatch(q)) {
+        try {
+          en = (await widget.api.translate([q], 'en')).single;
+        } on Exception {
+          if (mounted) {
+            setState(
+              () =>
+                  _error = 'Перевод недоступен — напиши название по-английски',
+            );
+          }
+          return;
+        }
       }
+      final Map<String, String> names;
+      if (_enemies) {
+        final found = await widget.api.searchCreatures(en);
+        if (mounted) setState(() => _creatures = found);
+        names = {for (final c in found) c.key: c.name};
+      } else {
+        final found = await widget.api.searchItems(en);
+        if (mounted) setState(() => _found = found);
+        names = {for (final o in found) o.key: o.name};
+      }
+      await _translateNames(names);
     } catch (e) {
       if (mounted) setState(() => _error = 'Open5e недоступен: $e');
     } finally {
@@ -78,8 +107,28 @@ class _Open5eScreenState extends State<Open5eScreen> {
     }
   }
 
+  /// Названия находок по-русски одним вызовом; не вышло — остаются английскими.
+  Future<void> _translateNames(Map<String, String> names) async {
+    var ru = const <String, String>{};
+    var failed = false;
+    if (names.isNotEmpty) {
+      try {
+        final out = await widget.api.translate(names.values.toList(), 'ru');
+        ru = Map.fromIterables(names.keys, out);
+      } on Exception {
+        failed = true;
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _ru = ru;
+        _untranslated = failed;
+      });
+    }
+  }
+
   void _pick(Open5eItem o) {
-    final plan = importPlan(o, widget.snapshot);
+    final plan = importPlan(o, widget.snapshot, title: _ru[o.key]);
     setState(() {
       _picked = o;
       _plan = plan;
@@ -102,7 +151,12 @@ class _Open5eScreenState extends State<Open5eScreen> {
           slug: plan.ops.single.slug!,
         ),
       );
-      if (mounted) closeDone(context, 'Импортировано: ${_picked!.name}');
+      if (mounted) {
+        closeDone(
+          context,
+          'Импортировано: ${_title(_picked!.key, _picked!.name)}',
+        );
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -119,7 +173,12 @@ class _Open5eScreenState extends State<Open5eScreen> {
       _busy = true;
       _error = null;
     });
-    final made = importEnemy(widget.world.id, widget.snapshot, c);
+    final made = importEnemy(
+      widget.world.id,
+      widget.snapshot,
+      c,
+      title: _ru[c.key],
+    );
     final failed = await saveManualEdit(
       widget.repo,
       widget.world.id,
@@ -128,7 +187,7 @@ class _Open5eScreenState extends State<Open5eScreen> {
     );
     if (!mounted) return;
     if (failed == null) {
-      closeDone(context, 'Импортировано: ${c.name}');
+      closeDone(context, 'Импортировано: ${_title(c.key, c.name)}');
     } else {
       setState(() {
         _busy = false;
@@ -138,7 +197,12 @@ class _Open5eScreenState extends State<Open5eScreen> {
   }
 
   List<Widget> _enemyPart(Open5eCreature c) {
-    final made = importEnemy(widget.world.id, widget.snapshot, c);
+    final made = importEnemy(
+      widget.world.id,
+      widget.snapshot,
+      c,
+      title: _ru[c.key],
+    );
     final problems = newProblems(
       widget.snapshot,
       made.edit.applyTo(widget.snapshot),
@@ -152,7 +216,7 @@ class _Open5eScreenState extends State<Open5eScreen> {
         key: const Key('open5e-attribution'),
       ),
       const SizedBox(height: 12),
-      EnemyPreview(c: c, problems: problems),
+      EnemyPreview(c: c, title: _title(c.key, c.name), problems: problems),
       const SizedBox(height: 12),
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -205,10 +269,10 @@ class _Open5eScreenState extends State<Open5eScreen> {
             key: const Key('open5e-query'),
             controller: _query,
             decoration: InputDecoration(
-              labelText: 'Название по-английски',
+              labelText: 'Название, можно по-русски',
               hintText: _enemies
-                  ? 'skeleton, goblin, wolf'
-                  : 'pick, sword, potion',
+                  ? 'скелет, гоблин, wolf'
+                  : 'кирка, меч, potion',
             ),
             onSubmitted: (_) => _search(),
           ),
@@ -222,6 +286,15 @@ class _Open5eScreenState extends State<Open5eScreen> {
           ),
           if (_error != null)
             Text(_error!, key: const Key('open5e-error'), style: error),
+          if (_untranslated && _error == null)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: NoticeBanner(
+                Notice.warning,
+                'Перевод недоступен — названия по-английски',
+                key: Key('open5e-untranslated'),
+              ),
+            ),
           if (_enemies && _creature != null)
             ..._enemyPart(_creature!)
           else if (_enemies)
@@ -242,7 +315,7 @@ class _Open5eScreenState extends State<Open5eScreen> {
         subtitle: Text('Ничего не нашлось'),
       ),
     for (final c in _creatures ?? const <Open5eCreature>[])
-      enemyTile(c, () => setState(() => _creature = c)),
+      enemyTile(c, _title(c.key, c.name), () => setState(() => _creature = c)),
   ];
 
   List<Widget> _results() => [
@@ -254,10 +327,13 @@ class _Open5eScreenState extends State<Open5eScreen> {
     for (final o in _found ?? const <Open5eItem>[])
       ListTile(
         key: Key('open5e-${o.key}'),
-        title: Text(o.name),
+        title: Text(_title(o.key, o.name)),
+        // Есть перевод — оригинал строкой выше чисел, как у врага.
         subtitle: Text(
+          '${_ru.containsKey(o.key) ? '${o.name}\n' : ''}'
           '${kindOf(o).label} · ${rarityOf(o).label} · ${o.document}',
         ),
+        isThreeLine: _ru.containsKey(o.key),
         onTap: () => _pick(o),
       ),
   ];

@@ -126,7 +126,7 @@ void main() {
     await t.enterText(find.byKey(const Key('open5e-query')), '   ');
     await tapButton(t, 'open5e-search');
     expect(
-      find.text('Напиши, что искать, — название по-английски'),
+      find.text('Напиши, что искать: «скелет» или «skeleton»'),
       findsOneWidget,
     );
     expect(api.queries, isEmpty);
