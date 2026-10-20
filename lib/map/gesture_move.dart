@@ -42,6 +42,7 @@ ManualEdit moveObject(
           hp: c.hp,
           attack: c.attack,
           icon: c.icon,
+          origin: c.origin,
         ),
       ),
     );

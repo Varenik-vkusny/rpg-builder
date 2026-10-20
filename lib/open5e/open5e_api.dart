@@ -1,5 +1,5 @@
 // Библиотека образцов Open5e (api.open5e.com/v2): SRD 5.1 / 5.2 под CC BY 4.0 (VISION.md, §10).
-// Только чтение и только предметы: обычные (/items) и магические (/magicitems).
+// Только чтение: предметы — обычные (/items) и магические (/magicitems), существа (/creatures).
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -47,9 +47,73 @@ class Open5eItem {
   );
 }
 
+/// Образец существа из Open5e (5д): что нужно для наших трёх чисел и значка, плюс ответ
+/// целиком — он хранится при враге как карточка оригинала.
+class Open5eCreature {
+  const Open5eCreature({
+    required this.key,
+    required this.name,
+    required this.type,
+    required this.challenge,
+    required this.hp,
+    required this.document,
+    this.firstAttack,
+    this.raw = const {},
+  });
+
+  final String key;
+  final String name;
+
+  /// Ключ типа существа: undead, ooze, beast, humanoid…
+  final String type;
+
+  /// Опасность (CR): 0.25, 2, 10…
+  final double challenge;
+  final int hp;
+  final String document;
+
+  /// Кости первой атаки по порядку в статблоке: (2, 6, 0) — 2d6+0. Атак нет — null.
+  final (int, int, int)? firstAttack;
+  final Map<String, dynamic> raw;
+
+  factory Open5eCreature.fromJson(Map<String, dynamic> j) {
+    final actions = [...(j['actions'] as List? ?? const [])]
+      ..sort(
+        (a, b) => ((a as Map)['order_in_statblock'] as int? ?? 0).compareTo(
+          (b as Map)['order_in_statblock'] as int? ?? 0,
+        ),
+      );
+    (int, int, int)? first;
+    for (final a in actions) {
+      for (final at in (a as Map)['attacks'] as List? ?? const []) {
+        final m = at as Map;
+        final n = m['damage_die_count'] as int?;
+        // «D6» → 6.
+        final d = int.tryParse(
+          '${m['damage_die_type'] ?? ''}'.replaceAll(RegExp(r'\D'), ''),
+        );
+        if (n != null && d != null) {
+          first ??= (n, d, m['damage_bonus'] as int? ?? 0);
+        }
+      }
+    }
+    return Open5eCreature(
+      key: j['key'] as String,
+      name: j['name'] as String,
+      type: ((j['type'] as Map?)?['key'] as String?) ?? '',
+      challenge: (j['challenge_rating'] as num?)?.toDouble() ?? 0,
+      hp: j['hit_points'] as int? ?? 1,
+      document: ((j['document'] as Map?)?['name'] as String?) ?? 'Open5e',
+      firstAttack: first,
+      raw: j,
+    );
+  }
+}
+
 /// Поиск образцов. Подменяется в тестах — сеть там не нужна.
 abstract class Open5eApi {
   Future<List<Open5eItem>> searchItems(String query);
+  Future<List<Open5eCreature>> searchCreatures(String query);
 }
 
 class HttpOpen5e implements Open5eApi {
@@ -65,7 +129,16 @@ class HttpOpen5e implements Open5eApi {
     return [for (final l in lists) ...l];
   }
 
-  Future<List<Open5eItem>> _search(String kind, String query) async {
+  @override
+  Future<List<Open5eCreature>> searchCreatures(String query) async => [
+    for (final r in await _get('creatures', query)) Open5eCreature.fromJson(r),
+  ];
+
+  Future<List<Open5eItem>> _search(String kind, String query) async => [
+    for (final r in await _get(kind, query)) Open5eItem.fromJson(r),
+  ];
+
+  Future<List<Map<String, dynamic>>> _get(String kind, String query) async {
     final url = Uri.parse('$_base/$kind/')
         .replace(queryParameters: {'name__icontains': query, 'limit': '20'});
     final res = await http.get(url).timeout(const Duration(seconds: 15));
@@ -73,10 +146,7 @@ class HttpOpen5e implements Open5eApi {
       throw Open5eError('Open5e ответил ${res.statusCode}');
     }
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-    return [
-      for (final r in body['results'] as List)
-        Open5eItem.fromJson(r as Map<String, dynamic>),
-    ];
+    return [for (final r in body['results'] as List) r as Map<String, dynamic>];
   }
 }
 

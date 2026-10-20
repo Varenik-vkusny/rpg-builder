@@ -226,6 +226,7 @@ ManualEdit editCharacter(
         hp: now.hp,
         attack: now.attack,
         icon: old.icon,
+        origin: old.origin,
       ),
     ),
   );

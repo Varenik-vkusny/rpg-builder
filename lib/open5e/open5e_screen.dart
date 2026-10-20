@@ -1,5 +1,6 @@
 // Библиотека Open5e (4.6): поиск образца → план «создать предмет» → проверка на копии →
-// «Импортировать» одним набором изменений (в историю, с откатом).
+// «Импортировать» одним набором изменений (в историю, с откатом). Враги (5д) — правкой
+// вручную с той же проверкой на копии (open5e_enemy.dart).
 import 'package:flutter/material.dart';
 
 import '../help/help.dart';
@@ -9,10 +10,13 @@ import '../assistant/plan_preview.dart';
 import '../assistant/plan_view.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
+import '../content/manual_save.dart';
 import '../ui/messages.dart';
 import '../ui/parts.dart';
 import '../worlds/world.dart';
 import 'open5e_api.dart';
+import 'open5e_enemy.dart';
+import 'open5e_enemy_view.dart';
 import 'open5e_import.dart';
 
 class Open5eScreen extends StatefulWidget {
@@ -36,6 +40,11 @@ class Open5eScreen extends StatefulWidget {
 class _Open5eScreenState extends State<Open5eScreen> {
   final _query = TextEditingController();
   List<Open5eItem>? _found;
+
+  /// Ищем врагов, а не предметы.
+  bool _enemies = false;
+  List<Open5eCreature>? _creatures;
+  Open5eCreature? _creature;
   Open5eItem? _picked;
   Plan? _plan;
   PlanPreview? _preview;
@@ -52,10 +61,16 @@ class _Open5eScreenState extends State<Open5eScreen> {
       _busy = true;
       _error = null;
       _picked = null;
+      _creature = null;
     });
     try {
-      final found = await widget.api.searchItems(q);
-      if (mounted) setState(() => _found = found);
+      if (_enemies) {
+        final found = await widget.api.searchCreatures(q);
+        if (mounted) setState(() => _creatures = found);
+      } else {
+        final found = await widget.api.searchItems(q);
+        if (mounted) setState(() => _found = found);
+      }
     } catch (e) {
       if (mounted) setState(() => _error = 'Open5e недоступен: $e');
     } finally {
@@ -98,6 +113,66 @@ class _Open5eScreenState extends State<Open5eScreen> {
     }
   }
 
+  Future<void> _importEnemy() async {
+    final c = _creature!;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final made = importEnemy(widget.world.id, widget.snapshot, c);
+    final failed = await saveManualEdit(
+      widget.repo,
+      widget.world.id,
+      widget.snapshot,
+      made.edit,
+    );
+    if (!mounted) return;
+    if (failed == null) {
+      closeDone(context, 'Импортировано: ${c.name}');
+    } else {
+      setState(() {
+        _busy = false;
+        _error = failed;
+      });
+    }
+  }
+
+  List<Widget> _enemyPart(Open5eCreature c) {
+    final made = importEnemy(widget.world.id, widget.snapshot, c);
+    final problems = newProblems(
+      widget.snapshot,
+      made.edit.applyTo(widget.snapshot),
+    );
+    final broken = problems.any((p) => p.severity == Severity.error);
+    return [
+      const SizedBox(height: 16),
+      Text(
+        'Источник: Open5e, ${c.document}. Враг запомнит источник и карточку '
+        'оригинала — они уйдут и в экспорт.',
+        key: const Key('open5e-attribution'),
+      ),
+      const SizedBox(height: 12),
+      EnemyPreview(c: c, problems: problems),
+      const SizedBox(height: 12),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 8,
+        children: [
+          FilledButton(
+            key: const Key('open5e-import'),
+            onPressed: _busy || broken ? null : _importEnemy,
+            child: const Text('Импортировать'),
+          ),
+          OutlinedButton(
+            key: const Key('open5e-back'),
+            onPressed: _busy ? null : () => setState(() => _creature = null),
+            child: const Text('К поиску'),
+          ),
+        ],
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final error = TextStyle(color: Theme.of(context).colorScheme.error);
@@ -109,12 +184,31 @@ class _Open5eScreenState extends State<Open5eScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          SegmentedButton<bool>(
+            key: const Key('open5e-kind'),
+            segments: const [
+              ButtonSegment(value: false, label: Text('Предметы')),
+              ButtonSegment(value: true, label: Text('Враги')),
+            ],
+            selected: {_enemies},
+            onSelectionChanged: _busy
+                ? null
+                : (v) => setState(() {
+                    _enemies = v.single;
+                    _picked = null;
+                    _creature = null;
+                    _error = null;
+                  }),
+          ),
+          const SizedBox(height: 8),
           TextField(
             key: const Key('open5e-query'),
             controller: _query,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Название по-английски',
-              hintText: 'pick, sword, potion',
+              hintText: _enemies
+                  ? 'skeleton, goblin, wolf'
+                  : 'pick, sword, potion',
             ),
             onSubmitted: (_) => _search(),
           ),
@@ -122,15 +216,34 @@ class _Open5eScreenState extends State<Open5eScreen> {
           FilledButton(
             key: const Key('open5e-search'),
             onPressed: _busy ? null : _search,
-            child: Text(_busy && _picked == null ? 'Ищу…' : 'Найти'),
+            child: Text(
+              _busy && _picked == null && _creature == null ? 'Ищу…' : 'Найти',
+            ),
           ),
           if (_error != null)
             Text(_error!, key: const Key('open5e-error'), style: error),
-          if (_picked != null) ..._importPart(_picked!) else ..._results(),
+          if (_enemies && _creature != null)
+            ..._enemyPart(_creature!)
+          else if (_enemies)
+            ..._enemyResults()
+          else if (_picked != null)
+            ..._importPart(_picked!)
+          else
+            ..._results(),
         ],
       ),
     );
   }
+
+  List<Widget> _enemyResults() => [
+    if (_creatures != null && _creatures!.isEmpty)
+      const ListTile(
+        key: Key('open5e-empty'),
+        subtitle: Text('Ничего не нашлось'),
+      ),
+    for (final c in _creatures ?? const <Open5eCreature>[])
+      enemyTile(c, () => setState(() => _creature = c)),
+  ];
 
   List<Widget> _results() => [
     if (_found != null && _found!.isEmpty)

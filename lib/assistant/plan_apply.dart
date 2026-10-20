@@ -309,6 +309,7 @@ class _Copy {
       hp: _int(op, 'hp', old?.hp ?? 10, min: 1),
       attack: _int(op, 'attack', old?.attack ?? 0),
       icon: old?.icon,
+      origin: old?.origin,
     );
     i < 0 ? characters.add(ch) : characters[i] = ch;
     return _diff({

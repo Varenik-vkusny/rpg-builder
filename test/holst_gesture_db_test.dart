@@ -13,12 +13,14 @@ import 'package:rpg_builder/map/gesture_icon.dart';
 import 'package:rpg_builder/map/gesture_link.dart';
 import 'package:rpg_builder/map/gesture_move.dart';
 import 'package:rpg_builder/map/gesture_path.dart';
+import 'package:rpg_builder/open5e/open5e_enemy.dart';
 import 'package:rpg_builder/worlds/world.dart';
 import 'package:rpg_builder/worlds/worlds_repo.dart';
 import 'package:supabase/supabase.dart';
 
 import 'assistant_fixtures.dart';
 import 'db_helpers.dart';
+import 'open5e_enemy_test.dart' show creature;
 
 void main() {
   late SupabaseClient a;
@@ -222,6 +224,24 @@ void main() {
       final back = await repo.snapshot(world.id);
       expect(back.characters.firstWhere((c) => c.id == slime.id).icon, isNull);
       expect(back.items.firstWhere((i) => i.id == key.id).icon, isNull);
+    },
+  );
+
+  test(
+    'враг из Open5e: числа, значок, источник и карточка в базе — откат убирает',
+    () async {
+      final w = await repo.snapshot(world.id);
+      final made = importEnemy(world.id, w, creature('skeleton'));
+      final r = await applyGesture(repo, world.id, w, made.edit);
+      expect(r.applied, isTrue, reason: r.reason);
+      final e = (await repo.snapshot(world.id)).characters
+          .firstWhere((c) => c.id == made.id);
+      expect((e.level, e.hp, e.attack, e.icon), (1, 13, 4, 'skeleton'));
+      expect(e.origin!.ref, 'srd_skeleton');
+      expect(e.origin!.card['hit_points'], 13);
+      expect(await undoGesture(repo, world.id, r.setId!), isNull);
+      final back = await repo.snapshot(world.id);
+      expect(back.characters.where((c) => c.id == made.id), isEmpty);
     },
   );
 }

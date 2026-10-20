@@ -31,9 +31,16 @@ const potion = Open5eItem(
 );
 
 class FakeOpen5e implements Open5eApi {
-  FakeOpen5e(this.result);
+  FakeOpen5e(this.result, {this.creatures = const []});
   final Object result;
+  final List<Open5eCreature> creatures;
   final queries = <String>[];
+
+  @override
+  Future<List<Open5eCreature>> searchCreatures(String query) async {
+    queries.add(query);
+    return creatures;
+  }
 
   @override
   Future<List<Open5eItem>> searchItems(String query) async {

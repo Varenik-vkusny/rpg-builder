@@ -28,6 +28,16 @@ class LootDrop {
   Map<String, dynamic> toJson() => {'item_id': itemId, 'chance': chance};
 }
 
+/// Откуда враг (импорт из справочника): источник и ключ для атрибуции и карточка оригинала
+/// целиком — числа, атаки, характеристики; уходит в экспорт, на экране не раздувает форму.
+class Origin {
+  const Origin({required this.source, required this.ref, required this.card});
+
+  final String source;
+  final String ref;
+  final Map<String, dynamic> card;
+}
+
 /// Персонаж мира (таблица `characters`) вместе с добычей.
 class Character {
   const Character({
@@ -42,6 +52,7 @@ class Character {
     this.hp = 10,
     this.attack = 0,
     this.icon,
+    this.origin,
   });
 
   final String id;
@@ -57,6 +68,9 @@ class Character {
 
   /// Значок вида из набора (glyphs.dart); null — значок по роли.
   final String? icon;
+
+  /// Образец из справочника (импорт); у своих врагов — null.
+  final Origin? origin;
 
   /// «Враг · ур. 3 · здоровье 30 · атака 8 · Штольня №3 · роняет: Ключ от лебёдки 35%» — строка в списке мира.
   String summary(
@@ -84,6 +98,13 @@ class Character {
     hp: row['hp'] as int,
     attack: row['attack'] as int,
     icon: row['icon'] as String?,
+    origin: row['source'] == null
+        ? null
+        : Origin(
+            source: row['source'] as String,
+            ref: row['source_ref'] as String,
+            card: (row['source_card'] as Map?)?.cast<String, dynamic>() ?? const {},
+          ),
     loot: [
       for (final l in (row['loot'] as List? ?? const []))
         LootDrop.fromRow(l as Map<String, dynamic>),

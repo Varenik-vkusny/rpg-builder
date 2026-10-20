@@ -7,8 +7,8 @@ import '../check/world_check.dart';
 import '../content/slug.dart';
 import '../worlds/world.dart';
 
-/// Версия формата файла. Меняется, когда меняются поля.
-const schemaVersion = 2;
+/// Версия формата файла. Меняется, когда меняются поля (3 — значок и источник врага, 5д).
+const schemaVersion = 3;
 
 /// Имя файла: «Пепельные копи» → `pepelnye_kopi.json`.
 String exportFileName(World world) => '${slugify(world.title)}.json';
@@ -69,6 +69,8 @@ List<Object> _items(WorldSnapshot w) => [
       // Атрибуция образца (Open5e, CC BY 4.0); у своих предметов — "".
       'source': i.source ?? '',
       'sourceRef': i.sourceRef ?? '',
+      // Значок вида из набора приложения (game-icons); не выбран — "".
+      'icon': i.icon ?? '',
     },
 ];
 
@@ -83,6 +85,12 @@ List<Object> _characters(WorldSnapshot w, String Function(String?) ref) => [
       'hp': c.hp,
       'attack': c.attack,
       'location': ref(c.locationId),
+      'icon': c.icon ?? '',
+      // Враг из справочника: источник, ключ и карточка оригинала строкой JSON — словарь
+      // JsonUtility не читает, игра разберёт строку сама. У своих — "".
+      'source': c.origin?.source ?? '',
+      'sourceRef': c.origin?.ref ?? '',
+      'sourceCard': c.origin == null ? '' : jsonEncode(c.origin!.card),
       'loot': [
         for (final l in c.loot) {'item': ref(l.itemId), 'chance': l.chance},
       ],

@@ -231,6 +231,7 @@ Character _withLoot(Character c, String item, double chance) => Character(
   hp: c.hp,
   attack: c.attack,
   icon: c.icon,
+  origin: c.origin,
 );
 
 WorldSnapshot _swap(
