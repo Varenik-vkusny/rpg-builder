@@ -1,5 +1,5 @@
 // ПОКАЗ, а не проверка (5д): враг из Open5e — поиск по-русски, карточка «каким станет враг»,
-// поиск без перевода (сервер не ответил).
+// названия из словаря приложения.
 // Запуск: flutter test --no-pub demo/open5e_enemy_snapshots_test.dart
 // → build/snapshots/enemy-*.png
 import 'package:flutter/material.dart';
@@ -24,11 +24,6 @@ void main() {
       open5e: FakeOpen5e(
         const [],
         creatures: [creature('skeleton'), creature('ochre_jelly')],
-        words: {
-          'skeleton': 'скелет',
-          'Skeleton': 'Скелет',
-          'Ochre Jelly': 'Охряная слизь',
-        },
       ),
       wrap: frame,
     );

@@ -31,35 +31,39 @@ const potion = Open5eItem(
 );
 
 class FakeOpen5e implements Open5eApi {
-  FakeOpen5e(this.result, {this.creatures = const [], this.words});
+  FakeOpen5e(this.result, {this.creatures = const []});
   final Object result;
   final List<Open5eCreature> creatures;
   final queries = <String>[];
 
-  /// Словарь переводчика в обе стороны; нет — перевод недоступен, как без сервера.
-  final Map<String, String>? words;
-  final translated = <(List<String>, String)>[];
+  /// Ключи поиска по словарю (русский запрос); английский запрос — null.
+  final keysAsked = <List<String>?>[];
 
   @override
-  Future<List<String>> translate(List<String> texts, String to) async {
-    translated.add((texts, to));
-    final w = words;
-    if (w == null) throw const Open5eError('перевод недоступен');
-    final back = {for (final e in w.entries) e.value: e.key};
-    return [for (final t in texts) (to == 'ru' ? w[t] : back[t]) ?? t];
+  Future<List<Open5eCreature>> searchCreatures(
+    String query, {
+    List<String>? keys,
+  }) async {
+    queries.add(query);
+    keysAsked.add(keys);
+    return [
+      for (final c in creatures)
+        if (keys == null || keys.contains(c.key)) c,
+    ];
   }
 
   @override
-  Future<List<Open5eCreature>> searchCreatures(String query) async {
+  Future<List<Open5eItem>> searchItems(
+    String query, {
+    List<String>? keys,
+  }) async {
     queries.add(query);
-    return creatures;
-  }
-
-  @override
-  Future<List<Open5eItem>> searchItems(String query) async {
-    queries.add(query);
+    keysAsked.add(keys);
     if (result is Exception) throw result;
-    return result as List<Open5eItem>;
+    return [
+      for (final o in result as List<Open5eItem>)
+        if (keys == null || keys.contains(o.key)) o,
+    ];
   }
 }
 
@@ -155,12 +159,13 @@ void main() {
         findsNothing,
         reason: 'вернулись в мир',
       );
+      // Название — из словаря приложения (ru_names.dart), оригинал — в источнике.
       await t.scrollUntilVisible(
-        find.text('War Pick'),
+        find.text('Боевая кирка'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await openObject(t, 'War Pick');
+      await openObject(t, 'Боевая кирка');
       expect(find.text('Оружие · Обычный'), findsOneWidget);
       expectTile('Уровень', '1');
       expectTile('Урон', '5');
@@ -174,7 +179,7 @@ void main() {
       );
       final set = content.changeSets.single;
       expect(set.status, 'applied');
-      expect(set.draft.request, 'Импорт из Open5e: War Pick');
+      expect(set.draft.request, 'Импорт из Open5e: Боевая кирка');
       expect(set.draft.toParams(minesId)['p_scope_type'], 'import');
       expect(set.draft.toParams(minesId)['p_attempts'], isNull);
     },

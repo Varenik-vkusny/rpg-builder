@@ -18,6 +18,7 @@ import 'open5e_api.dart';
 import 'open5e_enemy.dart';
 import 'open5e_enemy_view.dart';
 import 'open5e_import.dart';
+import 'ru_names.dart';
 
 class Open5eScreen extends StatefulWidget {
   const Open5eScreen({
@@ -51,11 +52,11 @@ class _Open5eScreenState extends State<Open5eScreen> {
   bool _busy = false;
   String? _error;
 
-  /// Русские названия находок: ключ образца → перевод. Нет перевода — оригинал.
-  Map<String, String> _ru = const {};
+  /// Словарь русских названий SRD (ru_names.dart) — грузится один раз при открытии.
+  late final Future<RuNames> _dict = RuNames.load();
 
-  /// Перевод не удался — находки по-английски, автору сказано почему.
-  bool _untranslated = false;
+  /// Русские названия образцов: ключ → название. Нет в словаре — оригинал.
+  Map<String, String> _ru = const {};
 
   static final _cyrillic = RegExp('[а-яё]', caseSensitive: false);
 
@@ -74,56 +75,27 @@ class _Open5eScreenState extends State<Open5eScreen> {
       _creature = null;
     });
     try {
-      // Справочник ищет только по-английски: русский запрос сначала переводим.
-      var en = q;
-      if (_cyrillic.hasMatch(q)) {
-        try {
-          en = (await widget.api.translate([q], 'en')).single;
-        } on Exception {
-          if (mounted) {
-            setState(
-              () =>
-                  _error = 'Перевод недоступен — напиши название по-английски',
-            );
-          }
-          return;
-        }
-      }
-      final Map<String, String> names;
+      final dict = await _dict;
+      _ru = {...dict.creatures, ...dict.items};
+      // Справочник ищет только по-английски: русский запрос — по словарю, в Open5e
+      // уходят ключи найденного. В словаре нет — справочник не спрашиваем.
+      List<String>? keys;
+      if (_cyrillic.hasMatch(q)) keys = dict.match(q, creatures: _enemies);
       if (_enemies) {
-        final found = await widget.api.searchCreatures(en);
+        final found = keys != null && keys.isEmpty
+            ? <Open5eCreature>[]
+            : await widget.api.searchCreatures(q, keys: keys);
         if (mounted) setState(() => _creatures = found);
-        names = {for (final c in found) c.key: c.name};
       } else {
-        final found = await widget.api.searchItems(en);
+        final found = keys != null && keys.isEmpty
+            ? <Open5eItem>[]
+            : await widget.api.searchItems(q, keys: keys);
         if (mounted) setState(() => _found = found);
-        names = {for (final o in found) o.key: o.name};
       }
-      await _translateNames(names);
     } catch (e) {
       if (mounted) setState(() => _error = 'Open5e недоступен: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  /// Названия находок по-русски одним вызовом; не вышло — остаются английскими.
-  Future<void> _translateNames(Map<String, String> names) async {
-    var ru = const <String, String>{};
-    var failed = false;
-    if (names.isNotEmpty) {
-      try {
-        final out = await widget.api.translate(names.values.toList(), 'ru');
-        ru = Map.fromIterables(names.keys, out);
-      } on Exception {
-        failed = true;
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _ru = ru;
-        _untranslated = failed;
-      });
     }
   }
 
@@ -286,15 +258,6 @@ class _Open5eScreenState extends State<Open5eScreen> {
           ),
           if (_error != null)
             Text(_error!, key: const Key('open5e-error'), style: error),
-          if (_untranslated && _error == null)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: NoticeBanner(
-                Notice.warning,
-                'Перевод недоступен — названия по-английски',
-                key: Key('open5e-untranslated'),
-              ),
-            ),
           if (_enemies && _creature != null)
             ..._enemyPart(_creature!)
           else if (_enemies)

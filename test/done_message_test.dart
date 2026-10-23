@@ -214,6 +214,6 @@ void main() {
     await openLibrary(t, FakeOpen5e([warPick()]));
     await tapButton(t, 'open5e-srd-2024_war-pick');
     await tapButton(t, 'open5e-import');
-    expectDone('Импортировано: ${warPick().name}');
+    expectDone('Импортировано: Боевая кирка');
   });
 }

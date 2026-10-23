@@ -1,9 +1,13 @@
-// Прибор «русский поиск в справочнике» (5д): «скелет» ищется как «skeleton», находки — по-русски
+// Прибор «русский поиск в справочнике» (5д, решение владельца 23.10 — словарь в приложении):
+// «скелет» находится по словарю, в Open5e уходят ключи найденного; находки — по-русски
 // с оригиналом рядом; в мир объект приходит под русским именем, slug и карточка — от оригинала.
-// Перевод недоступен — английский поиск работает, автору сказано почему; русский — просьба писать
-// по-английски, справочник не дёргается.
+// Слова нет в словаре — «Ничего не нашлось», справочник не спрашиваем.
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/open5e/ru_names.dart';
 
 import 'apply_flow_test.dart' show tapButton;
 import 'assistant_fixtures.dart';
@@ -17,20 +21,60 @@ Future<void> search(WidgetTester t, String query) async {
   await tapButton(t, 'open5e-search');
 }
 
+Future<void> enemies(WidgetTester t) async {
+  await t.tap(find.text('Враги'));
+  await t.pumpAndSettle();
+}
+
 void main() {
-  testWidgets(
-    '«скелет» → ищем skeleton → «Скелет» с оригиналом → в мире «Скелет», slug skeleton',
-    (t) async {
-      final api = FakeOpen5e(
-        const [],
-        creatures: [creature('skeleton')],
-        words: {'skeleton': 'скелет', 'Skeleton': 'Скелет'},
+  test(
+    'словарь: каждое название по-русски; скелет и боевая кирка на месте',
+    () {
+      final j = jsonDecode(
+        File(RuNames.asset).readAsStringSync(),
+      ) as Map<String, dynamic>;
+      final creatures = (j['creatures'] as Map).cast<String, String>();
+      final items = (j['items'] as Map).cast<String, String>();
+      // SRD 5.1 + 5.2: 656 существ, 440 обычных и 1259 магических предметов (23.10.2026).
+      expect(creatures.length, greaterThanOrEqualTo(650));
+      expect(items.length, greaterThanOrEqualTo(1690));
+      final latin = [
+        for (final e in {...creatures, ...items}.entries)
+          if (!RegExp('[а-яё]', caseSensitive: false).hasMatch(e.value)) e.key,
+      ];
+      expect(latin, isEmpty, reason: 'без перевода');
+      expect(creatures['srd_skeleton'], 'Скелет');
+      expect(items['srd-2024_war-pick'], 'Боевая кирка');
+    },
+  );
+
+  test(
+    'поиск по словарю: без регистра и «ё»; начинающиеся с запроса — первыми',
+    () {
+      const names = RuNames(
+        creatures: {
+          'a': 'Огненный скелет',
+          'b': 'Скелет',
+          'c': 'Скелет минотавра',
+          'd': 'Ёж',
+        },
+        items: {},
       );
+      expect(names.match('СКЕЛЕТ', creatures: true), ['b', 'c', 'a']);
+      expect(names.match('еж', creatures: true), ['d']);
+      expect(names.match('скелет', creatures: false), isEmpty);
+      expect(names.match('скелет', creatures: true, limit: 1), ['b']);
+    },
+  );
+
+  testWidgets(
+    '«скелет» → ключ srd_skeleton → «Скелет» с оригиналом → в мире «Скелет», slug skeleton',
+    (t) async {
+      final api = FakeOpen5e(const [], creatures: [creature('skeleton')]);
       final content = await openLibrary(t, api);
-      await t.tap(find.text('Враги'));
-      await t.pumpAndSettle();
+      await enemies(t);
       await search(t, 'скелет');
-      expect(api.queries.last, 'skeleton');
+      expect(api.keysAsked.last, contains('srd_skeleton'));
       final tile = k('open5e-srd_skeleton');
       expect(
         find.descendant(of: tile, matching: find.text('Скелет')),
@@ -41,7 +85,6 @@ void main() {
         findsOneWidget,
         reason: 'оригинал виден рядом с переводом',
       );
-      expect(k('open5e-untranslated'), findsNothing);
 
       await tapButton(t, 'open5e-srd_skeleton');
       final preview = k('open5e-enemy-preview');
@@ -63,13 +106,10 @@ void main() {
   testWidgets(
     'предмет: «кирка» → War Pick → в мире «Боевая кирка», slug war_pick',
     (t) async {
-      final api = FakeOpen5e(
-        [warPick()],
-        words: {'pick': 'кирка', 'War Pick': 'Боевая кирка'},
-      );
+      final api = FakeOpen5e([warPick()]);
       final content = await openLibrary(t, api);
       await search(t, 'кирка');
-      expect(api.queries.last, 'pick');
+      expect(api.keysAsked.last, contains('srd-2024_war-pick'));
       expect(find.text('Боевая кирка'), findsOneWidget);
       await tapButton(t, 'open5e-srd-2024_war-pick');
       await tapButton(t, 'open5e-import');
@@ -80,50 +120,34 @@ void main() {
   );
 
   testWidgets(
-    'перевод недоступен: английский ищется с пометкой, русский — просьба писать по-английски',
+    'слова нет в словаре — «Ничего не нашлось», справочник не спрашивали',
     (t) async {
       final api = FakeOpen5e(const [], creatures: [creature('skeleton')]);
       await openLibrary(t, api);
-      await t.tap(find.text('Враги'));
-      await t.pumpAndSettle();
-      await search(t, 'skeleton');
-      expect(
-        find.descendant(
-          of: k('open5e-srd_skeleton'),
-          matching: find.text('Skeleton'),
-        ),
-        findsOneWidget,
-      );
-      expect(k('open5e-untranslated'), findsOneWidget);
-
+      await enemies(t);
       final asked = api.queries.length;
-      await search(t, 'скелет');
-      expect(
-        find.text('Перевод недоступен — напиши название по-английски'),
-        findsOneWidget,
-      );
-      expect(
-        api.queries.length,
-        asked,
-        reason: 'справочник не спрашивали кириллицей',
-      );
+      await search(t, 'абырвалг');
+      expect(k('open5e-empty'), findsOneWidget);
+      expect(api.queries.length, asked);
     },
   );
 
-  testWidgets('английский запрос не переводится — переводятся только находки', (
-    t,
-  ) async {
-    final api = FakeOpen5e(
-      const [],
-      creatures: [creature('skeleton')],
-      words: {'Skeleton': 'Скелет'},
-    );
-    await openLibrary(t, api);
-    await t.tap(find.text('Враги'));
-    await t.pumpAndSettle();
-    await search(t, 'skeleton');
-    expect(api.translated.where((x) => x.$2 == 'en'), isEmpty);
-    expect(api.translated.last.$1, ['Skeleton']);
-    expect(api.translated.last.$2, 'ru');
-  });
+  testWidgets(
+    'английский запрос — поиск по названию, находки всё равно по-русски',
+    (t) async {
+      final api = FakeOpen5e(const [], creatures: [creature('skeleton')]);
+      await openLibrary(t, api);
+      await enemies(t);
+      await search(t, 'skeleton');
+      expect(api.keysAsked.last, isNull);
+      expect(api.queries.last, 'skeleton');
+      expect(
+        find.descendant(
+          of: k('open5e-srd_skeleton'),
+          matching: find.text('Скелет'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 }
