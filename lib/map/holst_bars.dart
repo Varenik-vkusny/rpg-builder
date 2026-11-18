@@ -6,7 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'holst_scene.dart';
 import 'token_frame.dart';
 
-/// Шапка: назад (уровень вверх или выход), мир и путь, «вблизи / издалека».
+/// Шапка: назад (туда, откуда вошёл, или выход), мир и путь, лупа «ближе / дальше».
 class HolstTopBar extends StatelessWidget {
   const HolstTopBar({
     super.key,
@@ -18,9 +18,10 @@ class HolstTopBar extends StatelessWidget {
     this.trailing = const [],
   });
 
-  final String world;
+  /// Имя мира мелко над путём; наверху мира — null: имя мира и есть путь.
+  final String? world;
 
-  /// «Копи › Штольня №3»; верхний уровень — «Мир».
+  /// «Копи › Штольня №3»; верхний уровень — имя мира.
   final String path;
   final bool far;
   final VoidCallback onBack;
@@ -50,12 +51,13 @@ class HolstTopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  world,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: s.onSurfaceVariant),
-                ),
+                if (world case final w?)
+                  Text(
+                    w,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: s.onSurfaceVariant),
+                  ),
                 Text(
                   path,
                   key: const Key('holst-path'),
@@ -70,17 +72,15 @@ class HolstTopBar extends StatelessWidget {
             ),
           ),
           if (onZoom != null)
-            TextButton.icon(
+            // Одна лупа, без слова (владелец 18.11): «+» — ближе, «−» — дальше.
+            IconButton(
               key: const Key('holst-zoom'),
+              tooltip: far ? 'Ближе' : 'Дальше',
+              color: s.onSurfaceVariant,
               onPressed: onZoom,
-              style: TextButton.styleFrom(
-                foregroundColor: s.onSurfaceVariant,
-                minimumSize: const Size(48, 48),
-              ),
               icon: Icon(
                 far ? Symbols.zoom_in_rounded : Symbols.zoom_out_rounded,
               ),
-              label: Text(far ? 'издалека' : 'вблизи'),
             ),
           ...trailing,
         ],

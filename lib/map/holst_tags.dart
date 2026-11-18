@@ -52,6 +52,45 @@ Offset towards(Offset from, Offset to) {
   return d.distance < 1 ? const Offset(0, -1) : d / d.distance;
 }
 
+/// Где встают метки [tags] на экране шириной [width]; [natural] — ширина метки целиком.
+/// Вкладка своего жетона: сидит на его верхней грани от левого края, в один ряд со
+/// значками; жетон обведён тем же цветом — одно целое (владелец 19.10).
+/// Метка не уходит левее своего жетона и кончается до соседней метки справа, до края
+/// экрана и до стрелки у края [arrows]; не влезла — короче, с многоточием (полностью
+/// связь видна в нижней строке выбранного). 18.11 на полке метку Ключей у края экрана
+/// сдвигало влево — на метку и рамку Кирки, на рамку выбранного квеста, на стрелку.
+Map<TagSpec, Rect> tagRects(
+  List<TagSpec> tags,
+  double width,
+  double Function(TagSpec) natural, {
+  List<Offset> arrows = const [],
+}) {
+  bool sameRow(TagSpec a, TagSpec b) => (a.rect.top - b.rect.top).abs() < 18;
+  final order = [...tags]..sort((a, b) => a.rect.left.compareTo(b.rect.left));
+  final done = <TagSpec, Rect>{};
+  for (final (n, tag) in order.indexed) {
+    var left = math.max(4.0, tag.rect.left), right = width - 4;
+    for (final o in order.skip(n + 1)) {
+      if (sameRow(tag, o)) {
+        right = math.min(right, math.max(4.0, o.rect.left) - 3);
+        break;
+      }
+    }
+    // Середина метки — на 1 ниже верха жетона; стрелка длиной 16 — по 8 в стороны.
+    for (final a in arrows) {
+      if ((a.dy - (tag.rect.top + 1)).abs() >= 18) continue;
+      if (a.dx >= left) {
+        right = math.min(right, a.dx - 10);
+      } else {
+        left = math.max(left, a.dx + 10);
+      }
+    }
+    final w = math.max(18.0, math.min(natural(tag), right - left));
+    done[tag] = Rect.fromLTWH(left, tag.rect.top - 8, w, 18);
+  }
+  return done;
+}
+
 class TagPainter extends CustomPainter {
   TagPainter({
     required this.tags,
@@ -95,7 +134,7 @@ class TagPainter extends CustomPainter {
     final t = tags();
     Paint fill(ThreadTone tone) => Paint()..color = colors.of(tone);
     // Сначала где встанут метки: значок, на который легла метка, не рисуется обрезком.
-    final placed = [for (final tag in t.tags) (tag, _tagRect(tag, size))];
+    final placed = _layout(t.tags, size, [for (final e in t.edges) e.at]);
     final covered = [for (final (_, p) in placed) p.rect];
     for (final b in t.badges) {
       _badge(canvas, b, covered);
@@ -158,30 +197,38 @@ class TagPainter extends CustomPainter {
       ..drawPath(path, line(color, 2.5));
   }
 
-  /// Где встанет метка. Вкладка своего жетона: сидит на его верхней грани от левого края,
-  /// в один ряд со значками; жетон обведён тем же цветом — одно целое (владелец 19.10).
-  ({Rect rect, TextPainter? icon, TextPainter tp, double lead}) _tagRect(
+  /// Где встанут метки — см. [tagRects]; текст не влез — многоточие.
+  List<(TagSpec, ({Rect rect, TextPainter? icon, TextPainter tp, double lead}))>
+  _layout(List<TagSpec> tags, Size size, List<Offset> arrows) {
+    final rects = tagRects(
+      tags,
+      size.width,
+      (tag) => _measure(tag, double.infinity),
+      arrows: arrows,
+    );
+    return [for (final tag in tags) (tag, _fit(tag, rects[tag]!))];
+  }
+
+  /// Ширина метки [tag], если текст не длиннее [max].
+  double _measure(TagSpec tag, double max) {
+    final lead = tag.icon == null
+        ? 0.0
+        : _glyph(tag.icon!, 14, colors.ink).width + 3;
+    return lead + _text(tag.text, textStyle, max).width + 12;
+  }
+
+  ({Rect rect, TextPainter? icon, TextPainter tp, double lead}) _fit(
     TagSpec tag,
-    Size size,
+    Rect r,
   ) {
     final icon = tag.icon == null ? null : _glyph(tag.icon!, 14, colors.ink);
     final lead = icon == null ? 0.0 : icon.width + 3;
     final tp = _text(
       tag.text,
       textStyle.copyWith(color: colors.ink),
-      math.max(40, size.width - 16 - lead),
+      math.max(0, r.width - 12 - lead),
     );
-    final w = lead + tp.width + 12;
-    final double left = tag.rect.left.clamp(
-      4.0,
-      math.max(4.0, size.width - w - 4),
-    );
-    return (
-      rect: Rect.fromLTWH(left, tag.rect.top - 8, w, 18),
-      icon: icon,
-      tp: tp,
-      lead: lead,
-    );
+    return (rect: r, icon: icon, tp: tp, lead: lead);
   }
 
   /// Значки у правого верхнего угла жетона, справа налево; под меткой — не рисуются.

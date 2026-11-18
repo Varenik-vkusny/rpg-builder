@@ -48,9 +48,13 @@ class QuestStep {
     if (kind.counted) 'amount': amount,
   };
 
-  /// «Убить: Пепельный слизень × 4».
-  String label(String targetTitle) =>
-      '${kind.label}: $targetTitle${kind.counted ? ' × $amount' : ''}';
+  /// «Убить: Пепельный слизень × 4». [glue] — число склеено с названием неразрывными
+  /// пробелами: в узкой ячейке «× 1» не уезжает на строку одно (владелец 18.11).
+  String label(String targetTitle, {bool glue = false}) {
+    final gap = glue ? String.fromCharCode(0xA0) : ' ';
+    return '${kind.label}: $targetTitle'
+        '${kind.counted ? '$gap×$gap$amount' : ''}';
+  }
 }
 
 /// Квест мира (таблица `quests`) с шагами по порядку и наградами.
@@ -78,25 +82,28 @@ class Quest {
 
   /// Строки страницы квеста: выдающий, шаги по порядку, награды по одной.
   /// [titles] — названия всех персонажей, предметов и локаций мира по id;
-  /// у строки [targetId] — объект, на который она ведёт, [step] — вид шага (для значка).
-  List<({String text, String? targetId, StepKind? step})> rows(
+  /// у строки [targetId] — объект, на который она ведёт, [step] — вид шага (для значка),
+  /// [number] — номер шага «1.»: его ставит приложение, он стоит отдельной колонкой.
+  List<({String? number, String text, String? targetId, StepKind? step})> rows(
     Map<String, String> titles,
   ) {
     String t(String id) => titles[id] ?? '?';
     return [
       (
+        number: null,
         text: 'Выдаёт: ${giverId == null ? '—' : t(giverId!)}',
         targetId: giverId,
         step: null,
       ),
       for (var i = 0; i < steps.length; i++)
         (
-          text: '${i + 1}. ${steps[i].label(t(steps[i].targetId))}',
+          number: '${i + 1}.',
+          text: steps[i].label(t(steps[i].targetId), glue: true),
           targetId: steps[i].targetId,
           step: steps[i].kind,
         ),
       for (final r in rewardIds)
-        (text: 'Награда: ${t(r)}', targetId: r, step: null),
+        (number: null, text: 'Награда: ${t(r)}', targetId: r, step: null),
     ];
   }
 

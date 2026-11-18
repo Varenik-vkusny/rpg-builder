@@ -2,11 +2,13 @@
 // Запреты и изоляцию квестов в настоящей базе проверяет quest_rls_test.dart.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
 
 import 'fakes.dart';
+import 'object_links_test.dart' show glued;
 
 void main() {
   group('квесты', () {
@@ -122,10 +124,13 @@ void main() {
       await openObject(t, 'Обвал в третьей штольне');
       for (final line in [
         'Выдаёт: Бригадир Эрден',
-        '1. Поговорить: Бригадир Эрден',
-        '2. Убить: Пепельный слизень × 4',
-        '3. Собрать: Ключ от лебёдки × 1',
+        'Поговорить: Бригадир Эрден',
+        glued('Убить: Пепельный слизень × 4'),
+        glued('Собрать: Ключ от лебёдки × 1'),
         'Награда: Кирка',
+        '1.',
+        '2.',
+        '3.',
       ]) {
         expect(find.text(line), findsOneWidget, reason: line);
       }

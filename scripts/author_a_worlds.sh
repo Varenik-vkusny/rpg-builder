@@ -6,7 +6,8 @@
 cd "$(dirname "$0")/.." || exit 1
 [ -f .env.test ] && { set -a; . ./.env.test; set +a; }
 [ -f .env ] && { set -a; . ./.env; set +a; }
-: "${RPGB_TEST_EMAIL_A:?нет RPGB_TEST_EMAIL_A}" "${RPGB_TEST_PASSWORD:?нет RPGB_TEST_PASSWORD}"
+# У А свой короткий пароль (владелец вводит его руками, 18.11); общий RPGB_TEST_PASSWORD — у Т и Б.
+: "${RPGB_TEST_EMAIL_A:?нет RPGB_TEST_EMAIL_A}" "${RPGB_TEST_PASSWORD_A:?нет RPGB_TEST_PASSWORD_A}"
 URL=${SUPABASE_URL:-}; KEY=${SUPABASE_KEY:-}
 [ -n "$URL" ] && [ -n "$KEY" ] || { echo "нет SUPABASE_URL или SUPABASE_KEY в .env" >&2; exit 1; }
 PY="python"; command -v python >/dev/null 2>&1 || PY="python3"
@@ -24,7 +25,7 @@ signed_in_at() {
 case "$1" in
   start)
     BODY=$("$PY" -c 'import json,sys; print(json.dumps({"email":sys.argv[1],"password":sys.argv[2]}))' \
-      "$RPGB_TEST_EMAIL_A" "$RPGB_TEST_PASSWORD")
+      "$RPGB_TEST_EMAIL_A" "$RPGB_TEST_PASSWORD_A")
     TOKEN=$(curl -sf "$URL/auth/v1/token?grant_type=password" -H "apikey: $KEY" \
       -H "Content-Type: application/json" -d "$BODY" | json '["access_token"]')
     [ -n "$TOKEN" ] || { echo "автор А не вошёл" >&2; exit 1; }

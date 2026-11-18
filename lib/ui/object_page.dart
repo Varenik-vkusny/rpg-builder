@@ -232,7 +232,8 @@ class _ObjectPageState extends State<ObjectPage> {
       body: NotificationListener<ScrollNotification>(
         onNotification: _onScroll,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+          // Сверху отступ: обложка и значок не липнут к шапке (владелец 18.11).
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
           children: [
             if (w.path.isNotEmpty) _PathLine(w.path, key: w.pathKey),
             if (w.cover)

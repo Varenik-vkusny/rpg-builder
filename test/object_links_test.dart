@@ -83,8 +83,8 @@ void main() {
     await open(t, 'obval');
     for (final (line, page) in [
       ('Выдаёт: Бригадир', 'Бригадир'),
-      ('2. Убить: Слизень × 4', 'Слизень'),
-      ('3. Собрать: Ключ × 1', 'Ключ'),
+      (glued('Убить: Слизень × 4'), 'Слизень'),
+      (glued('Собрать: Ключ × 1'), 'Ключ'),
       ('Награда: Кирка', 'Кирка'),
     ]) {
       await t.ensureVisible(find.text(line));
@@ -101,18 +101,26 @@ void main() {
   ) async {
     await openMines(t);
     await open(t, 'obval');
-    for (final line in [
-      'Выдаёт: Бригадир',
-      '1. Поговорить: Бригадир',
-      '2. Убить: Слизень × 4',
-      '3. Собрать: Ключ × 1',
-      'Награда: Кирка',
+    // Номер шага — своей колонкой в той же ячейке (18.11: перенос «× 1» вставал под «2.»).
+    for (final (number, line) in [
+      (null, 'Выдаёт: Бригадир'),
+      ('1.', 'Поговорить: Бригадир'),
+      ('2.', glued('Убить: Слизень × 4')),
+      ('3.', glued('Собрать: Ключ × 1')),
+      (null, 'Награда: Кирка'),
     ]) {
       final cell = find.ancestor(
         of: find.text(line),
         matching: find.byWidgetPredicate((w) => w is LinkRow && w.boxed),
       );
       expect(cell, findsOneWidget, reason: line);
+      if (number != null) {
+        expect(
+          find.descendant(of: cell, matching: find.text(number)),
+          findsOneWidget,
+          reason: '$number $line',
+        );
+      }
     }
   });
 
@@ -136,3 +144,9 @@ void main() {
     expect(inBar, findsOneWidget, reason: 'обложка ушла — имя в шапке');
   });
 }
+
+/// Строка шага на странице квеста: число склеено с названием неразрывными пробелами.
+String glued(String line) => line.replaceAll(
+  ' × ',
+  '${String.fromCharCode(0xA0)}×${String.fromCharCode(0xA0)}',
+);

@@ -87,6 +87,11 @@ class _HolstState extends State<HolstScreen>
 
   /// Места, в которые вошли: пусто — верхний уровень.
   List<Location> _path = const [];
+
+  /// Откуда пришли: «назад» возвращает на тот уровень, с которого вошли в дверь, а не
+  /// на каждого предка по очереди. Иначе из «Копи › Штольня 3» назад вело на «Копи» —
+  /// он выглядит как верх мира, если место верхнего уровня одно (владелец 18.11).
+  final _trail = <List<Location>>[];
   String? _sel;
   bool _far = false;
   HolstMode _mode = HolstMode.look;
@@ -225,8 +230,14 @@ class _HolstState extends State<HolstScreen>
     _rebuild();
   });
 
+  /// Вошёл в дверь: путь до места целиком, а «назад» вернёт сюда.
+  void _enter(List<Location> path) {
+    _trail.add(_path);
+    _go(path);
+  }
+
   void _back() {
-    if (_path.isNotEmpty) return _go(_path.sublist(0, _path.length - 1));
+    if (_trail.isNotEmpty) return _go(_trail.removeLast());
     Navigator.of(context).pop(_changed);
   }
 
@@ -272,8 +283,11 @@ class _HolstState extends State<HolstScreen>
     });
   }
 
-  String get _crumb =>
-      _path.isEmpty ? 'Мир' : _path.map((l) => l.title).join(' › ');
+  /// Наверху — имя мира, внутри — путь от места верхнего уровня (владелец 18.11:
+  /// слово «Мир» над единственным местом «Копи» путало, где ты).
+  String get _crumb => _path.isEmpty
+      ? widget.world.title
+      : _path.map((l) => l.title).join(' › ');
 
   @override
   Widget build(BuildContext context) {
@@ -290,7 +304,7 @@ class _HolstState extends State<HolstScreen>
               Column(
                 children: [
                   HolstTopBar(
-                    world: widget.world.title,
+                    world: _path.isEmpty ? null : widget.world.title,
                     path: _crumb,
                     far: _far,
                     onBack: _back,

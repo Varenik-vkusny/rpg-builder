@@ -2,6 +2,7 @@
 // полка; нажал объект — метки на связанных, остальное гаснет; издалека — числа, вблизи — объекты.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/map/gesture_link.dart';
 import 'package:rpg_builder/map/holst_links.dart';
 import 'package:rpg_builder/map/holst_scene.dart';
@@ -180,7 +181,8 @@ void main() {
     await t.tap(find.byKey(const Key('holst-zoom')));
     await t.pumpAndSettle();
     expect(token('slizen'), findsNothing);
-    expect(find.text('издалека'), findsOneWidget);
+    // Лупа без слова: издалека она зовёт «Ближе».
+    expect(find.byTooltip('Ближе'), findsOneWidget);
     final shaft = find.byKey(const Key('hplace-shtolnya_3'));
     expect(
       find.descendant(of: shaft, matching: find.text('3')),
@@ -191,29 +193,51 @@ void main() {
     expect(token('slizen'), findsOneWidget);
   });
 
-  testWidgets('дверь ведёт внутрь: путь сверху, назад — уровень вверх', (
+  testWidgets('дверь ведёт внутрь: путь сверху; назад — туда, откуда вошёл', (
     t,
   ) async {
-    await pumpHolst(t, await ashMines());
+    // 18.11: назад вело на каждого предка по очереди — из «Копи › Штольня 3» на «Копи»,
+    // а он выглядит как верх мира. Теперь назад — на уровень, с которого вошли.
+    final c = await ashMines();
+    final w = await c.snapshotOf(holstWorld.id);
+    final zaboy = w.locations.singleWhere((l) => l.slug == 'zaboy');
+    await c.createLocation(
+      holstWorld.id,
+      NewLocation(
+        title: 'Ниша',
+        description: '',
+        levelMin: 4,
+        levelMax: 5,
+        parentId: zaboy.id,
+      ),
+    );
+    await pumpHolst(t, c);
+    String path() => t.widget<Text>(find.byKey(const Key('holst-path'))).data!;
+    // Наверху — имя мира крупно, без второй строки с ним же.
+    expect(path(), 'Пепельные копи');
+    expect(find.text('Пепельные копи'), findsOneWidget);
     // Дверь нажимается целиком, не только стрелкой.
     final door = t.getRect(find.byKey(const Key('hdoor-zaboy')));
     await t.tapAt(door.topLeft + const Offset(30, 30));
     await t.pumpAndSettle();
-    expect(
-      t.widget<Text>(find.byKey(const Key('holst-path'))).data,
-      'Штольня №3 › Забой',
-    );
+    expect(path(), 'Штольня №3 › Забой');
+    expect(find.text('Пепельные копи'), findsOneWidget, reason: 'мир мелко');
     expect(token('kamneed'), findsOneWidget);
     expect(token('slizen'), findsNothing);
+    await t.tap(find.byKey(const Key('hdoor-nisha')));
+    await t.pumpAndSettle();
+    expect(path(), 'Штольня №3 › Забой › Ниша');
+    await t.tap(find.byKey(const Key('holst-back')));
+    await t.pumpAndSettle();
+    expect(path(), 'Штольня №3 › Забой');
     await t.tap(find.byKey(const Key('holst-back')));
     await t.pumpAndSettle();
     expect(
-      t.widget<Text>(find.byKey(const Key('holst-path'))).data,
-      'Штольня №3',
+      path(),
+      'Пепельные копи',
+      reason: 'не «Штольня №3»: туда не входили',
     );
-    await t.tap(find.byKey(const Key('holst-back')));
-    await t.pumpAndSettle();
-    expect(t.widget<Text>(find.byKey(const Key('holst-path'))).data, 'Мир');
+    expect(token('slizen'), findsOneWidget);
   });
 
   testWidgets('цели не меньше 48 dp, ширина 360 и 400 — без переполнения', (

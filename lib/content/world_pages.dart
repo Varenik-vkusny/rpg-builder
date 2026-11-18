@@ -292,6 +292,7 @@ class WorldPages {
                   LinkRow(
                     boxed: true,
                     icon: iconOf(r.step, k == 0),
+                    number: r.number,
                     text: r.text,
                     onTap: switch (byId[r.targetId]) {
                       final page? => () => openDeeper(context, page()),

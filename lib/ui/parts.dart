@@ -290,9 +290,13 @@ class LinkRow extends StatelessWidget {
     required this.text,
     required this.onTap,
     this.boxed = false,
+    this.number,
   });
   final IconData icon;
   final String text;
+
+  /// Номер шага «2.» — своей колонкой: перенесённый текст встаёт под текст, а не под номер.
+  final String? number;
   final VoidCallback? onTap;
   final bool boxed;
 
@@ -305,7 +309,19 @@ class LinkRow extends StatelessWidget {
         spacing: 12,
         children: [
           Icon(icon, size: 20, color: s.onSurfaceVariant),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 15))),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 6,
+              children: [
+                if (number case final n?)
+                  Text(n, style: const TextStyle(fontSize: 15)),
+                Expanded(
+                  child: Text(text, style: const TextStyle(fontSize: 15)),
+                ),
+              ],
+            ),
+          ),
           if (onTap != null)
             Icon(
               Symbols.chevron_right_rounded,

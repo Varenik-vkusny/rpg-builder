@@ -5,12 +5,67 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/map/gesture_link.dart';
+import 'package:rpg_builder/map/holst_tags.dart';
 import 'package:rpg_builder/map/holst_threads.dart' show ThreadTone;
 
 import 'holst_fixture.dart';
 import 'holst_look_test.dart' show drawnTags, tagTexts, token;
 
 void main() {
+  test('метки одного ряда не налезают друг на друга и на чужой жетон', () {
+    // Полка телефона 18.11 (ширина 360): Кирка «в награду», за ней Ключи — длинная
+    // метка у края экрана. Раньше её сдвигало влево прямо на метку и рамку Кирки.
+    TagSpec tag(String id, double left, double width, double y) => (
+      id: id,
+      rect: Rect.fromLTWH(left, y, width, 48),
+      text: id,
+      tone: ThreadTone.hot,
+      icon: null,
+    );
+    final kirka = tag('kirka', 145, 99, 700);
+    final klyuchi = tag('klyuchi', 253, 160, 700);
+    // Холст: у Бригадира длинная метка, справа вплотную отмеченная Штольня.
+    final brigadir = tag('brigadir', 10, 150, 140);
+    final shtolnya = tag('shtolnya', 175, 150, 140);
+    final natural = {
+      kirka: 60.0,
+      klyuchi: 206.0,
+      brigadir: 170.0,
+      shtolnya: 40.0,
+    };
+    // Стрелка «там ещё есть» в правом верхнем углу полки.
+    const arrow = Offset(344, 698);
+    final r = tagRects(
+      [klyuchi, kirka, brigadir, shtolnya],
+      360,
+      (x) => natural[x]!,
+      arrows: [arrow],
+    );
+    for (final a in r.keys) {
+      expect(r[a]!.left, greaterThanOrEqualTo(4), reason: a.id);
+      expect(r[a]!.right, lessThanOrEqualTo(356), reason: a.id);
+      for (final b in r.keys) {
+        if (a == b) continue;
+        expect(r[a]!.overlaps(r[b]!), isFalse, reason: '${a.id} на ${b.id}');
+        expect(
+          r[a]!.overlaps(b.rect),
+          isFalse,
+          reason: '${a.id} на жетоне ${b.id}',
+        );
+      }
+    }
+    // Влезает — метка целиком и с левого края своего жетона.
+    expect(r[kirka], const Rect.fromLTWH(145, 692, 60, 18));
+    expect(r[shtolnya], const Rect.fromLTWH(175, 132, 40, 18));
+    // Длинная метка кончается до соседа справа.
+    expect(r[brigadir]!.right, lessThan(175));
+    // Не влезает — не уходит левее своего жетона (там рамки Кирки и выбранного),
+    // а укорачивается и кончается до стрелки.
+    expect(r[klyuchi]!.left, 253);
+    expect(r[klyuchi]!.width, lessThan(206));
+    expect(r[klyuchi]!.right, lessThan(arrow.dx - 8));
+  });
+
   testWidgets('выбран Обвал: слова на каждом связанном объекте', (t) async {
     final c = await ashMines();
     final w = await c.snapshotOf(holstWorld.id);

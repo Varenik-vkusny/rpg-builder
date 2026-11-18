@@ -207,7 +207,7 @@ extension _Canvas on _HolstState {
                   door: d,
                   drop: _dropPlace == d.place.id,
                   mark: _doorMark(d.place.id),
-                  onEnter: () => _go([
+                  onEnter: () => _enter([
                     ...ancestorsOf(_w.locations, d.place).reversed,
                     d.place,
                   ]),

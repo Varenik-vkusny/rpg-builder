@@ -4,6 +4,7 @@
 // Как шаг ложится в базу — test/event_db_test.dart.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/ui/parts.dart' show LinkRow;
 import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/assistant/plan_apply.dart';
 import 'package:rpg_builder/assistant/scope.dart';
@@ -65,37 +66,44 @@ void main() {
         'event_id': 'event-1',
         'amount': null,
       });
-      expect((back.kind, back.targetId, back.amount), (
-        StepKind.event,
-        'event-1',
-        null,
-      ));
-      expect(step.label('Засада у лебёдки'), 'Пройти событие: Засада у лебёдки');
-    });
-
-    test('шаг на существующее событие — проблем нет; события нет — ошибка', () async {
-      final (c, _) = await minesWithEventStep();
-      final w = await c.snapshotOf(minesId);
-      final before = checkWorld(await (await minesContent()).snapshotOf(minesId));
       expect(
-        [for (final p in checkWorld(w)) p.message],
-        [for (final p in before) p.message],
-      );
-
-      final gone = WorldSnapshot(
-        locations: w.locations,
-        items: w.items,
-        characters: w.characters,
-        quests: w.quests,
+        (back.kind, back.targetId, back.amount),
+        (StepKind.event, 'event-1', null),
       );
       expect(
-        [
-          for (final p in checkWorld(gone))
-            if (p.severity == Severity.error) p.message,
-        ],
-        ['«Обвал»: шаг 4 ссылается на несуществующий объект'],
+        step.label('Засада у лебёдки'),
+        'Пройти событие: Засада у лебёдки',
       );
     });
+
+    test(
+      'шаг на существующее событие — проблем нет; события нет — ошибка',
+      () async {
+        final (c, _) = await minesWithEventStep();
+        final w = await c.snapshotOf(minesId);
+        final before = checkWorld(
+          await (await minesContent()).snapshotOf(minesId),
+        );
+        expect(
+          [for (final p in checkWorld(w)) p.message],
+          [for (final p in before) p.message],
+        );
+
+        final gone = WorldSnapshot(
+          locations: w.locations,
+          items: w.items,
+          characters: w.characters,
+          quests: w.quests,
+        );
+        expect(
+          [
+            for (final p in checkWorld(gone))
+              if (p.severity == Severity.error) p.message,
+          ],
+          ['«Обвал»: шаг 4 ссылается на несуществующий объект'],
+        );
+      },
+    );
 
     test('событие под шагом квеста удалить нельзя', () async {
       final (c, eventId) = await minesWithEventStep();
@@ -173,8 +181,16 @@ void main() {
     expect(step.targetId, (await content.events(minesId)).single.id);
 
     await tapButton(t, 'open-obval');
-    final cell = find.text('${i + 1}. Пройти событие: Засада у лебёдки');
+    // Номер шага — своей колонкой в той же ячейке (18.11).
+    final cell = find.text('Пройти событие: Засада у лебёдки');
     expect(cell, findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.ancestor(of: cell, matching: find.byType(LinkRow)),
+        matching: find.text('${i + 1}.'),
+      ),
+      findsOneWidget,
+    );
     await t.ensureVisible(cell);
     await t.tap(cell);
     await t.pumpAndSettle();
@@ -182,16 +198,17 @@ void main() {
     expect(find.byKey(const Key('enemy-slizen')), findsOneWidget);
   });
 
-  testWidgets('событие под шагом квеста: «Удалить» отказывает и называет квест', (
-    t,
-  ) async {
-    final (content, eventId) = await minesWithEventStep();
-    await openWorldWith(t, content);
-    final slug = (await content.events(minesId)).single.slug;
-    await tapButton(t, 'open-$slug');
-    await tapButton(t, 'object-edit');
-    await tapButton(t, 'object-delete');
-    expect(find.textContaining('шаг 4 квеста «Обвал»'), findsOneWidget);
-    expect((await content.events(minesId)).single.id, eventId);
-  });
+  testWidgets(
+    'событие под шагом квеста: «Удалить» отказывает и называет квест',
+    (t) async {
+      final (content, eventId) = await minesWithEventStep();
+      await openWorldWith(t, content);
+      final slug = (await content.events(minesId)).single.slug;
+      await tapButton(t, 'open-$slug');
+      await tapButton(t, 'object-edit');
+      await tapButton(t, 'object-delete');
+      expect(find.textContaining('шаг 4 квеста «Обвал»'), findsOneWidget);
+      expect((await content.events(minesId)).single.id, eventId);
+    },
+  );
 }
