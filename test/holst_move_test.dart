@@ -114,6 +114,39 @@ void main() {
     );
   });
 
+  testWidgets(
+    'место едет целиком: жетоны и двери внутри не отстают ни под пальцем, ни в полёте',
+    (t) async {
+      // Владелец 19.11: тащил «Копи» — житель и враг отставали и место разваливалось.
+      final c = await ashMines();
+      await pumpHolst(t, c, size: wide);
+      await build(t);
+      Rect place() => t.getRect(find.byKey(const Key('hplace-shtolnya_3')));
+      Offset inPlace(String key) =>
+          t.getRect(find.byKey(Key(key))).topLeft - place().topLeft;
+      final slime = inPlace('token-slizen'), door = inPlace('hdoor-zaboy');
+      final a = place().topLeft + const Offset(40, 16);
+      final g = await t.startGesture(a);
+      await t.pump(const Duration(milliseconds: 600));
+      for (var i = 1; i <= 6; i++) {
+        await g.moveTo(a + Offset(30.0 * i, 20.0 * i));
+        await t.pump(const Duration(milliseconds: 16));
+        expect(inPlace('token-slizen'), slime, reason: 'под пальцем, шаг $i');
+        expect(inPlace('hdoor-zaboy'), door, reason: 'под пальцем, шаг $i');
+      }
+      // Отпустил мимо мест — место летит обратно, содержимое с ним.
+      await g.moveTo(a + const Offset(0, 900));
+      await t.pump(const Duration(milliseconds: 16));
+      await g.up();
+      for (var i = 0; i < 6; i++) {
+        await t.pump(const Duration(milliseconds: 60));
+        expect(inPlace('token-slizen'), slime, reason: 'в полёте, кадр $i');
+        expect(inPlace('hdoor-zaboy'), door, reason: 'в полёте, кадр $i');
+      }
+      await settle(t);
+    },
+  );
+
   testWidgets('отпустил мимо мест — блок вернулся, мир не тронут', (t) async {
     final c = await ashMines();
     await pumpHolst(t, c, size: wide);

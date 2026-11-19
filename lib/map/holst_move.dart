@@ -140,9 +140,16 @@ extension _Move on _HolstState {
         : r;
   }
 
-  Duration _flyTime(String id) => _lift?.id == id
-      ? Duration.zero
-      : Duration(milliseconds: _flying[id] ?? _flyNear);
+  /// Сколько летит блок [id]. Содержимое места [placeId] (жетоны, двери) летит ровно
+  /// с местом: под пальцем — мгновенно, после броска — его же время. Иначе жетоны
+  /// отставали от места и оно разваливалось на ходу (владелец 19.11).
+  Duration _flyTime(String id, {String? placeId}) {
+    final l = _lift;
+    if (l != null && (l.id == id || (l.place && l.id == placeId))) {
+      return Duration.zero;
+    }
+    return Duration(milliseconds: _flying[id] ?? _flying[placeId] ?? _flyNear);
+  }
 
   /// Окно жёлтой метки: текст предупреждения, «Оставить» и «Откатить».
   Widget? _markSheet() {

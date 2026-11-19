@@ -197,8 +197,11 @@ extension _Canvas on _HolstState {
       children: [
         for (final p in _scene.places) ...[
           for (final d in p.doors)
-            Positioned.fromRect(
+            AnimatedPositioned.fromRect(
+              key: ValueKey('dr-${d.place.id}'),
               rect: _shownIn(p.place.id, d.rect),
+              duration: _flyTime(d.place.id, placeId: p.place.id),
+              curve: Curves.easeInOutCubic,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 200),
                 opacity: dim ? .28 : 1,
@@ -215,8 +218,11 @@ extension _Canvas on _HolstState {
               ),
             ),
           if (p.overflowRect case final r?)
-            Positioned.fromRect(
+            AnimatedPositioned.fromRect(
+              key: ValueKey('mo-${p.place.id}'),
               rect: _shownIn(p.place.id, r),
+              duration: _flyTime(p.place.id),
+              curve: Curves.easeInOutCubic,
               child: OverflowTile(
                 key: Key('hmore-${p.place.slug}'),
                 count: p.overflow + 1,
@@ -228,7 +234,7 @@ extension _Canvas on _HolstState {
           AnimatedPositioned.fromRect(
             key: ValueKey('tk-${t.id}'),
             rect: _shown(t),
-            duration: _flyTime(t.id),
+            duration: _flyTime(t.id, placeId: t.placeId),
             curve: Curves.easeInOutCubic,
             child: _token(t, hue),
           ),
