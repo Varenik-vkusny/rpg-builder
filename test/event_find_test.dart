@@ -36,22 +36,25 @@ void main() {
       expect(line('Обвал кровли'), 'Копи › Штольня №3 › Забой');
     });
 
-    test('события идут по местам: сначала по пути места, потом по названию', () async {
-      final c = await minesWithEvents();
-      final w0 = await c.snapshot(worldId);
-      final market = w0.locations.firstWhere((l) => l.slug == 'rynok').id;
-      for (final title in ['Ярмарка', 'Драка']) {
-        await c.createEvent(
-          worldId,
-          NewEvent(title: title, description: '', locationId: market),
+    test(
+      'события идут по местам: сначала по пути места, потом по названию',
+      () async {
+        final c = await minesWithEvents();
+        final w0 = await c.snapshot(worldId);
+        final market = w0.locations.firstWhere((l) => l.slug == 'rynok').id;
+        for (final title in ['Ярмарка', 'Драка']) {
+          await c.createEvent(
+            worldId,
+            NewEvent(title: title, description: '', locationId: market),
+          );
+        }
+        final w = await c.snapshot(worldId);
+        expect(
+          [for (final e in eventsByPlace(w)) e.title],
+          ['Засада у лебёдки', 'Обвал кровли', 'Драка', 'Ярмарка'],
         );
-      }
-      final w = await c.snapshot(worldId);
-      expect(
-        [for (final e in eventsByPlace(w)) e.title],
-        ['Засада у лебёдки', 'Обвал кровли', 'Драка', 'Ярмарка'],
-      );
-    });
+      },
+    );
   });
 
   testWidgets('обзор мира: плитка «События» с числом', (t) async {
@@ -85,7 +88,13 @@ void main() {
       for (final k in kinds) t.getSize(find.byKey(Key('count-$k'))).height,
     };
     expect(heights, hasLength(1), reason: 'плитки разной высоты: $heights');
-    for (final label in ['Места', 'Предметы', 'Персонажи', 'Квесты', 'События']) {
+    for (final label in [
+      'Места',
+      'Предметы',
+      'Персонажи',
+      'Квесты',
+      'События',
+    ]) {
       expect(find.text(label), findsOneWidget);
     }
   });
@@ -104,17 +113,19 @@ void main() {
     expect(find.byKey(const Key('events-empty')), findsNothing);
   });
 
-  testWidgets('мир без событий: раздел объясняет, что такое событие', (t) async {
+  testWidgets('мир без событий: коротко «Событий пока нет», без пояснения', (
+    t,
+  ) async {
     await openTall(t, await nestedMines());
     expect(
       find.descendant(
         of: find.byKey(const Key('events-empty')),
-        matching: find.text(eventsHint),
+        matching: find.text('Событий пока нет'),
       ),
       findsOneWidget,
     );
-    expect(eventsHint, contains('сцена в месте'));
-    expect(eventsHint, contains('Например'));
+    expect(find.textContaining('сцена в месте'), findsNothing);
+    expect(find.textContaining('Например'), findsNothing);
   });
 
   testWidgets('карточка места в списке: молния с числом — только сцены самого '
@@ -139,7 +150,8 @@ void main() {
     await openTall(t, c);
     await open(t, 'rynok');
     expect(find.text('События'), findsOneWidget);
-    expect(find.text(eventsHint), findsOneWidget);
+    expect(find.text('Событий пока нет'), findsOneWidget);
+    expect(find.textContaining('сцена в месте'), findsNothing);
 
     await tapButton(t, 'event-add');
     expect(find.text('Новое событие'), findsOneWidget);

@@ -57,6 +57,8 @@ void main() {
       await tapButton(t, 'open5e-search');
       expect(api.queries.last, 'skeleton');
       await tapButton(t, 'open5e-srd_skeleton');
+      expect(find.textContaining('запомнит источник'), findsNothing);
+      expect(find.textContaining('CC BY 4.0'), findsNothing);
       final preview = find.byKey(const Key('open5e-enemy-preview'));
       for (final s in ['Skeleton', '1', '13', '4', 'скелет']) {
         expect(

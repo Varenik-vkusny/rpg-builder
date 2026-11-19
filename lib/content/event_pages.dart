@@ -14,11 +14,6 @@ import 'world_pages.dart';
 
 const eventIcon = Symbols.bolt_rounded;
 
-/// Что такое событие — одной фразой там, где событий ещё нет.
-const eventsHint =
-    'Событие — сцена в месте: кто нападает, сколько их и что там лежит. '
-    'Например, засада у лебёдки: 3 слизня и ключ.';
-
 /// События мира по местам: сначала по пути места («Копи › Штольня №3»), потом по названию.
 List<Event> eventsByPlace(WorldSnapshot c) {
   final places = {for (final l in c.locations) l.id: pathOf(c.locations, l)};
@@ -64,7 +59,7 @@ extension EventPages on WorldPages {
       return (
         icon: eventIcon,
         title: 'События',
-        child: block(const Text(eventsHint)),
+        child: block(const Text('Событий пока нет')),
       );
     }
     return (

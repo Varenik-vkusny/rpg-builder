@@ -227,9 +227,11 @@ class WorldSections {
       'Новое событие',
       NewEventScreen(world: world, repo: repo, snapshot: c),
     ),
-    // Пустой раздел объясняет, что такое событие: без этого слово ничего не говорит.
     if (c.events.isEmpty)
-      const ListTile(key: Key('events-empty'), subtitle: Text(eventsHint)),
+      const ListTile(
+        key: Key('events-empty'),
+        subtitle: Text('Событий пока нет'),
+      ),
     // Сцены идут по местам: под названием — где сцена и что в ней.
     for (final e in eventsByPlace(c))
       _row(

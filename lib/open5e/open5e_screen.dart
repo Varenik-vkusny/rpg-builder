@@ -60,6 +60,13 @@ class _Open5eScreenState extends State<Open5eScreen> {
 
   static final _cyrillic = RegExp('[а-яё]', caseSensitive: false);
 
+  bool get _cardOpen => _picked != null || _creature != null;
+
+  void _closeCard() => setState(() {
+    _picked = null;
+    _creature = null;
+  });
+
   String _title(String key, String name) => _ru[key] ?? name;
 
   Future<void> _search() async {
@@ -182,12 +189,6 @@ class _Open5eScreenState extends State<Open5eScreen> {
     final broken = problems.any((p) => p.severity == Severity.error);
     return [
       const SizedBox(height: 16),
-      Text(
-        'Источник: Open5e, ${c.document}. Враг запомнит источник и карточку '
-        'оригинала — они уйдут и в экспорт.',
-        key: const Key('open5e-attribution'),
-      ),
-      const SizedBox(height: 12),
       EnemyPreview(c: c, title: _title(c.key, c.name), problems: problems),
       const SizedBox(height: 12),
       Column(
@@ -212,61 +213,75 @@ class _Open5eScreenState extends State<Open5eScreen> {
   @override
   Widget build(BuildContext context) {
     final error = TextStyle(color: Theme.of(context).colorScheme.error);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Образцы Open5e'),
-        actions: const [HelpAction('open5e')],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          SegmentedButton<bool>(
-            key: const Key('open5e-kind'),
-            segments: const [
-              ButtonSegment(value: false, label: Text('Предметы')),
-              ButtonSegment(value: true, label: Text('Враги')),
-            ],
-            selected: {_enemies},
-            onSelectionChanged: _busy
-                ? null
-                : (v) => setState(() {
-                    _enemies = v.single;
-                    _picked = null;
-                    _creature = null;
-                    _error = null;
-                  }),
+    // Карточка образца — состояние этого же экрана: «назад» (стрелка и кнопка
+    // телефона) закрывает карточку и оставляет выдачу с запросом; из выдачи — уходит.
+    return PopScope(
+      canPop: !_cardOpen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_busy) _closeCard();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: BackButton(
+            onPressed: () =>
+                _cardOpen ? _closeCard() : Navigator.maybePop(context),
           ),
-          const SizedBox(height: 8),
-          TextField(
-            key: const Key('open5e-query'),
-            controller: _query,
-            decoration: InputDecoration(
-              labelText: 'Название, можно по-русски',
-              hintText: _enemies
-                  ? 'скелет, гоблин, wolf'
-                  : 'кирка, меч, potion',
+          title: const Text('Образцы Open5e'),
+          actions: const [HelpAction('open5e')],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            SegmentedButton<bool>(
+              key: const Key('open5e-kind'),
+              segments: const [
+                ButtonSegment(value: false, label: Text('Предметы')),
+                ButtonSegment(value: true, label: Text('Враги')),
+              ],
+              selected: {_enemies},
+              onSelectionChanged: _busy
+                  ? null
+                  : (v) => setState(() {
+                      _enemies = v.single;
+                      _picked = null;
+                      _creature = null;
+                      _error = null;
+                    }),
             ),
-            onSubmitted: (_) => _search(),
-          ),
-          const SizedBox(height: 8),
-          FilledButton(
-            key: const Key('open5e-search'),
-            onPressed: _busy ? null : _search,
-            child: Text(
-              _busy && _picked == null && _creature == null ? 'Ищу…' : 'Найти',
+            const SizedBox(height: 8),
+            TextField(
+              key: const Key('open5e-query'),
+              controller: _query,
+              decoration: InputDecoration(
+                labelText: 'Название, можно по-русски',
+                hintText: _enemies
+                    ? 'скелет, гоблин, wolf'
+                    : 'кирка, меч, potion',
+              ),
+              onSubmitted: (_) => _search(),
             ),
-          ),
-          if (_error != null)
-            Text(_error!, key: const Key('open5e-error'), style: error),
-          if (_enemies && _creature != null)
-            ..._enemyPart(_creature!)
-          else if (_enemies)
-            ..._enemyResults()
-          else if (_picked != null)
-            ..._importPart(_picked!)
-          else
-            ..._results(),
-        ],
+            const SizedBox(height: 8),
+            FilledButton(
+              key: const Key('open5e-search'),
+              onPressed: _busy ? null : _search,
+              child: Text(
+                _busy && _picked == null && _creature == null
+                    ? 'Ищу…'
+                    : 'Найти',
+              ),
+            ),
+            if (_error != null)
+              Text(_error!, key: const Key('open5e-error'), style: error),
+            if (_enemies && _creature != null)
+              ..._enemyPart(_creature!)
+            else if (_enemies)
+              ..._enemyResults()
+            else if (_picked != null)
+              ..._importPart(_picked!)
+            else
+              ..._results(),
+          ],
+        ),
       ),
     );
   }
@@ -305,11 +320,6 @@ class _Open5eScreenState extends State<Open5eScreen> {
     final preview = _preview!;
     return [
       const SizedBox(height: 16),
-      Text(
-        'Источник: Open5e, ${o.document} — CC BY 4.0. '
-        'Предмет запомнит источник, он уйдёт и в экспорт.',
-        key: const Key('open5e-attribution'),
-      ),
       // Ошибка — плашкой со значком и словом, не одним красным цветом (инвариант 27.09).
       if (preview.hasErrors)
         const NoticeBanner(

@@ -141,12 +141,8 @@ void main() {
       final content = await openLibrary(t, api);
       expect(api.queries, ['pick']);
       await tapButton(t, 'open5e-srd-2024_war-pick');
-      expect(
-        find.textContaining(
-          'Open5e, System Reference Document 5.2 — CC BY 4.0',
-        ),
-        findsOneWidget,
-      );
+      expect(find.textContaining('CC BY 4.0'), findsNothing);
+      expect(find.textContaining('запомнит источник'), findsNothing);
       expect(
         find.textContaining('srd-2024_war-pick'),
         findsOneWidget,
@@ -195,6 +191,30 @@ void main() {
       );
     },
   );
+
+  testWidgets('«назад» из карточки образца — к выдаче с запросом: и стрелка, '
+      'и кнопка телефона', (t) async {
+    await openLibrary(t, FakeOpen5e([warPick(), potion]));
+    for (final byPhone in [false, true]) {
+      await tapButton(t, 'open5e-srd-2024_war-pick');
+      expect(find.byKey(const Key('open5e-import')), findsOneWidget);
+      if (byPhone) {
+        await t.binding.handlePopRoute();
+        await t.pumpAndSettle();
+      } else {
+        await t.tap(find.byType(BackButton));
+        await t.pumpAndSettle();
+      }
+      expect(find.byKey(const Key('open5e-import')), findsNothing);
+      expect(find.text('Образцы Open5e'), findsOneWidget, reason: 'экран жив');
+      expect(find.text('pick'), findsOneWidget, reason: 'запрос на месте');
+      expect(find.byKey(const Key('open5e-srd-2024_war-pick')), findsOneWidget);
+    }
+    // Из выдачи «назад» уходит с экрана, как раньше.
+    await t.binding.handlePopRoute();
+    await t.pumpAndSettle();
+    expect(find.text('Образцы Open5e'), findsNothing);
+  });
 
   testWidgets('образец: пустой ответ — «Ничего не нашлось»', (t) async {
     final content = await openLibrary(t, FakeOpen5e(const <Open5eItem>[]));
