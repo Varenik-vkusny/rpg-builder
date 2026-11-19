@@ -9,7 +9,8 @@ import 'package:rpg_builder/map/gesture_path.dart';
 import 'fakes.dart';
 import 'holst_build_test.dart' show build, settle, snack, snackSub;
 import 'holst_fixture.dart';
-import 'holst_look_test.dart' show token;
+import 'holst_link_test.dart' show thread;
+import 'holst_look_test.dart' show drawnTags, token;
 
 const wide = Size(1100, 800);
 
@@ -144,6 +145,41 @@ void main() {
         expect(inPlace('hdoor-zaboy'), door, reason: 'в полёте, кадр $i');
       }
       await settle(t);
+    },
+  );
+
+  testWidgets(
+    'зелёная метка едет с местом под пальцем и не висит на старом месте в полёте',
+    (t) async {
+      // Владелец 19.11 (снимок с телефона): место уехало, а рамка метки на Бригадире
+      // осталась на старом месте.
+      final c = await ashMines();
+      await pumpHolst(t, c, size: wide);
+      await build(t);
+      await thread(t, 'storozh', 'obval'); // квест → житель: меню «Поговорить»
+      await t.tap(find.byKey(const Key('holst-menu-talk')));
+      await settle(t);
+      await t.pump(const Duration(seconds: 6)); // полоса ушла, метка осталась
+      final canvas = t.getTopLeft(find.byKey(const Key('holst-canvas')));
+      Rect tile() => t.getRect(token('storozh')).shift(-canvas);
+      Rect tag() => drawnTags(t).tags.single.rect;
+      expect(tag(), tile());
+      final place = t.getRect(find.byKey(const Key('hplace-lebedka')));
+      final a = place.topLeft + const Offset(40, 16);
+      final g = await t.startGesture(a);
+      await t.pump(const Duration(milliseconds: 600));
+      for (var i = 1; i <= 5; i++) {
+        await g.moveTo(a + Offset(30.0 * i, 20.0 * i));
+        await t.pump(const Duration(milliseconds: 16));
+        expect(tag(), tile(), reason: 'под пальцем, шаг $i');
+      }
+      await g.moveTo(a + const Offset(0, 900));
+      await t.pump(const Duration(milliseconds: 16));
+      await g.up();
+      await t.pump(const Duration(milliseconds: 60));
+      expect(drawnTags(t).tags, isEmpty, reason: 'в полёте метки нет');
+      await settle(t);
+      expect(tag(), tile(), reason: 'долетело — метка снова на жетоне');
     },
   );
 

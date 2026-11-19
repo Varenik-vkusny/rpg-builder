@@ -9,11 +9,18 @@ extension _Geometry on _HolstState {
     for (final p in _scene.places) {
       for (final t in p.tokens) {
         if (t.id == id) {
-          return (rect: toScreen(_view.value, t.rect), shelf: false);
+          // Метка едет с жетоном: под пальцем — где он нарисован; в полёте после
+          // броска её нет (владелец 19.11: рамка метки оставалась на старом месте).
+          if (_flying.containsKey(t.id) || _flying.containsKey(t.placeId)) {
+            return null;
+          }
+          return (rect: toScreen(_view.value, _shown(t)), shelf: false);
         }
       }
       if (p.place.id == id) {
-        final head = Rect.fromLTWH(p.rect.left, p.rect.top, p.rect.width, 32);
+        if (_flying.containsKey(id)) return null;
+        final at = _shownPlace(p);
+        final head = Rect.fromLTWH(at.left, at.top, at.width, 32);
         return (rect: toScreen(_view.value, head), shelf: false);
       }
     }
@@ -199,7 +206,9 @@ extension _Geometry on _HolstState {
     for (final p in _scene.places) {
       for (final d in p.doors) {
         if (placeAndInside(_w.locations, d.place.id).contains(placeId)) {
-          return toScreen(_view.value, d.rect);
+          // Дверь едет с местом — и метка на ней (ревью 19.11); в полёте её нет.
+          if (_flying.containsKey(p.place.id)) return null;
+          return toScreen(_view.value, _shownIn(p.place.id, d.rect));
         }
       }
     }
