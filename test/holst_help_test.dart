@@ -2,6 +2,7 @@
 // «?» — легенда цветов, нитей и жестов, пустой мир — три быстрых старта.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/map/holst_tags.dart' show EdgeArrowSample;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fakes.dart';
@@ -62,7 +63,9 @@ void main() {
       'Связь выбранного',
       'Новая связь',
       'Изменённая связь',
-      'Ещё связь — за краем или за дверью',
+      'Ещё связь — за краем',
+      'Ещё связь — за дверью',
+      'Значки — откуда связи',
       'Из палитры в место — создать',
       'От объекта к объекту — связь',
       'Держать и тащить — перенести',
@@ -82,6 +85,19 @@ void main() {
         reason: shape,
       );
     }
+    // «За краем» — та же стрелка, что на холсте, а не квадрат (владелец 19.11);
+    // значки покоя тоже объяснены.
+    for (final key in [
+      'legend-edge-arrow',
+      'legend-door-mark',
+      'legend-badge',
+    ]) {
+      expect(find.descendant(of: sheet, matching: k(key)), findsOneWidget);
+    }
+    expect(
+      t.widget<CustomPaint>(k('legend-edge-arrow')).painter,
+      isA<EdgeArrowSample>(),
+    );
   });
 
   testWidgets(

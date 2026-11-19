@@ -170,32 +170,8 @@ class TagPainter extends CustomPainter {
     }
   }
 
-  /// Стрелка длиной 16 с острием по [dir]: обводка цвета текста меток, сверху цвет связи.
-  void _arrow(Canvas canvas, Offset at, Offset dir, Color color) {
-    final tip = at + dir * 8, tail = at - dir * 8;
-    Offset turn(double a) => Offset(
-      dir.dx * math.cos(a) - dir.dy * math.sin(a),
-      dir.dx * math.sin(a) + dir.dy * math.cos(a),
-    );
-    final path = Path()
-      ..moveTo(tail.dx, tail.dy)
-      ..lineTo(tip.dx, tip.dy);
-    for (final a in const [2.5, -2.5]) {
-      final h = tip + turn(a) * 7;
-      path
-        ..moveTo(tip.dx, tip.dy)
-        ..lineTo(h.dx, h.dy);
-    }
-    Paint line(Color c, double w) => Paint()
-      ..color = c
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    canvas
-      ..drawPath(path, line(colors.ink, 6))
-      ..drawPath(path, line(color, 2.5));
-  }
+  void _arrow(Canvas canvas, Offset at, Offset dir, Color color) =>
+      paintEdgeArrow(canvas, at, dir, color, colors.ink);
 
   /// Где встанут метки — см. [tagRects]; текст не влез — многоточие.
   List<(TagSpec, ({Rect rect, TextPainter? icon, TextPainter tp, double lead}))>
@@ -261,4 +237,59 @@ class TagPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(TagPainter old) => true;
+}
+
+/// Стрелка «там ещё связь» длиной 16 с острием по [dir]: обводка [ink], сверху цвет
+/// связи. Та же рисуется на холсте у края и в легенде «?».
+void paintEdgeArrow(
+  Canvas canvas,
+  Offset at,
+  Offset dir,
+  Color color,
+  Color ink,
+) {
+  final tip = at + dir * 8, tail = at - dir * 8;
+  Offset turn(double a) => Offset(
+    dir.dx * math.cos(a) - dir.dy * math.sin(a),
+    dir.dx * math.sin(a) + dir.dy * math.cos(a),
+  );
+  final path = Path()
+    ..moveTo(tail.dx, tail.dy)
+    ..lineTo(tip.dx, tip.dy);
+  for (final a in const [2.5, -2.5]) {
+    final h = tip + turn(a) * 7;
+    path
+      ..moveTo(tip.dx, tip.dy)
+      ..lineTo(h.dx, h.dy);
+  }
+  Paint line(Color c, double w) => Paint()
+    ..color = c
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = w
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round;
+  canvas
+    ..drawPath(path, line(ink, 6))
+    ..drawPath(path, line(color, 2.5));
+}
+
+/// Образец стрелки для легенды «?».
+class EdgeArrowSample extends CustomPainter {
+  const EdgeArrowSample(this.color, this.ink);
+
+  final Color color;
+  final Color ink;
+
+  @override
+  void paint(Canvas canvas, Size size) => paintEdgeArrow(
+    canvas,
+    size.center(Offset.zero),
+    const Offset(1, 1) / math.sqrt2,
+    color,
+    ink,
+  );
+
+  @override
+  bool shouldRepaint(EdgeArrowSample old) =>
+      old.color != color || old.ink != ink;
 }

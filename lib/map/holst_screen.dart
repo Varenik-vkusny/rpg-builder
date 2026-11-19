@@ -32,6 +32,7 @@ import 'glyph_picker.dart';
 import 'glyphs.dart';
 import 'holst_doors.dart';
 import 'holst_help.dart';
+import 'holst_legend.dart';
 import 'holst_links.dart';
 import 'holst_modes.dart';
 import 'holst_pops.dart';
