@@ -12,7 +12,7 @@ import 'package:rpg_builder/map/holst_threads.dart' show ThreadTone;
 
 import 'assistant_fixtures.dart';
 import 'fakes.dart';
-import 'holst_build_test.dart' show settle, snack;
+import 'holst_build_test.dart' show settle, snack, snackSub;
 import 'holst_fixture.dart';
 import 'holst_look_test.dart' show drawnTags, token;
 
@@ -92,7 +92,17 @@ void main() {
       expect(t.widget<FilledButton>(k('holst-plan-apply')).onPressed, isNull);
       await settle(t);
       await t.pump(const Duration(seconds: 3));
-      expect(text(t, 'holst-plan-check'), startsWith('Проверка:'));
+      // План чистый — строки проверки нет (владелец 19.11: «ошибок 0» автору не нужно).
+      expect(k('holst-plan-check'), findsNothing);
+      // Новое — только «стало», без «— →».
+      for (final e in find
+          .descendant(of: k('holst-plan'), matching: find.byType(RichText))
+          .evaluate()) {
+        final x = (e.widget as RichText).text.toPlainText();
+        expect(x.contains('—  →') || x.startsWith('→'), isFalse, reason: x);
+        // Убранное — только «было»: «Ключ 35%», без «→ —».
+        expect(x.contains('→  —') || x.trimRight().endsWith('→'), isFalse, reason: x);
+      }
       // Утопленник — новый, зелёный; Штольня — изменена; в мире пока ничего.
       final drowned = find.descendant(
         of: token('utoplennik'),
@@ -116,6 +126,8 @@ void main() {
       await t.tap(k('holst-plan-apply'));
       await settle(t);
       expect(snack(t), 'План применён: 5 изменений');
+      // Крупное действие — одно короткое «в истории» (владелец 19.11).
+      expect(snackSub(t), 'в истории');
       expect(c.changeSets.single.status, 'applied');
       final w = await c.snapshotOf(holstWorld.id);
       expect(w.characters.any((x) => x.slug == 'utoplennik'), isTrue);
@@ -168,7 +180,7 @@ void main() {
         final x = (e.widget as RichText).text.toPlainText();
         expect(x.contains('·'), isFalse, reason: x);
       }
-      expect(text(t, 'holst-plan-check'), startsWith('Проверка:'));
+      expect(k('holst-plan-check'), findsNothing);
       // Седьмой враг — в Забое, уровнем ниже: на двери метка.
       expect(
         find.descendant(
@@ -201,10 +213,11 @@ void main() {
     await ask(t);
     await settle(t);
     await t.pump(const Duration(seconds: 2));
-    expect(
-      text(t, 'holst-plan-check'),
-      isNot(startsWith('Проверка: ошибок 0')),
-    );
+    // Не применить — сказано словами, почему (владелец 19.11), без счёта «ошибок N».
+    expect(text(t, 'holst-plan-check'), startsWith('Не получится: '));
+    expect(text(t, 'holst-plan-check'), isNot(contains('ошибок')));
+    // Причина — из проверки, а не запасная фраза.
+    expect(text(t, 'holst-plan-check'), isNot(contains('нарушает правила мира')));
     expect(t.widget<FilledButton>(k('holst-plan-apply')).onPressed, isNull);
     await t.tap(k('holst-plan-apply'));
     await settle(t);
@@ -247,11 +260,17 @@ void main() {
     final quest = copy.quests.single.id;
     final giver = copy.quests.single.giverId!;
     // У квеста с бригадиром «выдаёт» и «поговорить» — план их не трогал.
-    expect(tones['$quest>$giver'], isNull);
+    expect(tones.keys.where((x) => x.startsWith('$quest>$giver>')), isEmpty);
     final drowned = copy.characters
         .firstWhere((x) => x.slug == 'utoplennik')
         .id;
-    expect(tones['$quest>$drowned'], ThreadTone.isNew);
+    expect(
+      [
+        for (final e in tones.entries)
+          if (e.key.startsWith('$quest>$drowned>')) e.value,
+      ],
+      [ThreadTone.isNew],
+    );
   });
 
   test('метки плана: связь пары изменилась — пурпурная', () async {
@@ -274,6 +293,8 @@ void main() {
     final copy = applyToCopy(w, plan).$1;
     final slime = copy.characters.firstWhere((x) => x.slug == 'slizen').id;
     final key = copy.items.firstWhere((x) => x.slug == 'klyuch').id;
-    expect(planThreads(w, copy), {'$slime>$key': ThreadTone.changed});
+    expect(planThreads(w, copy), {
+      '$slime>$key>выпадает 50%>': ThreadTone.changed,
+    });
   });
 }

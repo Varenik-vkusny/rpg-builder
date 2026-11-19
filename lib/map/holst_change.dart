@@ -209,6 +209,8 @@ extension _Change on _HolstState {
     _say(
       SnackData(
         title: 'План применён: ${changesWord(p.run.proposal.plan.ops.length)}',
+        // Крупное действие — одно короткое напоминание, где его найти (владелец 19.11).
+        sub: 'в истории',
         action: 'Откатить',
         onAction: () => _undo(setId, done: 'Набор откачен'),
         seconds: 7,

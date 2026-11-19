@@ -100,6 +100,7 @@ class PlanSheet extends StatelessWidget {
     required this.ready,
     required this.errors,
     required this.warnings,
+    this.why,
     required this.canApply,
     required this.big,
     required this.peek,
@@ -117,6 +118,9 @@ class PlanSheet extends StatelessWidget {
   final int errors;
   final int warnings;
 
+  /// Почему план не применить — словами (первая ошибка проверки); null — всё в порядке.
+  final String? why;
+
   /// Можно ли применить — то же правило, что на экране ассистента (ошибка запирает).
   final bool canApply;
   final bool big;
@@ -132,9 +136,13 @@ class PlanSheet extends StatelessWidget {
     final s = Theme.of(context).colorScheme;
     final c = AppColors.of(context);
     final h = MediaQuery.sizeOf(context).height;
-    final checkLine = ready
-        ? 'Проверка: ошибок $errors, предупреждений $warnings'
-        : 'Строю план: $shown из $total';
+    // Проверка автору не показывается (владелец 19.11): план строится — сколько готово;
+    // не применить — почему, словами; всё в порядке — строки нет.
+    final checkLine = !ready
+        ? 'Строю план: $shown из $total'
+        : errors > 0
+        ? 'Не получится: ${why ?? 'план нарушает правила мира'}'
+        : null;
     return Container(
       key: const Key('holst-plan'),
       decoration: BoxDecoration(
@@ -174,30 +182,34 @@ class PlanSheet extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Row(
-              children: [
-                Icon(
-                  ready
-                      ? (errors > 0
-                            ? Symbols.error_rounded
-                            : Symbols.check_rounded)
-                      : Symbols.auto_awesome_rounded,
-                  size: 18,
-                  color: errors > 0 ? s.error : s.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    checkLine,
-                    key: const Key('holst-plan-check'),
-                    style: TextStyle(fontSize: 13, color: s.onSurfaceVariant),
+          if (checkLine != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  Icon(
+                    ready
+                        ? (errors > 0
+                              ? Symbols.error_rounded
+                              : Symbols.check_rounded)
+                        : Symbols.auto_awesome_rounded,
+                    size: 18,
+                    color: errors > 0 ? s.error : s.onSurfaceVariant,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      checkLine,
+                      key: const Key('holst-plan-check'),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: errors > 0 ? s.error : s.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           if (!peek)
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: big ? h * .45 : 112),
@@ -306,21 +318,26 @@ class _Row extends StatelessWidget {
                   Text.rich(
                     TextSpan(
                       children: [
-                        TextSpan(
-                          text: row.was,
-                          style: TextStyle(color: s.onSurfaceVariant),
-                        ),
-                        TextSpan(
-                          text: '  →  ',
-                          style: TextStyle(color: s.outline),
-                        ),
-                        TextSpan(
-                          text: row.now,
-                          style: TextStyle(
-                            color: row.isNew ? ok : change,
-                            fontWeight: FontWeight.w600,
+                        // Новое — только «стало», убранное — только «было»: «— →» не пишем.
+                        if (row.was != '—' && row.was.isNotEmpty) ...[
+                          TextSpan(
+                            text: row.was,
+                            style: TextStyle(color: s.onSurfaceVariant),
                           ),
-                        ),
+                          if (row.now != '—')
+                            TextSpan(
+                              text: '  →  ',
+                              style: TextStyle(color: s.outline),
+                            ),
+                        ],
+                        if (row.now != '—')
+                          TextSpan(
+                            text: row.now,
+                            style: TextStyle(
+                              color: row.isNew ? ok : change,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                       ],
                     ),
                     style: const TextStyle(fontSize: 13),

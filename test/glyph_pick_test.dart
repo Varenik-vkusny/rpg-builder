@@ -49,7 +49,8 @@ void main() {
       expect(k('glyph-slizen'), findsNothing);
       await choose(t, 'slizen', 'slime');
       expect(snack(t), 'Значок «Слизень»: слизень');
-      expect(snackSub(t), 'проверено · в истории');
+      // «проверено · в истории» автору не пишем (владелец 19.11).
+      expect(snackSub(t), isNull);
       expect(await iconOf(c, 'slizen'), 'slime');
       expect(c.journal.length, sets + 1);
       expect(

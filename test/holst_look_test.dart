@@ -251,13 +251,24 @@ void main() {
     }
   });
 
+  testWidgets('выдающий выбран: квест горит, но пустой метки на нём нет', (
+    t,
+  ) async {
+    // Связь «выдаёт» без слов на квесте (владелец 19.11) — метка не рисуется пустой.
+    await pumpHolst(t, await ashMines());
+    await t.tap(token('brigadir'));
+    await t.pumpAndSettle();
+    expect(drawnTags(t).tags.map((x) => x.text), everyElement(isNotEmpty));
+  });
+
   test(
     'связи мира словами автора: слово — про тот конец, на котором стоит',
     () async {
       final w = await (await ashMines()).snapshotOf(holstWorld.id);
       final words = [for (final l in worldLinks(w)) (l.back, l.label, l.step)];
       expect(words, [
-        ('его квест', 'выдаёт', null),
+        // На квесте выбранного выдающего слова нет (владелец 19.11).
+        ('', 'выдаёт', null),
         ('убить ×3', 'убить ×3', 1),
         ('пройти', 'пройти', 2),
         ('собрать ×1', 'собрать ×1', 3),
@@ -309,7 +320,12 @@ void main() {
     await pumpHolst(t, c);
     await t.tap(token('brigadir'));
     await t.pumpAndSettle();
-    expect(linkTiles(t), {'Обвал': 'его квест, шаг 4: поговорить'});
+    expect(linkTiles(t), {'Обвал': 'шаг 4: поговорить'});
+    // И на метке квеста — без «его квест» (владелец 19.11).
+    expect(
+      drawnTags(t).tags.map((x) => x.text),
+      everyElement(isNot(contains('его квест'))),
+    );
     for (final x in infoTexts(t)) {
       expect(x.contains('·') || x.contains(' / '), isFalse, reason: x);
     }

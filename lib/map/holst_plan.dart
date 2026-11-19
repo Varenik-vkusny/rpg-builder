@@ -50,14 +50,14 @@ Map<String, Mark> planMarks(WorldSnapshot was, WorldSnapshot now) {
 }
 
 /// Метки плана: связи, которой не было, — зелёная, если у пары не было ни одной связи,
-/// и пурпурная, если пара была связана иначе. Ключ — «откуда>куда».
+/// и пурпурная, если пара была связана иначе. Ключ — [HolstLink.mark].
 Map<String, ThreadTone> planThreads(WorldSnapshot was, WorldSnapshot now) {
   final old = {for (final l in worldLinks(was)) l.key};
   final pairs = {for (final l in worldLinks(was)) '${l.a}>${l.b}'};
   return {
     for (final l in worldLinks(now))
       if (!old.contains(l.key))
-        '${l.a}>${l.b}': pairs.contains('${l.a}>${l.b}')
+        l.mark: pairs.contains('${l.a}>${l.b}')
             ? ThreadTone.changed
             : ThreadTone.isNew,
   };

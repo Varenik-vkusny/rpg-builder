@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/quest.dart';
+import 'package:rpg_builder/map/gesture_link.dart';
 import 'package:rpg_builder/map/holst_threads.dart' show ThreadTone;
 
 import 'fakes.dart';
@@ -103,6 +104,29 @@ void main() {
       final tag = drawnTags(t).tags.single;
       expect(tag.text, 'Обвал, шаг 4: поговорить');
       expect(tag.icon, isNotNull);
+    },
+  );
+
+  testWidgets(
+    'квест → его же выдающий: метка только про новый шаг, имя квеста один раз',
+    (t) async {
+      // Владелец 19.11: на Бригадире было «Обвал его квест, Обвал, шаг 1: поговорить,
+      // Обвал…» — метились все связи пары, а не одна новая.
+      final c = await ashMines();
+      // У пары уже есть «выдаёт» и шаг 4 «поговорить» — новая только шаг 5.
+      final w = await c.snapshotOf(holstWorld.id);
+      final quest = w.quests.single.id;
+      final brig = w.characters.firstWhere((x) => x.slug == 'brigadir').id;
+      await c.applyManualEdit(
+        holstWorld.id,
+        linkByGesture(holstWorld.id, w, LinkKind.talk, quest, brig, 1),
+      );
+      await pumpHolst(t, c, size: wide);
+      await build(t);
+      await thread(t, 'brigadir', 'obval');
+      await t.tap(find.byKey(const Key('holst-menu-talk')));
+      await settle(t);
+      expect(drawnTags(t).tags.single.text, 'Обвал, шаг 5: поговорить');
     },
   );
 

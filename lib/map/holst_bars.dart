@@ -299,10 +299,11 @@ class _LinkChip extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Text(
-                link.words.join(', '),
-                style: TextStyle(fontSize: 12, color: s.onSurfaceVariant),
-              ),
+              if (link.words.isNotEmpty)
+                Text(
+                  link.words.join(', '),
+                  style: TextStyle(fontSize: 12, color: s.onSurfaceVariant),
+                ),
             ],
           ),
         ],

@@ -1,5 +1,5 @@
 // Прибор 5е.3 «Строить: из палитры в место»: тащишь врага, жителя, событие, предмет или место
-// на холст — объект создан через проверку и историю, полоса «Создано… / проверено · в истории»
+// на холст — объект создан через проверку и историю, полоса «Создано…» без «проверено · в истории» (владелец 19.11)
 // и «Отменить» 5 секунд. Мимо места — «Брось в место», в мире ничего не поменялось.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,7 +65,8 @@ void main() {
     await drag(t, 'enemy', placeCenter(t, 'baraki'));
 
     expect(snack(t), 'Создано: Новый враг в «Бараки»');
-    expect(snackSub(t), 'проверено · в истории');
+    // «проверено · в истории» автору не пишем (владелец 19.11).
+      expect(snackSub(t), isNull);
     expect(c.journal.length, sets + 1);
     expect(c.journal.last.entry.request, 'Холст: создано «Новый враг»');
     final w = await c.snapshotOf(holstWorld.id);

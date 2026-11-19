@@ -107,6 +107,7 @@ extension _Build on _HolstState {
     String? Function(Problem)? explain,
   }) async {
     _set(() => _busy = true);
+    final before = {for (final l in _links) l.mark};
     final r = await applyGesture(widget.repo, widget.world.id, _w, edit);
     if (!mounted) return false;
     if (!r.applied) {
@@ -133,9 +134,14 @@ extension _Build on _HolstState {
       _marks
         ..clear()
         ..addAll(marks);
+      // Пара «откуда>куда» жеста → только связи, которых до жеста не было.
       _threadMarks
         ..clear()
-        ..addAll(threads);
+        ..addAll([
+          for (final l in _links)
+            if (threads.contains('${l.a}>${l.b}') && !before.contains(l.mark))
+              l.mark,
+        ]);
       _planThreads = const {};
       for (final p in r.warnings) {
         if (setId != null) {

@@ -14,6 +14,7 @@ extension _Bottom on _HolstState {
           ready: p.ready,
           errors: p.run.preview.of(Severity.error).length,
           warnings: p.run.preview.of(Severity.warning).length,
+          why: p.run.preview.of(Severity.error).firstOrNull?.message,
           canApply: p.run.canApply,
           big: p.big,
           peek: p.peek,

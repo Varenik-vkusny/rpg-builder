@@ -51,7 +51,8 @@ void main() {
       final sets = c.journal.length;
       await carry(t, token('storozh'), inside(t, 'rynok'));
       expect(snack(t), 'Перенесено: Сторож → Рынок');
-      expect(snackSub(t), 'проверено · в истории');
+      // «проверено · в истории» автору не пишем (владелец 19.11).
+      expect(snackSub(t), isNull);
       expect(await placeOf(c, 'storozh'), 'rynok');
       expect(c.journal.length, sets + 1);
       final market = t.getRect(find.byKey(const Key('hplace-rynok')));

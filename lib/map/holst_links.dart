@@ -32,6 +32,10 @@ class HolstLink {
 
   /// Одна и та же связь между теми же концами — для сравнения «было → стало».
   String get key => '$a>$b>$label';
+
+  /// Именно эта связь — для зелёной и пурпурной метки: у пары их бывает несколько
+  /// (выдаёт + шаги), метится только новая (владелец 19.11: «Обвал» повторялся трижды).
+  String get mark => '$key>${step ?? ''}';
 }
 
 /// «35.0» → «35», «12.5» → «12.5».
@@ -49,7 +53,8 @@ String stepLabel(QuestStep s) => switch (s.kind) {
 List<HolstLink> worldLinks(WorldSnapshot w) => [
   for (final q in w.quests) ...[
     if (q.giverId case final g?)
-      HolstLink(q.id, g, 'выдаёт', back: 'его квест'),
+      // На квесте выбранного выдающего слова нет: связь видна выделением (владелец 19.11).
+      HolstLink(q.id, g, 'выдаёт', back: ''),
     for (final (i, s) in q.steps.indexed)
       HolstLink(q.id, s.targetId, stepLabel(s), step: i + 1, chip: '${i + 1}'),
     for (final r in q.rewardIds)
@@ -88,7 +93,9 @@ List<({String other, List<String> words})> linkGroups(
   for (final l in links) {
     if (l.touches(id)) {
       final o = l.other(id);
-      out.putIfAbsent(o, () => []).add(stepWord(l, l.wordOn(o)));
+      final words = out.putIfAbsent(o, () => []);
+      final w = l.wordOn(o);
+      if (w.isNotEmpty) words.add(stepWord(l, w));
     }
   }
   return [for (final e in out.entries) (other: e.key, words: e.value)];

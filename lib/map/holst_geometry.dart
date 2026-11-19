@@ -53,10 +53,8 @@ extension _Geometry on _HolstState {
     final pending = _pendingLink();
     for (final (l, tone) in [
       for (final l in _links)
-        if (_planThreads['${l.a}>${l.b}'] ??
-                (_threadMarks.contains('${l.a}>${l.b}')
-                    ? ThreadTone.isNew
-                    : null)
+        if (_planThreads[l.mark] ??
+                (_threadMarks.contains(l.mark) ? ThreadTone.isNew : null)
             case final tone?)
           (l, tone),
       if (pending != null) (pending, ThreadTone.isNew),
@@ -68,9 +66,16 @@ extension _Geometry on _HolstState {
         tone: tone,
         icon: from == null ? null : tokenIcon(from),
       );
-      final word = l.wordOn(l.a), name = from?.title ?? '';
+      // Имя первого конца — один раз на метку, дальше только слова связи.
+      final word = l.wordOn(l.a);
+      final name = g.words.isEmpty ? (from?.title ?? '') : '';
+      final said = stepWord(l, word);
       g.words.add(
-        l.step == null ? '$name $word' : '$name, шаг ${l.step}: $word',
+        name.isEmpty || said.isEmpty
+            ? '$name$said'
+            : l.step == null
+            ? '$name $said'
+            : '$name, $said',
       );
     }
     final placed = _place(groups);
@@ -165,6 +170,8 @@ extension _Geometry on _HolstState {
         continue;
       }
       final view = r.shelf ? shelfView : canvasView;
+      // Связь без слов (квест выбранного выдающего) — видна тем, что объект не погас.
+      if (g.words.isEmpty) continue;
       if (view.contains(r.rect.center)) {
         tags.add((
           id: id,

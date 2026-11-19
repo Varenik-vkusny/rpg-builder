@@ -1,4 +1,4 @@
-// Холст мира (5е): полоса после жеста — что сделано, «проверено · в истории» и «Отменить»
+// Холст мира (5е): полоса после жеста — что сделано и «Отменить»
 // на 5 секунд (полоска убывает). Предупреждение — жёлтая, ошибка — красная с причиной.
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -10,7 +10,7 @@ import 'gesture_path.dart';
 class SnackData {
   const SnackData({
     required this.title,
-    this.sub = 'проверено · в истории',
+    this.sub,
     this.tone = GestureTone.ok,
     this.action,
     this.onAction,
