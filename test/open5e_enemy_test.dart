@@ -57,6 +57,12 @@ void main() {
       await tapButton(t, 'open5e-search');
       expect(api.queries.last, 'skeleton');
       await tapButton(t, 'open5e-srd_skeleton');
+      // «Назад» с карточки врага — к выдаче с запросом (владелец 19.11), и снова в карточку.
+      await t.binding.handlePopRoute();
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('open5e-import')), findsNothing);
+      expect(find.text('skeleton'), findsOneWidget, reason: 'запрос на месте');
+      await tapButton(t, 'open5e-srd_skeleton');
       expect(find.textContaining('запомнит источник'), findsNothing);
       expect(find.textContaining('CC BY 4.0'), findsNothing);
       final preview = find.byKey(const Key('open5e-enemy-preview'));

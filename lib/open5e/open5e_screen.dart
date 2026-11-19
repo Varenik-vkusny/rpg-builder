@@ -222,9 +222,13 @@ class _Open5eScreenState extends State<Open5eScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
+          // Пока идёт импорт, карточку не закрыть: сообщение «Импортировано…» берёт её образец.
           leading: BackButton(
-            onPressed: () =>
-                _cardOpen ? _closeCard() : Navigator.maybePop(context),
+            onPressed: () => !_cardOpen
+                ? Navigator.maybePop(context)
+                : _busy
+                ? null
+                : _closeCard(),
           ),
           title: const Text('Образцы Open5e'),
           actions: const [HelpAction('open5e')],

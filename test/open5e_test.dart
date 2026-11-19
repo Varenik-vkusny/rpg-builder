@@ -210,6 +210,12 @@ void main() {
       expect(find.text('pick'), findsOneWidget, reason: 'запрос на месте');
       expect(find.byKey(const Key('open5e-srd-2024_war-pick')), findsOneWidget);
     }
+    // Авторство образцов (CC BY 4.0) — в справке «?» экрана: с карточек его убрали.
+    await t.tap(find.byKey(const Key('help-screen-open5e')));
+    await t.pumpAndSettle();
+    expect(find.textContaining('CC BY 4.0'), findsOneWidget);
+    await t.binding.handlePopRoute();
+    await t.pumpAndSettle();
     // Из выдачи «назад» уходит с экрана, как раньше.
     await t.binding.handlePopRoute();
     await t.pumpAndSettle();
