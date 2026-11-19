@@ -102,6 +102,7 @@ extension _Build on _HolstState {
     required String done,
     required Map<String, Mark> marks,
     Set<String> threads = const {},
+    SnackLink? link,
     String failed = 'Не применено',
     String undone = 'Откачено',
     String? Function(Problem)? explain,
@@ -152,6 +153,7 @@ extension _Build on _HolstState {
     _say(
       SnackData(
         title: done,
+        link: link,
         tone: r.tone,
         action: setId == null ? null : 'Отменить',
         onAction: setId == null ? null : () => _undo(setId),

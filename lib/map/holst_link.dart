@@ -128,6 +128,13 @@ extension _Link on _HolstState {
     await _gesture(
       linkByGesture(widget.world.id, _w, kind, p.from, p.to, p.value),
       done: 'Связь: ${a.title} — ${linkLabel(kind, p.value)} — ${b.title}',
+      link: (
+        fromIcon: tokenIcon(a),
+        from: a.title,
+        what: linkShort(kind, p.value),
+        toIcon: tokenIcon(b),
+        to: b.title,
+      ),
       marks: const {},
       threads: {'${p.from}>${p.to}'},
     );

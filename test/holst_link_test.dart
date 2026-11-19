@@ -29,6 +29,13 @@ Future<void> thread(WidgetTester t, String from, String to) async {
 
 Future<int> sets(FakeContent c) async => c.journal.length;
 
+/// Связь в полосе — рисунком (владелец 19.11): «Слизень —40%→ Кирка»; слова «Связь:» нет.
+String drawnLink(WidgetTester t) {
+  expect(find.textContaining('Связь:'), findsNothing);
+  String at(String k) => t.widget<Text>(find.byKey(Key(k))).data!;
+  return '${at('holst-snack-from')} —${at('holst-snack-what')}→ ${at('holst-snack-to')}';
+}
+
 void main() {
   testWidgets(
     'враг → предмет: колёсико «Шанс», 40% — добыча в мире и в истории',
@@ -58,7 +65,7 @@ void main() {
       await t.tap(find.byKey(const Key('holst-wheel-done')));
       await settle(t);
 
-      expect(snack(t), 'Связь: Слизень — роняет 40% — Кирка');
+      expect(drawnLink(t), 'Слизень —40%→ Кирка');
       expect(await sets(c), before + 1);
       final w = await c.snapshotOf(holstWorld.id);
       final slime = w.characters.firstWhere((x) => x.slug == 'slizen');
@@ -96,7 +103,7 @@ void main() {
       expect(find.text('Обвал → Сторож'), findsOneWidget);
       await t.tap(find.byKey(const Key('holst-menu-talk')));
       await settle(t);
-      expect(snack(t), 'Связь: Обвал — поговорить — Сторож');
+      expect(drawnLink(t), 'Обвал —поговорить→ Сторож');
       final q = (await c.snapshotOf(holstWorld.id)).quests.single;
       expect(q.steps, hasLength(4));
       expect(q.steps.last.kind, StepKind.talk);
@@ -136,7 +143,7 @@ void main() {
     await build(t);
     await thread(t, 'zasada', 'klyuch_ot_lebedki');
     expect(find.byKey(const Key('holst-wheel')), findsNothing);
-    expect(snack(t), 'Связь: Засада — лежит — Ключ от лебёдки');
+    expect(drawnLink(t), 'Засада —лежит→ Ключ от лебёдки');
     final e = (await c.snapshotOf(holstWorld.id)).events.single;
     expect(e.itemIds, hasLength(1));
   });

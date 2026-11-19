@@ -88,6 +88,10 @@ String linkLabel(LinkKind k, int value) => switch (wheelOf(k)) {
   Wheel.none => linkWord(k),
 };
 
+/// Связь коротко — на стрелке в полосе: «40%», «×3», а без числа — слово («поговорить»).
+String linkShort(LinkKind k, int value) =>
+    wheelOf(k) == Wheel.chance ? '$value%' : linkLabel(k, value);
+
 /// Правка: новая связь [kind] от [from] к [to] со значением [value] (шанс или сколько).
 ManualEdit linkByGesture(
   String worldId,
