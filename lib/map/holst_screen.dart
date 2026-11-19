@@ -46,6 +46,7 @@ import 'holst_view.dart';
 import 'token_frame.dart';
 import 'map_parts.dart' show DotGrid;
 
+part 'holst_bottom.dart';
 part 'holst_build.dart';
 part 'holst_canvas.dart';
 part 'holst_change.dart';
@@ -247,42 +248,6 @@ class _HolstState extends State<HolstScreen>
   /// setState для частей экрана (holst_build.dart, holst_canvas.dart).
   void _set(VoidCallback f) => setState(f);
 
-  /// Списки мира; вернулись — перечитать мир: там могли создать, править и удалять.
-  Future<void> _openLists() async {
-    await Navigator.of(context)
-        .push(MaterialPageRoute<void>(builder: (_) => widget.lists!()));
-    if (mounted) await _reload();
-  }
-
-  /// Страница выбранного объекта; вернулись с правкой — перечитать мир.
-  Future<void> _openPage() async {
-    final id = _sel;
-    if (id == null) return;
-    final pages = WorldPages(widget.world, widget.repo, _w);
-    final page = switch (_scene.all[id]!.kind) {
-      TokenKind.enemy || TokenKind.npc => pages.character(
-        _w.characters.firstWhere((c) => c.id == id),
-      ),
-      TokenKind.event => pages.event(_w.events.firstWhere((e) => e.id == id)),
-      TokenKind.item => pages.item(_w.items.firstWhere((i) => i.id == id)),
-      TokenKind.quest => pages.quest(_w.quests.firstWhere((q) => q.id == id)),
-    };
-    final changed = await Navigator.of(context)
-        .push<bool>(MaterialPageRoute(builder: (_) => page));
-    if (changed == true) await _reload();
-  }
-
-  Future<void> _reload() async {
-    final w = await widget.repo.snapshot(widget.world.id);
-    if (!mounted) return;
-    setState(() {
-      _w = w;
-      _changed = true;
-      if (_sel != null && !worldTokens(w).containsKey(_sel)) _sel = null;
-      _rebuild();
-    });
-  }
-
   /// Наверху — имя мира, внутри — путь от места верхнего уровня (владелец 18.11:
   /// слово «Мир» над единственным местом «Копи» путало, где ты).
   String get _crumb => _path.isEmpty
@@ -291,7 +256,6 @@ class _HolstState extends State<HolstScreen>
 
   @override
   Widget build(BuildContext context) {
-    final sel = _sel == null ? null : _scene.all[_sel];
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -321,68 +285,7 @@ class _HolstState extends State<HolstScreen>
                     ],
                   ),
                   Expanded(child: _canvas(context)),
-                  if (_plan case final p?)
-                    PlanSheet(
-                      rows: p.rows,
-                      total: p.run.proposal.plan.ops.length,
-                      shown: p.shown,
-                      ready: p.ready,
-                      errors: p.run.preview.of(Severity.error).length,
-                      warnings: p.run.preview.of(Severity.warning).length,
-                      canApply: p.run.canApply,
-                      big: p.big,
-                      peek: p.peek,
-                      busy: _busy,
-                      onShow: _showRow,
-                      onUnpeek: () =>
-                          setState(() => _plan = _with(p, peek: false)),
-                      onApply: () => _decidePlan(true),
-                      onReject: () => _decidePlan(false),
-                    )
-                  else if (_mode == HolstMode.build)
-                    const HolstPalette()
-                  else if (_mode == HolstMode.change)
-                    ChangeTray(
-                      controller: _phrase,
-                      scope: _scopeTitle,
-                      busy: _asking,
-                      onAsk: _ask,
-                    ),
-                  if (sel != null && !_far && _mode == HolstMode.look)
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                          ),
-                        ),
-                      ),
-                      child: HolstInfo(
-                        token: sel,
-                        links: [
-                          for (final g in linkGroups(sel.id, _links))
-                            (
-                              token: _scene.all[g.other],
-                              title:
-                                  _scene.all[g.other]?.title ??
-                                  _placeTitle(g.other) ??
-                                  '?',
-                              words: g.words,
-                            ),
-                        ],
-                        onPage: _openPage,
-                        onGlyph: frameOf(sel.kind) == null ? null : _pickGlyph,
-                      ),
-                    ),
-                  if (_plan == null)
-                    HolstModes(
-                      mode: _mode,
-                      onMode: (m) => setState(() {
-                        _mode = m;
-                        _sel = null;
-                        _scopePlace = null;
-                      }),
-                    ),
+                  ..._bottom(context),
                 ],
               ),
               if (!_coachSeen) HolstCoach(onDone: _coachDone),
@@ -392,7 +295,4 @@ class _HolstState extends State<HolstScreen>
       ),
     );
   }
-
-  String? _placeTitle(String? id) =>
-      _w.locations.where((l) => l.id == id).firstOrNull?.title;
 }
