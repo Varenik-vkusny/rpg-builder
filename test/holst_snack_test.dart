@@ -1,6 +1,7 @@
 // Полоса после жеста связи — связь рисунком (владелец 19.11): значок, имя, стрелка с числом
 // или словом, значок, имя. На узком телефоне не переполняется: имена режутся, стрелка — нет.
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:rpg_builder/map/holst_snack.dart';
@@ -33,46 +34,48 @@ void main() {
     ('поговорить', 'Обвал в старой штольне', 'Бригадир Пепельных копей'),
     ('40%', 'Слизень', 'Кирка'),
   ]) {
-    testWidgets('связь «$what» на 320 dp: значки и стрелка целиком, без переполнения', (
-      t,
-    ) async {
-      await pumpSnack(
-        t,
-        SnackData(
-          title: 'Связь: $from — $what — $to',
-          link: (
-            fromIcon: Symbols.skull_rounded,
-            from: from,
-            what: what,
-            toIcon: Symbols.key_rounded,
-            to: to,
+    testWidgets(
+      'связь «$what» на 320 dp: значки и стрелка целиком, без переполнения',
+      (t) async {
+        await pumpSnack(
+          t,
+          SnackData(
+            title: 'Связь: $from — $what — $to',
+            link: (
+              fromIcon: Symbols.skull_rounded,
+              from: from,
+              what: what,
+              toIcon: Symbols.key_rounded,
+              to: to,
+            ),
+            action: 'Отменить',
+            onAction: () {},
           ),
-          action: 'Отменить',
-          onAction: () {},
-        ),
-        320,
-      );
-      expect(t.takeException(), isNull);
-      final strip = find.byKey(const Key('holst-snack-link'));
-      // Число или слово связи — целиком; оба значка и стрелка на месте.
-      expect(
-        t.widget<Text>(find.byKey(const Key('holst-snack-what'))).data,
-        what,
-      );
-      final icons = [
-        for (final e in find
-            .descendant(of: strip, matching: find.byType(Icon))
-            .evaluate())
-          (e.widget as Icon).icon,
-      ];
-      expect(icons, [
-        Symbols.skull_rounded,
-        Symbols.play_arrow_rounded,
-        Symbols.key_rounded,
-      ]);
-      expect(find.text('Отменить'), findsOneWidget);
-      expect(find.textContaining('Связь:'), findsNothing);
-    });
+          320,
+        );
+        expect(t.takeException(), isNull);
+        final strip = find.byKey(const Key('holst-snack-link'));
+        // Число или слово связи — целиком; оба значка и стрелка на месте.
+        expect(
+          t.widget<Text>(find.byKey(const Key('holst-snack-what'))).data,
+          what,
+        );
+        final icons = [
+          for (final e
+              in find
+                  .descendant(of: strip, matching: find.byType(Icon))
+                  .evaluate())
+            (e.widget as Icon).icon,
+        ];
+        expect(icons, [
+          Symbols.skull_rounded,
+          Symbols.play_arrow_rounded,
+          Symbols.key_rounded,
+        ]);
+        expect(find.text('Отменить'), findsOneWidget);
+        expect(find.textContaining('Связь:'), findsNothing);
+      },
+    );
   }
 
   testWidgets('на обычном телефоне (412 dp) — и имена обоих концов', (t) async {
@@ -96,4 +99,32 @@ void main() {
     expect(find.byKey(const Key('holst-snack-from')), findsOneWidget);
     expect(find.byKey(const Key('holst-snack-to')), findsOneWidget);
   });
+
+  testWidgets(
+    'место под имена делится по длине: «Новый враг» не режется из-за «Кирки»',
+    (t) async {
+      // На телефоне 19.11 было «Нов… ─30%─▶ Кирка»: короткое имя держало половину.
+      await pumpSnack(
+        t,
+        SnackData(
+          title: 'Связь: Новый враг — роняет 30% — Кирка',
+          link: (
+            fromIcon: Symbols.skull_rounded,
+            from: 'Новый враг',
+            what: '30%',
+            toIcon: Symbols.key_rounded,
+            to: 'Кирка',
+          ),
+          action: 'Отменить',
+          onAction: () {},
+        ),
+        540,
+      );
+      bool cut(String key) => t
+          .renderObject<RenderParagraph>(find.byKey(Key(key)))
+          .didExceedMaxLines;
+      expect(cut('holst-snack-from'), isFalse);
+      expect(cut('holst-snack-to'), isFalse);
+    },
+  );
 }

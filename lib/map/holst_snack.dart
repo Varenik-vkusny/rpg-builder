@@ -203,7 +203,9 @@ class _LinkStrip extends StatelessWidget {
             decoration: BoxDecoration(border: Border.all(color: s.outline)),
             child: Icon(icon, size: 16),
           );
+    // Место делится по длине имён: короткое не держит половину впустую («Нов…» при «Кирка»).
     Widget name(String text, String key) => Flexible(
+      flex: text.characters.length.clamp(1, 40),
       child: Text(
         text,
         key: Key(key),
