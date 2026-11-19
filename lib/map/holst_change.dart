@@ -194,7 +194,10 @@ extension _Change on _HolstState {
     await _reload();
     if (!mounted) return;
     if (!apply) {
-      _set(_marks.clear);
+      _set(() {
+        _marks.clear();
+        _rebuild();
+      });
       return _say(
         const SnackData(title: 'План отклонён', sub: null, seconds: 2),
       );
@@ -205,6 +208,7 @@ extension _Change on _HolstState {
         ..clear()
         ..addAll(marks);
       _planThreads = threads;
+      _rebuild();
     });
     _say(
       SnackData(

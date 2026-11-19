@@ -109,7 +109,6 @@ class _Tip extends StatelessWidget {
   );
 }
 
-
 /// Пустой мир: первое место, попросить ассистента, справочник — позже.
 class EmptyStarts extends StatelessWidget {
   const EmptyStarts({super.key, required this.onPlace, required this.onAsk});

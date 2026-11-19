@@ -188,12 +188,17 @@ bool isWide(int tokens, int doors) => doors > 0 || tokens > 3;
 
 /// Раскладка одного места в точке [o]: двери — в правом столбце сверху, жетоны — в
 /// свободные клетки по рядам. Не влезло в [maxRows] — последняя клетка «ещё N».
+///
+/// [first] — только что созданное: в тесном месте встаёт в последние видимые клетки,
+/// порядок остальных тот же; не влезают все — видны самые поздние (владелец 19.11:
+/// новый враг в тесном месте терялся). Место не тесное — ничего не двигается.
 HolstPlace layPlace(
   Location place,
   Offset o,
   List<HolstToken> tokens,
-  List<HolstDoor Function(Rect)> doors,
-) {
+  List<HolstDoor Function(Rect)> doors, {
+  Set<String> first = const {},
+}) {
   final wide = isWide(tokens.length, doors.length);
   final cols = wide ? 2 : 1;
   final doorRows = 2 * doors.length;
@@ -210,6 +215,18 @@ HolstPlace layPlace(
   ];
   final fits = tokens.length <= cells.length;
   final shown = fits ? tokens.length : cells.length - 1;
+  if (!fits && tokens.any((t) => first.contains(t.id))) {
+    final all = [
+      for (final t in tokens)
+        if (first.contains(t.id)) t,
+    ];
+    final keep = all.skip(math.max(0, all.length - shown)).toList();
+    final rest = [
+      for (final t in tokens)
+        if (!keep.contains(t)) t,
+    ];
+    tokens = [...rest]..insertAll(shown - keep.length, keep);
+  }
   final width = wide ? wideWidth : narrowWidth;
   return HolstPlace(
     place: place,
@@ -229,7 +246,11 @@ HolstPlace layPlace(
 /// Холст уровня: [focus] null — места верхнего уровня; иначе — само место, в которое
 /// вошли через дверь, с его жителями и дверями глубже. Места идут рядами: широкое — одно в ряд,
 /// узкие — по два. Порядок — как в мире: новое место встаёт в конец и не двигает старые.
-HolstScene buildScene(WorldSnapshot w, Location? focus) {
+HolstScene buildScene(
+  WorldSnapshot w,
+  Location? focus, {
+  Set<String> first = const {},
+}) {
   final all = worldTokens(w);
   final level = focus == null ? levelOf(w.locations, null) : [focus];
   List<HolstToken> inPlace(String id) => [
@@ -255,7 +276,7 @@ HolstScene buildScene(WorldSnapshot w, Location? focus) {
       x = 0;
       rowH = 0;
     }
-    final p = layPlace(l, Offset(x, y), tokens, doors);
+    final p = layPlace(l, Offset(x, y), tokens, doors, first: first);
     places.add(p);
     rowH = math.max(rowH, p.rect.height);
     x += p.rect.width + placeGap;

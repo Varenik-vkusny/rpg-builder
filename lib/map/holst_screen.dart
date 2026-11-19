@@ -196,7 +196,16 @@ class _HolstState extends State<HolstScreen>
         : _w.locations.where((l) => l.id == _path.last.id).firstOrNull;
     // Пока на холсте план — рисуется копия мира после него.
     final w = _copy ?? _w;
-    _scene = buildScene(w, focus);
+    // Только что созданное не прячется в «ещё N». Выбранное и предупреждения сюда
+    // не идут: копятся и двигали бы соседей (ревью 19.11).
+    _scene = buildScene(
+      w,
+      focus,
+      first: {
+        for (final m in _marks.entries)
+          if (m.value == Mark.isNew) m.key,
+      },
+    );
     _links = worldLinks(w);
     _problems = checkWorld(w);
   }

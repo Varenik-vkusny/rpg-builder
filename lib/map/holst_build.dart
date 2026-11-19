@@ -149,6 +149,7 @@ extension _Build on _HolstState {
           _warns[p.objectId] = (text: p.message, setId: setId, undone: undone);
         }
       }
+      _rebuild(); // только что созданное — в видимые клетки тесного места
     });
     _say(
       SnackData(
@@ -184,6 +185,7 @@ extension _Build on _HolstState {
       _threadMarks.clear();
       _planThreads = const {};
       _warns.removeWhere((_, w) => w.setId == setId);
+      _rebuild(); // меток нет — тесное место в обычном порядке
     });
     _say(SnackData(title: done, seconds: 2));
   }
