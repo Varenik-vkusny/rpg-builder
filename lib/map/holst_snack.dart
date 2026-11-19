@@ -166,8 +166,8 @@ class HolstSnack extends StatelessWidget {
   }
 }
 
-/// Связь рисунком: [значок] Слизень ──40%──▶ [значок] Кирка. Имена режутся с краю,
-/// стрелка с числом не сжимается.
+/// Связь рисунком: значок с именем мелко под ним ─40%─▶ значок с именем. Имена под
+/// значками, а не рядом: на телефоне 360 dp рядом им не хватало места («Нов… ─30%─▶ Ки…»).
 class _LinkStrip extends StatelessWidget {
   const _LinkStrip(this.link);
 
@@ -182,9 +182,9 @@ class _LinkStrip extends StatelessWidget {
       fontWeight: FontWeight.w700,
       color: s.surfaceContainerLowest,
     );
-    // Значки и стрелка не сжимаются; уступают имена (режутся многоточием), а на совсем
-    // узком экране их нет вовсе — остаётся рисунок «значок ─40%─▶ значок». Ширину
-    // считаем от экрана: в полосе стоит IntrinsicHeight, LayoutBuilder там нельзя.
+    // Подпись на стрелке не сжимается, пока помещается; на совсем узком экране
+    // (крупный шрифт телефона) режется многоточием, а не ломает полосу. Ширину считаем
+    // от экрана: в полосе стоит IntrinsicHeight, LayoutBuilder там нельзя.
     final pill = (TextPainter(
       text: TextSpan(text: link.what, style: pillStyle),
       textDirection: TextDirection.ltr,
@@ -192,68 +192,67 @@ class _LinkStrip extends StatelessWidget {
       maxLines: 1,
     )..layout()).width;
     // Поля полосы, «Отменить», два значка, усы стрелки и наконечник.
-    const around = 16 + 26 + 104 + 56 + 44;
-    final names = MediaQuery.sizeOf(context).width - around - pill - 10 >= 72;
-    Widget box(IconData? icon) => icon == null
-        ? const SizedBox.shrink()
-        : Container(
+    const around = 16 + 26 + 104 + 48 + 40;
+    final roomy = MediaQuery.sizeOf(context).width - around - pill >= 0;
+    // Конец связи: значок, под ним имя мелко. Место делится по длине имён.
+    Widget end(IconData? icon, String name, String key) => Flexible(
+      flex: name.characters.length.clamp(1, 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
             width: 24,
             height: 24,
-            margin: const EdgeInsets.only(right: 4),
             decoration: BoxDecoration(border: Border.all(color: s.outline)),
-            child: Icon(icon, size: 16),
-          );
-    // Место делится по длине имён: короткое не держит половину впустую («Нов…» при «Кирка»).
-    Widget name(String text, String key) => Flexible(
-      flex: text.characters.length.clamp(1, 40),
-      child: Text(
-        text,
-        key: Key(key),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            child: icon == null ? null : Icon(icon, size: 16),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            name,
+            key: Key(key),
+            // Две строки: «Новый / враг» читается, «Новый в…» — нет (телефон 19.11).
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+    final arrow = Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 6, height: 2, color: ok),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              color: ok,
+              child: Text(
+                link.what,
+                key: const Key('holst-snack-what'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: pillStyle,
+              ),
+            ),
+          ),
+          Container(width: 6, height: 2, color: ok),
+          Icon(Symbols.play_arrow_rounded, size: 14, color: ok, fill: 1),
+        ],
       ),
     );
     return Row(
       key: const Key('holst-snack-link'),
       children: [
-        box(link.fromIcon),
-        if (names) name(link.from, 'holst-snack-from'),
-        // Последний запас: если и без имён тесно (крупный шрифт телефона), подпись на
-        // стрелке режется многоточием, а не ломает полосу.
-        Flexible(
-          flex: names ? 0 : 1,
-          fit: FlexFit.loose,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(width: 6, height: 2, color: ok),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 1,
-                    ),
-                    color: ok,
-                    child: Text(
-                      link.what,
-                      key: const Key('holst-snack-what'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: pillStyle,
-                    ),
-                  ),
-                ),
-                Container(width: 6, height: 2, color: ok),
-                Icon(Symbols.play_arrow_rounded, size: 14, color: ok, fill: 1),
-              ],
-            ),
-          ),
-        ),
-        box(link.toIcon),
-        if (names) name(link.to, 'holst-snack-to'),
+        end(link.fromIcon, link.from, 'holst-snack-from'),
+        if (roomy) arrow else Flexible(child: arrow),
+        end(link.toIcon, link.to, 'holst-snack-to'),
       ],
     );
   }

@@ -118,7 +118,7 @@ void main() {
           action: 'Отменить',
           onAction: () {},
         ),
-        540,
+        430,
       );
       bool cut(String key) => t
           .renderObject<RenderParagraph>(find.byKey(Key(key)))
