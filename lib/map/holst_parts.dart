@@ -10,6 +10,7 @@ import '../ui/cover_card.dart';
 import '../ui/theme.dart';
 import 'holst_scene.dart';
 import 'token_frame.dart';
+import 'token_name.dart';
 
 /// Текст в жетоне растёт с шрифтом телефона только до предела: жетон фиксированного размера.
 const tokenTextScaleMax = 1.15;
@@ -306,11 +307,8 @@ class TokenTile extends StatelessWidget {
             fit: width == null ? FlexFit.loose : FlexFit.tight,
             child: Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: Text(
+              child: TokenName(
                 t.title,
-                maxLines: 2,
-                softWrap: true,
-                overflow: TextOverflow.clip,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
