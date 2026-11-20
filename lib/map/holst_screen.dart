@@ -165,6 +165,10 @@ class _HolstState extends State<HolstScreen>
 
   // Сцена, связи и проблемы — пересчитываются при смене мира или уровня.
   late HolstScene _scene;
+
+  /// Где стоял каждый жетон места (место → жетон → клетка): после «Применить» план
+  /// не двигает старые, новые встают в свободные клетки.
+  final _slots = <String, Map<String, int>>{};
   late List<HolstLink> _links;
   late List<Problem> _problems;
 
@@ -212,7 +216,14 @@ class _HolstState extends State<HolstScreen>
         for (final m in _marks.entries)
           if (m.value == Mark.isNew) m.key,
       },
+      slots: _slots,
     );
+    // Помним клетки только настоящего мира: копия плана — черновик.
+    if (_copy == null) {
+      for (final p in _scene.places) {
+        _slots[p.place.id] = p.cellOf;
+      }
+    }
     _links = worldLinks(w);
     _problems = checkWorld(w);
   }

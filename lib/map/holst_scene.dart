@@ -75,6 +75,7 @@ class HolstPlace {
     required this.doors,
     required this.overflow,
     required this.overflowRect,
+    this.cellOf = const {},
   });
 
   final Location place;
@@ -85,6 +86,10 @@ class HolstPlace {
   /// Сколько жетонов не влезло; [overflowRect] — клетка «ещё N».
   final int overflow;
   final Rect? overflowRect;
+
+  /// Клетка каждого показанного жетона (ряд * 2 + столбец) — экран помнит её, чтобы
+  /// после правок мира старые жетоны не прыгали, а новые вставали в свободные.
+  final Map<String, int> cellOf;
 
   /// Все жетоны места, включая не влезшие, — для чисел «издалека».
   int get total => tokens.length + overflow;
@@ -189,6 +194,9 @@ bool isWide(int tokens, int doors) => doors > 0 || tokens > 3;
 /// Раскладка одного места в точке [o]: двери — в правом столбце сверху, жетоны — в
 /// свободные клетки по рядам. Не влезло в [maxRows] — последняя клетка «ещё N».
 ///
+/// [slots] — клетки, где жетоны стояли раньше (id → ряд * 2 + столбец): они остаются
+/// на месте, новые встают в свободные клетки по порядку мира (владелец: после «Применить»
+/// старые перепрыгивали, потому что порядок мира сначала жители, потом события).
 /// [first] — только что созданное: в тесном месте встаёт в последние видимые клетки,
 /// порядок остальных тот же; не влезают все — видны самые поздние (владелец 19.11:
 /// новый враг в тесном месте терялся). Место не тесное — ничего не двигается.
@@ -198,6 +206,7 @@ HolstPlace layPlace(
   List<HolstToken> tokens,
   List<HolstDoor Function(Rect)> doors, {
   Set<String> first = const {},
+  Map<String, int> slots = const {},
 }) {
   final wide = isWide(tokens.length, doors.length);
   final cols = wide ? 2 : 1;
@@ -208,25 +217,27 @@ HolstPlace layPlace(
       rows < math.max(maxRows, doorRows)) {
     rows++;
   }
-  final cells = <Rect>[
+  // Место не ужимается под старые клетки: ряд, где кто-то стоял, остаётся.
+  final lastRow = tokens
+      .map((t) => slots[t.id])
+      .whereType<int>()
+      .fold(0, (m, k) => math.max(m, k ~/ 2 + 1));
+  rows = math.max(rows, math.min(lastRow, math.max(maxRows, doorRows)));
+  final keys = <int>[
     for (var r = 0; r < rows; r++)
       for (var c = 0; c < cols; c++)
-        if (!(wide && c == 1 && r < doorRows)) _cell(o, c, r),
+        if (!(wide && c == 1 && r < doorRows)) r * 2 + c,
   ];
-  final fits = tokens.length <= cells.length;
-  final shown = fits ? tokens.length : cells.length - 1;
-  if (!fits && tokens.any((t) => first.contains(t.id))) {
-    final all = [
-      for (final t in tokens)
-        if (first.contains(t.id)) t,
-    ];
-    final keep = all.skip(math.max(0, all.length - shown)).toList();
-    final rest = [
-      for (final t in tokens)
-        if (!keep.contains(t)) t,
-    ];
-    tokens = [...rest]..insertAll(shown - keep.length, keep);
-  }
+  Rect cellRect(int k) => _cell(o, k % 2, k ~/ 2);
+  final fits = tokens.length <= keys.length;
+  final shown = fits ? tokens.length : keys.length - 1;
+  if (!fits) tokens = _newestLast(tokens, first, shown);
+  final at = _seat(
+    tokens.take(shown).toList(),
+    fits ? [...keys] : keys.take(shown).toList(),
+    slots,
+  );
+  final placed = at.keys.toList()..sort();
   final width = wide ? wideWidth : narrowWidth;
   return HolstPlace(
     place: place,
@@ -236,11 +247,51 @@ HolstPlace layPlace(
       width,
       placeHead + rows * (tokenSize.height + cellGap) + cellGap,
     ),
-    tokens: [for (var i = 0; i < shown; i++) _at(tokens[i], cells[i])],
+    tokens: [for (final k in placed) _at(at[k]!, cellRect(k))],
     doors: [for (final (i, d) in doors.indexed) d(_cell(o, 1, 2 * i, rows: 2))],
     overflow: tokens.length - shown,
-    overflowRect: fits ? null : cells.last,
+    overflowRect: fits ? null : cellRect(keys.last),
+    cellOf: {for (final k in placed) at[k]!.id: k},
   );
+}
+
+/// Тесное место: только что созданное ([first]) — в последних видимых клетках,
+/// порядок остальных тот же; не влезают все — видны самые поздние.
+List<HolstToken> _newestLast(
+  List<HolstToken> tokens,
+  Set<String> first,
+  int shown,
+) {
+  final all = [
+    for (final t in tokens)
+      if (first.contains(t.id)) t,
+  ];
+  if (all.isEmpty) return tokens;
+  final keep = all.skip(math.max(0, all.length - shown)).toList();
+  final rest = [
+    for (final t in tokens)
+      if (!keep.contains(t)) t,
+  ];
+  return [...rest]..insertAll(shown - keep.length, keep);
+}
+
+/// Видимые жетоны по клеткам [free]: сначала те, что помнят клетку ([slots]),
+/// потом остальные — в свободные по порядку.
+Map<int, HolstToken> _seat(
+  List<HolstToken> visible,
+  List<int> free,
+  Map<String, int> slots,
+) {
+  final at = <int, HolstToken>{};
+  for (final t in visible) {
+    final k = slots[t.id];
+    if (k != null && free.contains(k) && !at.containsKey(k)) at[k] = t;
+  }
+  free.removeWhere(at.containsKey);
+  for (final t in visible) {
+    if (!at.containsValue(t)) at[free.removeAt(0)] = t;
+  }
+  return at;
 }
 
 /// Холст уровня: [focus] null — места верхнего уровня; иначе — само место, в которое
@@ -250,6 +301,7 @@ HolstScene buildScene(
   WorldSnapshot w,
   Location? focus, {
   Set<String> first = const {},
+  Map<String, Map<String, int>> slots = const {},
 }) {
   final all = worldTokens(w);
   final level = focus == null ? levelOf(w.locations, null) : [focus];
@@ -276,7 +328,14 @@ HolstScene buildScene(
       x = 0;
       rowH = 0;
     }
-    final p = layPlace(l, Offset(x, y), tokens, doors, first: first);
+    final p = layPlace(
+      l,
+      Offset(x, y),
+      tokens,
+      doors,
+      first: first,
+      slots: slots[l.id] ?? const {},
+    );
     places.add(p);
     rowH = math.max(rowH, p.rect.height);
     x += p.rect.width + placeGap;
