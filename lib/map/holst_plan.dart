@@ -8,6 +8,7 @@ import '../content/nesting.dart';
 import 'holst_links.dart';
 import 'holst_parts.dart' show Mark;
 import 'holst_threads.dart' show ThreadTone;
+import 'plan_why.dart' show rowWhy;
 
 /// Больше стольких изменений план не проступает по шагу — показывается список.
 const planStepsOnCanvas = 6;
@@ -156,7 +157,7 @@ List<PlanRow> planRows(List<OpResult> ops, WorldSnapshot copy) => [
         },
         isNew: r.op.action == OpAction.create,
         target: targetOf(r.op, copy),
-        error: r.error,
+        error: r.error == null ? null : rowWhy(r.error!),
       )
     else
       for (final c in r.changes)

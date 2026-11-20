@@ -46,6 +46,7 @@ import 'holst_threads.dart';
 import 'holst_view.dart';
 import 'token_frame.dart';
 import 'map_parts.dart' show DotGrid;
+import 'plan_why.dart';
 
 part 'holst_bottom.dart';
 part 'holst_build.dart';

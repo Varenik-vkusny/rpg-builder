@@ -218,6 +218,11 @@ void main() {
     expect(text(t, 'holst-plan-check'), isNot(contains('ошибок')));
     // Причина — из проверки, а не запасная фраза.
     expect(text(t, 'holst-plan-check'), isNot(contains('нарушает правила мира')));
+    // Причина — словами автора, без «Операция 1 (…)» и ключа «nikto» (владелец 20.11).
+    expect(
+      text(t, 'holst-plan-check'),
+      'Не получится: В мире нет такого персонажа',
+    );
     expect(t.widget<FilledButton>(k('holst-plan-apply')).onPressed, isNull);
     await t.tap(k('holst-plan-apply'));
     await settle(t);
