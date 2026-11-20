@@ -20,6 +20,8 @@ import '../content/manual_edit.dart';
 import '../content/nesting.dart';
 import '../content/world_pages.dart';
 import '../help/help.dart';
+import '../open5e/open5e_api.dart';
+import '../open5e/open5e_screen.dart';
 import '../ui/theme.dart';
 import '../worlds/world.dart';
 import 'gesture_create.dart';
@@ -65,6 +67,7 @@ class HolstScreen extends StatefulWidget {
     required this.snapshot,
     required this.assistant,
     this.lists,
+    this.open5e = const HttpOpen5e(),
   });
 
   final World world;
@@ -76,6 +79,9 @@ class HolstScreen extends StatefulWidget {
 
   /// Экран списков мира — кнопка «Списки» (холст — главный экран мира); null — кнопки нет.
   final Widget Function()? lists;
+
+  /// Справочник Open5e — третий старт пустого мира.
+  final Open5eApi open5e;
 
   @override
   State<HolstScreen> createState() => _HolstState();

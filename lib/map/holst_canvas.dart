@@ -42,6 +42,7 @@ extension _Canvas on _HolstState {
                       child: EmptyStarts(
                         onPlace: () => _firstPlace(ask: false),
                         onAsk: () => _firstPlace(ask: true),
+                        onLibrary: _openLibrary,
                       ),
                     ),
                   Positioned(

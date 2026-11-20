@@ -11,6 +11,7 @@ import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/content/quest.dart';
 import 'package:rpg_builder/map/holst_screen.dart';
+import 'package:rpg_builder/open5e/open5e_api.dart';
 import 'package:rpg_builder/ui/theme.dart';
 import 'package:rpg_builder/worlds/world.dart';
 
@@ -138,6 +139,7 @@ Future<void> pumpHolst(
   Widget Function(Widget app)? around,
   AssistantService? assistant,
   bool coachSeen = true,
+  Open5eApi? open5e,
 }) async {
   // Подсказку первого входа «уже видели», если тест не про неё: она закрывает холст.
   SharedPreferences.setMockInitialValues({if (coachSeen) 'holst-coach': true});
@@ -153,6 +155,7 @@ Future<void> pumpHolst(
       repo: c,
       snapshot: snapshot,
       assistant: assistant ?? FakeAssistant(),
+      open5e: open5e ?? const HttpOpen5e(),
     ),
   );
   if (around != null) {

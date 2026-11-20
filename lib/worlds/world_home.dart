@@ -58,6 +58,7 @@ class _WorldHomeState extends State<WorldHome> {
         repo: widget.repo,
         snapshot: w,
         assistant: widget.assistant,
+        open5e: widget.open5e,
         lists: () => WorldScreen(
           world: widget.world,
           repo: widget.repo,

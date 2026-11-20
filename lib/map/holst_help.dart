@@ -109,12 +109,18 @@ class _Tip extends StatelessWidget {
   );
 }
 
-/// Пустой мир: первое место, попросить ассистента, справочник — позже.
+/// Пустой мир: первое место, попросить ассистента, справочник.
 class EmptyStarts extends StatelessWidget {
-  const EmptyStarts({super.key, required this.onPlace, required this.onAsk});
+  const EmptyStarts({
+    super.key,
+    required this.onPlace,
+    required this.onAsk,
+    required this.onLibrary,
+  });
 
   final VoidCallback onPlace;
   final VoidCallback onAsk;
+  final VoidCallback onLibrary;
 
   @override
   Widget build(BuildContext context) {
@@ -204,7 +210,7 @@ class EmptyStarts extends StatelessWidget {
             const Key('holst-start-library'),
             Symbols.menu_book_rounded,
             'Из справочника',
-            sub: 'позже',
+            onTap: onLibrary,
           ),
         ],
       ),

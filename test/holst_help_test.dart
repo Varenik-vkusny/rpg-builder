@@ -5,9 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/map/holst_tags.dart' show EdgeArrowSample;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:rpg_builder/content/character.dart';
+import 'package:rpg_builder/open5e/open5e_screen.dart';
+
 import 'fakes.dart';
 import 'holst_build_test.dart' show settle, snack;
 import 'holst_fixture.dart';
+import 'open5e_enemy_test.dart' show creature;
+import 'open5e_test.dart' show FakeOpen5e;
 
 Finder k(String key) => find.byKey(Key(key));
 
@@ -107,7 +112,7 @@ void main() {
       await pumpHolst(t, c);
       expect(k('holst-empty'), findsOneWidget);
       expect(find.text('Из справочника'), findsOneWidget);
-      expect(t.widget<InkWell>(k('holst-start-library')).onTap, isNull);
+      expect(t.widget<InkWell>(k('holst-start-library')).onTap, isNotNull);
       await t.tap(k('holst-start-place'));
       await settle(t);
       expect(snack(t), 'Создано: Новое место');
@@ -126,6 +131,46 @@ void main() {
       await settle(t);
       expect(k('holst-phrase'), findsOneWidget);
       expect(t.widget<Text>(k('holst-scope')).data, 'Новое место');
+    },
+  );
+
+  testWidgets('«Из справочника» открыт, без «позже»; «назад» — на холст', (
+    t,
+  ) async {
+    await pumpHolst(t, FakeContent(), open5e: FakeOpen5e(const []));
+    expect(find.text('позже'), findsNothing);
+    await t.tap(k('holst-start-library'));
+    await t.pumpAndSettle();
+    expect(find.byType(Open5eScreen), findsOneWidget);
+    expect(find.text('Образцы Open5e'), findsOneWidget);
+    await t.tap(find.byType(BackButton));
+    await t.pumpAndSettle();
+    expect(find.byType(Open5eScreen), findsNothing);
+    expect(k('holst-empty'), findsOneWidget);
+  });
+
+  testWidgets(
+    'справочник с холста: импорт врага — назад на холст, враг на полке',
+    (t) async {
+      final c = FakeContent();
+      final api = FakeOpen5e(const [], creatures: [creature('skeleton')]);
+      await pumpHolst(t, c, open5e: api);
+      await t.tap(k('holst-start-library'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Враги'));
+      await t.pumpAndSettle();
+      await t.enterText(k('open5e-query'), 'skeleton');
+      await t.tap(k('open5e-search'));
+      await t.pumpAndSettle();
+      await t.tap(k('open5e-srd_skeleton'));
+      await t.pumpAndSettle();
+      await t.tap(k('open5e-import'));
+      await t.pumpAndSettle(const Duration(seconds: 5));
+      expect(find.byType(Open5eScreen), findsNothing);
+      final w = await c.snapshotOf(holstWorld.id);
+      final e = w.characters.singleWhere((x) => x.slug == 'skeleton');
+      expect(e.role, Role.enemy);
+      expect(k('token-skeleton'), findsOneWidget);
     },
   );
 }

@@ -76,6 +76,21 @@ extension _Bottom on _HolstState {
     if (mounted) await _reload();
   }
 
+  /// Справочник того же мира; импортировали — перечитать мир, чтобы образец был виден.
+  Future<void> _openLibrary() async {
+    final imported = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => Open5eScreen(
+          world: widget.world,
+          snapshot: _w,
+          repo: widget.repo,
+          api: widget.open5e,
+        ),
+      ),
+    );
+    if (imported == true && mounted) await _reload();
+  }
+
   /// Страница выбранного объекта; вернулись с правкой — перечитать мир.
   Future<void> _openPage() async {
     final id = _sel;
