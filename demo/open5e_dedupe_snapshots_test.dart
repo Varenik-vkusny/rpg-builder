@@ -1,0 +1,46 @@
+// ПОКАЗ, а не проверка (5д): враг из Open5e — поиск по-русски, карточка «каким станет враг»,
+// названия из словаря приложения.
+// Запуск: flutter test --no-pub demo/open5e_enemy_snapshots_test.dart
+// → build/snapshots/enemy-*.png
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../test/apply_flow_test.dart' show tapButton;
+import '../test/assistant_fixtures.dart';
+import '../test/fakes.dart';
+import '../test/open5e_dedupe_test.dart' show skel51, skel52, fireSkel;
+import '../test/open5e_test.dart' show FakeOpen5e;
+import 'shots.dart';
+
+void main() {
+  testWidgets('враг из Open5e: поиск и карточка', (t) async {
+    await t.runAsync(loadFont);
+    t.view.physicalSize = const Size(400, 760);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await pumpApp(
+      t,
+      content: await minesContent(),
+      open5e: FakeOpen5e(const [], creatures: [skel51, fireSkel, skel52]),
+      wrap: frame,
+    );
+    await signUp(t, 'author@test.dev');
+    await createWorld(t, 'Пепельные копи');
+    await openWorld(t, 'Пепельные копи');
+    await t.scrollUntilVisible(
+      find.byKey(const Key('open5e-open')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tapButton(t, 'open5e-open');
+    await t.tap(find.text('Враги'));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('open5e-query')), 'скелет');
+    await tapShown(t, find.byKey(const Key('open5e-search')));
+    await shot(t, 'dedupe-enemies', ratio: 3);
+    await tapShown(t, find.byKey(const Key('open5e-srd-2024_skeleton')));
+    await t.runAsync(() => Future<void>.delayed(const Duration(seconds: 1)));
+    await t.pumpAndSettle();
+    await shot(t, 'dedupe-card', ratio: 3);
+  });
+}

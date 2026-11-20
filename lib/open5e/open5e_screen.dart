@@ -15,6 +15,7 @@ import '../ui/messages.dart';
 import '../ui/parts.dart';
 import '../worlds/world.dart';
 import 'open5e_api.dart';
+import 'open5e_dedupe.dart';
 import 'open5e_enemy.dart';
 import 'open5e_enemy_view.dart';
 import 'open5e_import.dart';
@@ -92,12 +93,12 @@ class _Open5eScreenState extends State<Open5eScreen> {
         final found = keys != null && keys.isEmpty
             ? <Open5eCreature>[]
             : await widget.api.searchCreatures(q, keys: keys);
-        if (mounted) setState(() => _creatures = found);
+        if (mounted) setState(() => _creatures = dedupeCreatures(found));
       } else {
         final found = keys != null && keys.isEmpty
             ? <Open5eItem>[]
             : await widget.api.searchItems(q, keys: keys);
-        if (mounted) setState(() => _found = found);
+        if (mounted) setState(() => _found = dedupeItems(found));
       }
     } catch (e) {
       if (mounted) setState(() => _error = 'Open5e недоступен: $e');
