@@ -40,6 +40,7 @@ extension _Canvas on _HolstState {
                     Positioned.fill(
                       bottom: HolstShelf.height,
                       child: EmptyStarts(
+                        titled: _scene.all.isEmpty,
                         onPlace: () => _firstPlace(ask: false),
                         onAsk: () => _firstPlace(ask: true),
                         onLibrary: _openLibrary,

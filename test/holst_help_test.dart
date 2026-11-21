@@ -147,6 +147,7 @@ void main() {
     await t.pumpAndSettle();
     expect(find.byType(Open5eScreen), findsNothing);
     expect(k('holst-empty'), findsOneWidget);
+    expect(find.text('Пустой мир'), findsOneWidget);
   });
 
   testWidgets(
@@ -171,6 +172,11 @@ void main() {
       final e = w.characters.singleWhere((x) => x.slug == 'skeleton');
       expect(e.role, Role.enemy);
       expect(k('token-skeleton'), findsOneWidget);
+      // Мир уже не пуст: заголовка нет, три старта остались.
+      expect(find.text('Пустой мир'), findsNothing);
+      expect(k('holst-start-place'), findsOneWidget);
+      expect(k('holst-start-ask'), findsOneWidget);
+      expect(k('holst-start-library'), findsOneWidget);
     },
   );
 }

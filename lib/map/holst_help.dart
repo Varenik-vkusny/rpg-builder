@@ -116,8 +116,11 @@ class EmptyStarts extends StatelessWidget {
     required this.onPlace,
     required this.onAsk,
     required this.onLibrary,
+    this.titled = true,
   });
 
+  /// «Пустой мир» над стартами — только когда в мире вообще ничего нет.
+  final bool titled;
   final VoidCallback onPlace;
   final VoidCallback onAsk;
   final VoidCallback onLibrary;
@@ -185,14 +188,15 @@ class EmptyStarts extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 12,
         children: [
-          Text(
-            'Пустой мир',
-            style: TextStyle(
-              fontFamily: AppStyle.of(context).display,
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
+          if (titled)
+            Text(
+              'Пустой мир',
+              style: TextStyle(
+                fontFamily: AppStyle.of(context).display,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
           start(
             const Key('holst-start-place'),
             Symbols.add_rounded,
