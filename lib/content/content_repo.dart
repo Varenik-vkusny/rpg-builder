@@ -90,7 +90,7 @@ class SupabaseContentRepo implements ContentRepo {
         .from('locations')
         .select()
         .eq('project_id', worldId)
-        .order('created_at');
+        .order('created_at', ascending: true);
     return rows.map(Location.fromRow).toList();
   }
 
@@ -111,7 +111,7 @@ class SupabaseContentRepo implements ContentRepo {
         .from('items')
         .select()
         .eq('project_id', worldId)
-        .order('created_at');
+        .order('created_at', ascending: true);
     return rows.map(Item.fromRow).toList();
   }
 
@@ -165,7 +165,7 @@ class SupabaseContentRepo implements ContentRepo {
         .from('quests')
         .select(_questColumns)
         .eq('project_id', worldId)
-        .order('created_at');
+        .order('created_at', ascending: true);
     return rows.map(Quest.fromRow).toList();
   }
 

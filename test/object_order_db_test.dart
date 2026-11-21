@@ -9,7 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/event.dart';
+import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
+import 'package:rpg_builder/content/quest.dart';
 import 'package:rpg_builder/map/holst_scene.dart';
 import 'package:rpg_builder/worlds/world.dart';
 import 'package:rpg_builder/worlds/worlds_repo.dart';
@@ -75,6 +77,54 @@ void main() {
     expect(
       [for (final t in buildScene(w, null).places.single.tokens) t.title],
       ['Бригадир', 'Засада', 'Гоблин', 'Крысы'],
+    );
+  });
+
+  test('новое место, предмет и квест — в конец холста и полки', () async {
+    Future<Location> place(String title) => repo.createLocation(
+      world.id,
+      NewLocation(title: title, description: '', levelMin: 1, levelMax: 5),
+    );
+    Future<Item> item(String title) => repo.createItem(
+      world.id,
+      NewItem(
+        title: title,
+        kind: ItemKind.misc,
+        rarity: Rarity.common,
+        level: 1,
+        price: 1,
+      ),
+    );
+    final w0 = await repo.snapshot(world.id);
+    final giver = w0.characters.first;
+    Future<Quest> quest(String title) => repo.createQuest(
+      world.id,
+      NewQuest(
+        title: title,
+        description: '',
+        giverId: giver.id,
+        steps: [QuestStep(kind: StepKind.talk, targetId: giver.id)],
+      ),
+    );
+    await place('Рынок');
+    await item('Ключ');
+    await quest('Обвал');
+    await place('Забой');
+    await item('Кирка');
+    await quest('Завал');
+    final w = await repo.snapshot(world.id);
+    final scene = buildScene(w, null);
+
+    expect(
+      [for (final p in scene.places) p.place.title],
+      ['Копи', 'Рынок', 'Забой'],
+    );
+    expect(
+      [
+        for (final t in scene.shelf)
+          if (t.kind != TokenKind.npc && t.kind != TokenKind.enemy) t.title,
+      ],
+      ['Обвал', 'Завал', 'Ключ', 'Кирка'],
     );
   });
 }
