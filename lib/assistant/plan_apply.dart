@@ -13,6 +13,7 @@ import 'scope.dart';
 
 part 'plan_apply_events.dart';
 part 'plan_apply_links.dart';
+part 'plan_apply_order.dart';
 
 /// Одно изменённое поле: подпись, было, стало (null — значения нет).
 class FieldChange {
@@ -42,6 +43,7 @@ class _OpError implements Exception {
 (WorldSnapshot, List<OpResult>) applyToCopy(WorldSnapshot world, Plan plan) {
   final c = _Copy(world);
   final results = [for (final op in plan.ops) c.apply(op)];
+  c.newByTitle(world);
   return (c.snapshot, results);
 }
 

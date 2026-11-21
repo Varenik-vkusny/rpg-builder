@@ -6,6 +6,11 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/assistant/assistant_service.dart';
+import 'package:rpg_builder/assistant/change_set.dart';
+import 'package:rpg_builder/assistant/plan.dart';
+import 'package:rpg_builder/assistant/plan_apply.dart' show titleOrder;
+import 'package:rpg_builder/check/world_check.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/content_repo.dart';
 import 'package:rpg_builder/content/event.dart';
@@ -127,4 +132,108 @@ void main() {
       ['Обвал', 'Завал', 'Ключ', 'Кирка'],
     );
   });
+
+  test(
+    'одно «Применить»: созданные в один миг — по названию, при каждой загрузке',
+    () async {
+      final w0 = await repo.snapshot(world.id);
+      final kopi = w0.locations.firstWhere((l) => l.title == 'Копи').slug;
+      Map<String, dynamic> op(
+        String type,
+        String slug,
+        Map<String, Object> f,
+      ) => {'action': 'create', 'type': type, 'slug': slug, 'fields': f};
+      // Порядок операций нарочно не по алфавиту: Вепрь, Акула, Бес.
+      final plan = Plan.fromJson({
+        'summary': 'стая',
+        'ops': [
+          for (final (slug, title) in [
+            ('vepr', 'Вепрь'),
+            ('akula', 'Акула'),
+            ('bes', 'Бес'),
+          ])
+            op('character', slug, {
+              'title': title,
+              'role': 'enemy',
+              'location': kopi,
+            }),
+          for (final (slug, title) in [
+            ('yashik', 'Ящик'),
+            ('verevka', 'Верёвка'),
+            ('yozh', 'Ёж'),
+            ('eda', 'Еда'),
+            ('akula_zub', 'акула-зуб'),
+            ('bes_rog', 'Бес рог'),
+            ('rog_1', 'Рог'),
+            ('rog_2', 'рог'),
+          ])
+            op('item', slug, {
+              'title': title,
+              'kind': 'misc',
+              'rarity': 'common',
+              'level': 1,
+              'price': 1,
+            }),
+        ],
+      });
+      await repo.applyChangeSet(
+        world.id,
+        ChangeSetDraft(
+          scope: Scope(ScopeType.location, kopi),
+          request: 'стая',
+          plan: plan,
+          inputTokens: 0,
+          outputTokens: 0,
+          attempts: 1,
+        ),
+      );
+      List<String> placeOrder(WorldSnapshot w) => [
+        for (final t in buildScene(w, null).places.first.tokens) t.title,
+      ];
+      List<String> shelfItems(WorldSnapshot w) => [
+        for (final t in buildScene(w, null).shelf)
+          if (t.kind == TokenKind.item) t.title,
+      ];
+      for (var i = 0; i < 3; i++) {
+        final w = await repo.snapshot(world.id);
+        // Старые — по времени, новые из одного набора — по названию (у событий на боевом
+        // сервере операций плана нет — ступень 2 отложена).
+        expect(placeOrder(w), [
+          'Бригадир',
+          'Засада',
+          'Гоблин',
+          'Крысы',
+          'Акула',
+          'Бес',
+          'Вепрь',
+        ]);
+        // Новые предметы — тем же правилом, что в приложении (titleOrder): база и копия
+        // плана упорядочивают одинаково, в том числе регистр, «ё» и знаки.
+        expect(shelfItems(w), [
+          'Ключ',
+          'Кирка',
+          ...([
+            'Ящик',
+            'Верёвка',
+            'Ёж',
+            'Еда',
+            'акула-зуб',
+            'Бес рог',
+            'Рог',
+            'рог',
+          ]..sort(titleOrder)),
+        ]);
+        expect(shelfItems(w).sublist(2), [
+          'акула-зуб',
+          'Бес рог',
+          'Верёвка',
+          'Еда',
+          'Ёж',
+          'рог',
+          'Рог',
+          'Ящик',
+        ]);
+      }
+    },
+  );
 }

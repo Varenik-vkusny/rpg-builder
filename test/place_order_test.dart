@@ -89,4 +89,41 @@ void main() {
     expect(copy.events.single.createdAt, t(2));
     expect(order(copy), ['brigadir', 'zasada', 'goblin', 'novyi']);
   });
+
+  test('созданное одним планом — по названию, как отдаст база', () {
+    expect(['Яма', 'Ёж', 'Еда', 'акула', 'Бес']..sort(titleOrder), [
+      'акула',
+      'Бес',
+      'Еда',
+      'Ёж',
+      'Яма',
+    ]);
+    final plan = Plan.fromJson({
+      'summary': '',
+      'ops': [
+        for (final (slug, title) in [
+          ('vepr', 'Вепрь'),
+          ('akula', 'Акула'),
+          ('bes', 'Бес'),
+        ])
+          {
+            'action': 'create',
+            'type': 'character',
+            'slug': slug,
+            'fields': {'title': title, 'role': 'enemy', 'location': 'kopi'},
+          },
+      ],
+    });
+    final (copy, ops) = applyToCopy(w, plan);
+    expect([for (final r in ops) r.error], [null, null, null]);
+    expect(order(copy), [
+      'brigadir',
+      'zasada',
+      'goblin',
+      'novyi',
+      'new-character-akula',
+      'new-character-bes',
+      'new-character-vepr',
+    ]);
+  });
 }

@@ -90,7 +90,10 @@ class SupabaseContentRepo implements ContentRepo {
         .from('locations')
         .select()
         .eq('project_id', worldId)
-        .order('created_at', ascending: true);
+        .order('created_at', ascending: true)
+        // Созданные одним набором — в один миг: второй ключ, как на холсте (place_order.dart).
+        .order('title', ascending: true)
+        .order('id', ascending: true);
     return rows.map(Location.fromRow).toList();
   }
 
@@ -111,7 +114,9 @@ class SupabaseContentRepo implements ContentRepo {
         .from('items')
         .select()
         .eq('project_id', worldId)
-        .order('created_at', ascending: true);
+        .order('created_at', ascending: true)
+        .order('title', ascending: true)
+        .order('id', ascending: true);
     return rows.map(Item.fromRow).toList();
   }
 
@@ -134,7 +139,9 @@ class SupabaseContentRepo implements ContentRepo {
         .eq('project_id', worldId)
         // Старые первыми: по этому порядку жетоны встают в клетки места, новое — в конец
         // (без ascending библиотека отдаёт новые первыми — найдено на телефоне 21.11).
-        .order('created_at', ascending: true);
+        .order('created_at', ascending: true)
+        .order('title', ascending: true)
+        .order('id', ascending: true);
     return rows.map(Character.fromRow).toList();
   }
 
@@ -165,7 +172,9 @@ class SupabaseContentRepo implements ContentRepo {
         .from('quests')
         .select(_questColumns)
         .eq('project_id', worldId)
-        .order('created_at', ascending: true);
+        .order('created_at', ascending: true)
+        .order('title', ascending: true)
+        .order('id', ascending: true);
     return rows.map(Quest.fromRow).toList();
   }
 
@@ -188,7 +197,9 @@ class SupabaseContentRepo implements ContentRepo {
         .from('events')
         .select(_eventColumns)
         .eq('project_id', worldId)
-        .order('created_at', ascending: true);
+        .order('created_at', ascending: true)
+        .order('title', ascending: true)
+        .order('id', ascending: true);
     return rows.map(Event.fromRow).toList();
   }
 
