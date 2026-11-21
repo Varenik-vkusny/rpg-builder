@@ -132,7 +132,9 @@ class SupabaseContentRepo implements ContentRepo {
         .from('characters')
         .select('*, loot(item_id, chance)')
         .eq('project_id', worldId)
-        .order('created_at');
+        // Старые первыми: по этому порядку жетоны встают в клетки места, новое — в конец
+        // (без ascending библиотека отдаёт новые первыми — найдено на телефоне 21.11).
+        .order('created_at', ascending: true);
     return rows.map(Character.fromRow).toList();
   }
 
@@ -186,7 +188,7 @@ class SupabaseContentRepo implements ContentRepo {
         .from('events')
         .select(_eventColumns)
         .eq('project_id', worldId)
-        .order('created_at');
+        .order('created_at', ascending: true);
     return rows.map(Event.fromRow).toList();
   }
 
