@@ -40,6 +40,7 @@ class Event {
     required this.locationId,
     this.enemies = const [],
     this.items = const [],
+    this.createdAt,
   });
 
   final String id;
@@ -52,6 +53,9 @@ class Event {
   final String? locationId;
   final List<EventEnemy> enemies;
   final List<EventItem> items;
+
+  /// Когда создано (из базы): по нему жетоны встают в клетки места. null — ещё не в базе.
+  final DateTime? createdAt;
 
   Iterable<String> get itemIds => items.map((i) => i.itemId);
 
@@ -68,6 +72,7 @@ class Event {
     title: row['title'] as String,
     description: row['description'] as String,
     locationId: row['location_id'] as String?,
+    createdAt: DateTime.tryParse(row['created_at'] as String? ?? ''),
     enemies: [
       for (final e in (row['event_enemies'] as List? ?? const []))
         EventEnemy.fromRow(e as Map<String, dynamic>),

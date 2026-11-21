@@ -53,6 +53,7 @@ class Character {
     this.attack = 0,
     this.icon,
     this.origin,
+    this.createdAt,
   });
 
   final String id;
@@ -71,6 +72,9 @@ class Character {
 
   /// Образец из справочника (импорт); у своих врагов — null.
   final Origin? origin;
+
+  /// Когда создан (из базы): по нему жетоны встают в клетки места. null — ещё не в базе.
+  final DateTime? createdAt;
 
   /// «Враг · ур. 3 · здоровье 30 · атака 8 · Штольня №3 · роняет: Ключ от лебёдки 35%» — строка в списке мира.
   String summary(
@@ -98,12 +102,15 @@ class Character {
     hp: row['hp'] as int,
     attack: row['attack'] as int,
     icon: row['icon'] as String?,
+    createdAt: DateTime.tryParse(row['created_at'] as String? ?? ''),
     origin: row['source'] == null
         ? null
         : Origin(
             source: row['source'] as String,
             ref: row['source_ref'] as String,
-            card: (row['source_card'] as Map?)?.cast<String, dynamic>() ?? const {},
+            card:
+                (row['source_card'] as Map?)?.cast<String, dynamic>() ??
+                const {},
           ),
     loot: [
       for (final l in (row['loot'] as List? ?? const []))

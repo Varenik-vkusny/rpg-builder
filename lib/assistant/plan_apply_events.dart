@@ -20,6 +20,7 @@ extension _Events on _Copy {
       locationId: locationId ?? _missing('место события'),
       enemies: old?.enemies ?? const [],
       items: old?.items ?? const [],
+      createdAt: old?.createdAt,
     );
     i < 0 ? events.add(e) : events[i] = e;
     return _diff({
@@ -40,6 +41,7 @@ extension _Events on _Copy {
       locationId: e.locationId,
       enemies: enemies ?? e.enemies,
       items: items ?? e.items,
+      createdAt: e.createdAt,
     );
   }
 

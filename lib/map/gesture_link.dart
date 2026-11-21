@@ -155,6 +155,7 @@ ManualEdit linkByGesture(
                       title: e.title,
                       description: e.description,
                       locationId: e.locationId,
+                      createdAt: e.createdAt,
                       enemies: [
                         ...e.enemies,
                         if (enemy) EventEnemy(characterId: to, amount: value),
@@ -236,6 +237,7 @@ Character _withLoot(Character c, String item, double chance) => Character(
   attack: c.attack,
   icon: c.icon,
   origin: c.origin,
+  createdAt: c.createdAt,
 );
 
 WorldSnapshot _swap(

@@ -43,6 +43,7 @@ ManualEdit moveObject(
           attack: c.attack,
           icon: c.icon,
           origin: c.origin,
+          createdAt: c.createdAt,
         ),
       ),
     );
@@ -69,6 +70,7 @@ ManualEdit moveObject(
         locationId: placeId,
         enemies: e.enemies,
         items: e.items,
+        createdAt: e.createdAt,
       ),
     ),
   );

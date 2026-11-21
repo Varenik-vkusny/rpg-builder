@@ -39,6 +39,7 @@ extension _Links on _Copy {
       attack: c.attack,
       icon: c.icon,
       origin: c.origin,
+      createdAt: c.createdAt,
     );
     return _diff({'chance': (before, after)});
   }

@@ -310,6 +310,7 @@ class _Copy {
       attack: _int(op, 'attack', old?.attack ?? 0),
       icon: old?.icon,
       origin: old?.origin,
+      createdAt: old?.createdAt,
     );
     i < 0 ? characters.add(ch) : characters[i] = ch;
     return _diff({

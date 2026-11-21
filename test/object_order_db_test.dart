@@ -38,7 +38,7 @@ void main() {
 
   tearDownAll(() => a.from('projects').delete().eq('id', world.id));
 
-  test('новый житель и событие встают в конец, старые не двигаются', () async {
+  test('новый житель и событие встают в конец, старые не двигаются, и после повторного входа', () async {
     final place = await repo.createLocation(
       world.id,
       const NewLocation(
@@ -61,24 +61,20 @@ void main() {
       world.id,
       NewEvent(title: title, description: '', locationId: place.id),
     );
-    final brigadir = await npc('Бригадир');
-    final ambush = await event('Засада');
+    await npc('Бригадир');
+    await event('Засада');
 
-    Future<Map<String, int>> cellsNow() async {
-      final w = await repo.snapshot(world.id);
-      return buildScene(w, null).places.single.cellOf;
-    }
-
-    final before = await cellsNow();
-    final goblin = await npc('Гоблин');
-    final rat = await event('Крысы');
+    await npc('Гоблин');
+    await event('Крысы');
     final w = await repo.snapshot(world.id);
 
     expect([for (final c in w.characters) c.title], ['Бригадир', 'Гоблин']);
     expect([for (final e in w.events) e.title], ['Засада', 'Крысы']);
-    final after = await cellsNow();
-    expect(after[brigadir.id], before[brigadir.id]);
-    expect(after[ambush.id], before[ambush.id]);
-    expect(after.containsKey(goblin.id) && after.containsKey(rat.id), isTrue);
+    // Жетоны места — по времени создания, вперемешку: событие «Засада» старше
+    // «Гоблина» и стоит раньше него (не «сначала все жители, потом события»).
+    expect(
+      [for (final t in buildScene(w, null).places.single.tokens) t.title],
+      ['Бригадир', 'Засада', 'Гоблин', 'Крысы'],
+    );
   });
 }

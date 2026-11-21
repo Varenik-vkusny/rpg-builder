@@ -113,6 +113,7 @@ Event _editedEvent(
   Map<String, EventItem> wasItems,
 ) => Event(
   id: old.id,
+  createdAt: old.createdAt,
   slug: old.slug,
   title: now.title,
   description: now.description,

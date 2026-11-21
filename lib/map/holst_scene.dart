@@ -9,6 +9,7 @@ import '../content/character.dart';
 import '../content/location.dart';
 import '../content/nesting.dart';
 import 'map_model.dart' show levelOf;
+import 'place_order.dart';
 
 /// Жетон объекта: 148 × 48 (решение владельца 16.10).
 const tokenSize = Size(148, 48);
@@ -304,15 +305,16 @@ HolstScene buildScene(
   Map<String, Map<String, int>> slots = const {},
 }) {
   final all = worldTokens(w);
+  final born = bornOf(w);
   final level = focus == null ? levelOf(w.locations, null) : [focus];
-  List<HolstToken> inPlace(String id) => [
+  List<HolstToken> inPlace(String id) => byBirth([
     for (final t in all.values)
       if (t.placeId == id &&
           (t.kind == TokenKind.npc ||
               t.kind == TokenKind.enemy ||
               t.kind == TokenKind.event))
         t,
-  ];
+  ], born);
   HolstDoor Function(Rect) door(Location d) =>
       (r) => HolstDoor(d, r, [for (final t in inPlace(d.id)) t.title]);
 

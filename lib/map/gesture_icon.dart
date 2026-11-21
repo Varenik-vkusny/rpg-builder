@@ -37,6 +37,7 @@ ManualEdit? editIcon(String worldId, WorldSnapshot w, String id, String? icon) {
               attack: c.attack,
               icon: icon,
               origin: c.origin,
+              createdAt: c.createdAt,
             )
           : Item(
               id: i!.id,
