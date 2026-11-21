@@ -109,6 +109,17 @@ extension _Change on _HolstState {
         ready: big,
       );
     });
+    _planCells = planCells(
+      buildScene(
+        run.preview.copy,
+        _focus,
+        first: {
+          for (final m in planMarks(_w, run.preview.copy).entries)
+            if (m.value == Mark.isNew) m.key,
+        },
+        slots: _slots,
+      ),
+    );
     if (big) return _preview(run.preview.copy);
     for (var k = 1; k <= plan.ops.length; k++) {
       final p = _plan;
@@ -187,6 +198,7 @@ extension _Change on _HolstState {
     _set(() {
       _plan = null;
       _copy = null;
+      _planCells = null;
       _planThreads = const {};
       _busy = false;
       _phrase.clear();
@@ -222,3 +234,14 @@ extension _Change on _HolstState {
     );
   }
 }
+
+/// Клетки и ширина мест итога плана — для шагов показа.
+({Map<String, Map<String, int>> slots, Set<String> wide}) planCells(
+  HolstScene s,
+) => (
+  slots: {for (final p in s.places) p.place.id: p.cellOf},
+  wide: {
+    for (final p in s.places)
+      if (p.rect.width == wideWidth) p.place.id,
+  },
+);

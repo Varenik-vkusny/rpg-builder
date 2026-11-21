@@ -121,6 +121,9 @@ class _HolstState extends State<HolstScreen>
   String? _scopePlace;
   PlanState? _plan;
   WorldSnapshot? _copy;
+
+  /// Клетки итога плана: шаги плана ставят новые жетоны сразу туда.
+  ({Map<String, Map<String, int>> slots, Set<String> wide})? _planCells;
   Map<String, ThreadTone> _planThreads = const {};
 
   /// Подсветка после жеста: новое — зелёным, изменённое — пурпуром (до следующего жеста).
@@ -200,13 +203,17 @@ class _HolstState extends State<HolstScreen>
     super.dispose();
   }
 
+  // Место берём из свежего снимка: его могли переименовать на странице.
+  Location? get _focus => _path.isEmpty
+      ? null
+      : _w.locations.where((l) => l.id == _path.last.id).firstOrNull;
+
   void _rebuild() {
-    // Место берём из свежего снимка: его могли переименовать на странице.
-    final focus = _path.isEmpty
-        ? null
-        : _w.locations.where((l) => l.id == _path.last.id).firstOrNull;
+    final focus = _focus;
     // Пока на холсте план — рисуется копия мира после него.
     final w = _copy ?? _w;
+    // Шаги плана — сразу в итоговых клетках (владелец 21.11: новые не сдвигаются).
+    final cells = _copy == null ? null : _planCells;
     // Только что созданное не прячется в «ещё N». Выбранное и предупреждения сюда
     // не идут: копятся и двигали бы соседей (ревью 19.11).
     _scene = buildScene(
@@ -216,7 +223,8 @@ class _HolstState extends State<HolstScreen>
         for (final m in _marks.entries)
           if (m.value == Mark.isNew) m.key,
       },
-      slots: _slots,
+      slots: cells == null ? _slots : {..._slots, ...cells.slots},
+      widePlaces: cells?.wide ?? const {},
     );
     // Помним клетки только настоящего мира: копия плана — черновик.
     if (_copy == null) {

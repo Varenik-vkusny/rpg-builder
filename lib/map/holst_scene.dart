@@ -201,6 +201,7 @@ bool isWide(int tokens, int doors) => doors > 0 || tokens > 3;
 /// [first] — только что созданное: в тесном месте встаёт в последние видимые клетки,
 /// порядок остальных тот же; не влезают все — видны самые поздние (владелец 19.11:
 /// новый враг в тесном месте терялся). Место не тесное — ничего не двигается.
+/// [keepWide] — место уже широкое в итоге плана: шаги плана его не сужают.
 HolstPlace layPlace(
   Location place,
   Offset o,
@@ -208,8 +209,9 @@ HolstPlace layPlace(
   List<HolstDoor Function(Rect)> doors, {
   Set<String> first = const {},
   Map<String, int> slots = const {},
+  bool keepWide = false,
 }) {
-  final wide = isWide(tokens.length, doors.length);
+  final wide = keepWide || isWide(tokens.length, doors.length);
   final cols = wide ? 2 : 1;
   final doorRows = 2 * doors.length;
   int freeCells(int rows) => rows * cols - doorRows;
@@ -303,6 +305,7 @@ HolstScene buildScene(
   Location? focus, {
   Set<String> first = const {},
   Map<String, Map<String, int>> slots = const {},
+  Set<String> widePlaces = const {},
 }) {
   final all = worldTokens(w);
   final born = bornOf(w);
@@ -323,7 +326,8 @@ HolstScene buildScene(
   for (final l in level) {
     final tokens = inPlace(l.id);
     final doors = [for (final c in childrenOf(w.locations, l.id)) door(c)];
-    final wide = isWide(tokens.length, doors.length);
+    final wide =
+        widePlaces.contains(l.id) || isWide(tokens.length, doors.length);
     // Широкое или второе узкое не влезает в ряд — новый ряд.
     if (x > 0 && (wide || x + narrowWidth > wideWidth)) {
       y += rowH + placeGap;
@@ -337,6 +341,7 @@ HolstScene buildScene(
       doors,
       first: first,
       slots: slots[l.id] ?? const {},
+      keepWide: widePlaces.contains(l.id),
     );
     places.add(p);
     rowH = math.max(rowH, p.rect.height);
