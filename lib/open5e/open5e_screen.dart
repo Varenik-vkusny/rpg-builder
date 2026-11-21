@@ -87,18 +87,28 @@ class _Open5eScreenState extends State<Open5eScreen> {
       _ru = {...dict.creatures, ...dict.items};
       // Справочник ищет только по-английски: русский запрос — по словарю, в Open5e
       // уходят ключи найденного. В словаре нет — справочник не спрашиваем.
+      // Просим с запасом: двойники изданий склеятся, и после склейки остаётся до 20.
+      const asked = open5eAsked;
       List<String>? keys;
-      if (_cyrillic.hasMatch(q)) keys = dict.match(q, creatures: _enemies);
+      if (_cyrillic.hasMatch(q)) {
+        keys = dict.match(q, creatures: _enemies, limit: asked);
+      }
       if (_enemies) {
         final found = keys != null && keys.isEmpty
             ? <Open5eCreature>[]
-            : await widget.api.searchCreatures(q, keys: keys);
-        if (mounted) setState(() => _creatures = dedupeCreatures(found));
+            : await widget.api.searchCreatures(q, keys: keys, limit: asked);
+        final shown = dedupeCreatures(byKeyRank(found, keys, (c) => c.key))
+            .take(open5eShown)
+            .toList();
+        if (mounted) setState(() => _creatures = shown);
       } else {
         final found = keys != null && keys.isEmpty
             ? <Open5eItem>[]
-            : await widget.api.searchItems(q, keys: keys);
-        if (mounted) setState(() => _found = dedupeItems(found));
+            : await widget.api.searchItems(q, keys: keys, limit: asked);
+        final shown = dedupeItems(byKeyRank(found, keys, (i) => i.key))
+            .take(open5eShown)
+            .toList();
+        if (mounted) setState(() => _found = shown);
       }
     } catch (e) {
       if (mounted) setState(() => _error = 'Open5e недоступен: $e');

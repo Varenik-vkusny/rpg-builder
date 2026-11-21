@@ -36,6 +36,9 @@ class FakeOpen5e implements Open5eApi {
   final List<Open5eCreature> creatures;
   final queries = <String>[];
 
+  /// Сколько образцов просили у справочника при каждом поиске.
+  final limitsAsked = <int>[];
+
   /// Ключи поиска по словарю (русский запрос); английский запрос — null.
   final keysAsked = <List<String>?>[];
 
@@ -43,27 +46,32 @@ class FakeOpen5e implements Open5eApi {
   Future<List<Open5eCreature>> searchCreatures(
     String query, {
     List<String>? keys,
+    int limit = open5eShown,
   }) async {
     queries.add(query);
     keysAsked.add(keys);
+    limitsAsked.add(limit);
     return [
       for (final c in creatures)
         if (keys == null || keys.contains(c.key)) c,
-    ];
+    ].take(keys?.length ?? limit).toList();
   }
 
   @override
   Future<List<Open5eItem>> searchItems(
     String query, {
     List<String>? keys,
+    int limit = open5eShown,
   }) async {
     queries.add(query);
     keysAsked.add(keys);
+    limitsAsked.add(limit);
     if (result is Exception) throw result;
+    // Как сервер: не больше limit (по ключам — не больше числа ключей).
     return [
       for (final o in result as List<Open5eItem>)
         if (keys == null || keys.contains(o.key)) o,
-    ];
+    ].take(keys?.length ?? limit).toList();
   }
 }
 

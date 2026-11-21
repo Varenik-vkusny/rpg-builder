@@ -110,13 +110,27 @@ class Open5eCreature {
   }
 }
 
+/// Сколько находок видно на экране после склейки двойников SRD 5.1 / 5.2.
+const open5eShown = 20;
+
+/// Сколько просить у справочника, чтобы после склейки осталось [open5eShown]:
+/// пара изданий занимает два места, склеивается в одно — берём вдвое больше.
+const open5eAsked = open5eShown * 2;
+
 /// Поиск образцов: по части английского названия или по ключам (русский поиск идёт
 /// через словарь ru_names.dart). Подменяется в тестах — сеть там не нужна.
 abstract class Open5eApi {
-  Future<List<Open5eItem>> searchItems(String query, {List<String>? keys});
+  /// [limit] — сколько образцов просить у справочника (по умолчанию [open5eShown]):
+  /// экран просит с запасом, потому что двойники изданий склеиваются уже после.
+  Future<List<Open5eItem>> searchItems(
+    String query, {
+    List<String>? keys,
+    int limit = open5eShown,
+  });
   Future<List<Open5eCreature>> searchCreatures(
     String query, {
     List<String>? keys,
+    int limit = open5eShown,
   });
 }
 
@@ -129,9 +143,11 @@ class HttpOpen5e implements Open5eApi {
   Future<List<Open5eItem>> searchItems(
     String query, {
     List<String>? keys,
+    int limit = open5eShown,
   }) async {
     final lists = await Future.wait([
-      for (final kind in ['items', 'magicitems']) _search(kind, query, keys),
+      for (final kind in ['items', 'magicitems'])
+        _search(kind, query, keys, limit),
     ]);
     return [for (final l in lists) ...l];
   }
@@ -140,8 +156,9 @@ class HttpOpen5e implements Open5eApi {
   Future<List<Open5eCreature>> searchCreatures(
     String query, {
     List<String>? keys,
+    int limit = open5eShown,
   }) async => [
-    for (final r in await _get('creatures', query, keys))
+    for (final r in await _get('creatures', query, keys, limit))
       Open5eCreature.fromJson(r),
   ];
 
@@ -149,8 +166,10 @@ class HttpOpen5e implements Open5eApi {
     String kind,
     String query,
     List<String>? keys,
+    int limit,
   ) async => [
-    for (final r in await _get(kind, query, keys)) Open5eItem.fromJson(r),
+    for (final r in await _get(kind, query, keys, limit))
+      Open5eItem.fromJson(r),
   ];
 
   /// [keys] — точный список образцов (`key__in`), иначе часть названия.
@@ -158,11 +177,12 @@ class HttpOpen5e implements Open5eApi {
     String kind,
     String query,
     List<String>? keys,
+    int limit,
   ) async {
     final url = Uri.parse('$_base/$kind/').replace(
       queryParameters: keys != null
           ? {'key__in': keys.join(','), 'limit': '${keys.length}'}
-          : {'name__icontains': query, 'limit': '20'},
+          : {'name__icontains': query, 'limit': '$limit'},
     );
     final res = await http.get(url).timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {

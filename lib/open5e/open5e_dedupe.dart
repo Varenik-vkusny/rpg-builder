@@ -31,3 +31,22 @@ List<Open5eItem> dedupeItems(List<Open5eItem> l) =>
     dedupeEditions(l, (o) => o.key);
 List<Open5eCreature> dedupeCreatures(List<Open5eCreature> l) =>
     dedupeEditions(l, (o) => o.key);
+
+/// Русский поиск: справочник отдаёт находки по ключам в своём порядке — раскладываем
+/// по рангу словаря (лучшие совпадения первыми), иначе при запасе на склейку лучшие
+/// могли бы уйти за 20-е место. [keys] null — английский поиск, порядок справочника.
+List<T> byKeyRank<T>(
+  List<T> found,
+  List<String>? keys,
+  String Function(T) key,
+) {
+  if (keys == null) return found;
+  final rank = {for (final (i, k) in keys.indexed) k: i};
+  int r(T x) => rank[key(x)] ?? keys.length;
+  final indexed = [...found.indexed]
+    ..sort((a, b) {
+      final c = r(a.$2).compareTo(r(b.$2));
+      return c != 0 ? c : a.$1.compareTo(b.$1);
+    });
+  return [for (final (_, x) in indexed) x];
+}
