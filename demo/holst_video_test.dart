@@ -53,7 +53,10 @@ void main() {
     await v.wait(s * 1.5);
 
     // Квест → житель: меню «Поговорить / Убить».
-    await v.drag(t.getCenter(k('token-storozh')), t.getCenter(k('token-obval')));
+    await v.drag(
+      t.getCenter(k('token-storozh')),
+      t.getCenter(k('token-obval')),
+    );
     await v.wait(s * .8);
     await v.tap(k('holst-menu-talk'));
     await v.wait(s * 1.5);

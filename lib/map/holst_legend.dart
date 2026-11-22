@@ -19,7 +19,7 @@ const _gestureIcons = [
 /// Жесты «Строить» — в легенде под строками справки.
 const _buildGestures = [
   (Symbols.add_rounded, 'Из палитры в место — создать'),
-  (Symbols.gesture_rounded, 'От объекта к объекту — связь'),
+  (Symbols.gesture_rounded, 'Тяни от кружка — связь'),
   (Symbols.pan_tool_rounded, 'Держать и тащить — перенести'),
   (Symbols.undo_rounded, 'Отменить — 5 секунд после жеста'),
 ];

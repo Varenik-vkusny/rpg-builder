@@ -24,7 +24,12 @@ void main() {
     ops[1]['repairs'] = ['порядок: была операция 4, стала 2'];
     ops[2]['repairs'] = ['опечатка в slug: slizn → slizen'];
     final assistant = FakeAssistant([proposal(Plan.fromJson(j))]);
-    await pumpApp(t, content: await minesContent(), assistant: assistant, wrap: frame);
+    await pumpApp(
+      t,
+      content: await minesContent(),
+      assistant: assistant,
+      wrap: frame,
+    );
     await signUp(t, 'author@test.dev');
     await createWorld(t, 'Пепельные копи');
     await openWorld(t, 'Пепельные копи');

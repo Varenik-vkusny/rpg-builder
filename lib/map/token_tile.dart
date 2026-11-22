@@ -21,6 +21,7 @@ class TokenTile extends StatelessWidget {
     this.target = false,
     this.onWarn,
     this.width = 148,
+    this.handle,
   });
 
   final HolstToken token;
@@ -42,6 +43,9 @@ class TokenTile extends StatelessWidget {
   /// Нажали на жёлтую метку — окно с причиной и «Откатить».
   final VoidCallback? onWarn;
   final double? width;
+
+  /// Ручка связи на правом краю («Строить»): от неё тянут нить, остальное — листает.
+  final Widget? handle;
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +121,7 @@ class TokenTile extends StatelessWidget {
           Flexible(
             fit: width == null ? FlexFit.loose : FlexFit.tight,
             child: Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: EdgeInsets.only(right: handle == null ? 8 : 4),
               child: TokenName(
                 t.title,
                 style: const TextStyle(
@@ -128,6 +132,7 @@ class TokenTile extends StatelessWidget {
               ),
             ),
           ),
+          if (handle != null) const SizedBox(width: threadHandleWidth),
         ],
       ),
     );
@@ -157,8 +162,13 @@ class TokenTile extends StatelessWidget {
                 ),
               ),
             ),
+          // Ручка — в нижней части правого края: верхний угол занят меткой ⚠
+          // (ревью 22.11: метка закрывала кружок, нить не тянулась).
+          if (handle case final h?)
+            Positioned(right: 0, top: threadHandleTop, bottom: 0, child: h),
           if (warn)
-            // Метка 22 × 22 в углу, зона касания — 40 × 40 вокруг неё.
+            // Метка 22 × 22 в углу, зона касания — 40 × 40 вокруг неё;
+            // в «Строить» — 28 × 28, чтобы не наезжать на ручку.
             Positioned(
               top: -9,
               right: -9,
@@ -167,8 +177,8 @@ class TokenTile extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 onTap: onWarn,
                 child: SizedBox(
-                  width: 40,
-                  height: 40,
+                  width: handle == null ? 40 : 28,
+                  height: handle == null ? 40 : 28,
                   child: Align(
                     alignment: Alignment.topRight,
                     child: Container(
@@ -187,6 +197,68 @@ class TokenTile extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Ширина зоны ручки связи: кружок 28 dp и по 2 dp воздуха.
+const threadHandleWidth = 32.0;
+
+/// Ручка начинается ниже угловой метки ⚠ (её зона в «Строить» кончается на 19 dp).
+const threadHandleTop = 20.0;
+
+/// Ручка связи: кружок на правом краю жетона, виден только в «Строить». Нить тянут от
+/// неё; провести по остальному жетону — листать холст.
+class ThreadHandle extends StatelessWidget {
+  const ThreadHandle({
+    super.key,
+    required this.color,
+    required this.onStart,
+    required this.onUpdate,
+    required this.onEnd,
+    required this.onCancel,
+  });
+
+  /// Цвет места (на полке — нейтральный).
+  final Color color;
+  final GestureDragStartCallback onStart;
+  final GestureDragUpdateCallback onUpdate;
+  final VoidCallback onEnd;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanStart: onStart,
+      onPanUpdate: onUpdate,
+      onPanEnd: (_) => onEnd(),
+      onPanCancel: onCancel,
+      child: SizedBox(
+        width: threadHandleWidth,
+        child: Center(
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color.alphaBlend(
+                color.withValues(alpha: .34),
+                s.surfaceContainer,
+              ),
+              border: Border.all(color: color, width: 2),
+            ),
+            child: Center(
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -48,7 +48,9 @@ class Video {
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: f.$2 ? .45 : .2),
+                          color: Colors.white.withValues(
+                            alpha: f.$2 ? .45 : .2,
+                          ),
                           border: Border.all(color: Colors.white, width: 2),
                         ),
                       ),
@@ -61,12 +63,12 @@ class Video {
   );
 
   Future<void> _shot() => t.runAsync(() async {
-    final b = frame.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final b =
+        frame.currentContext!.findRenderObject()! as RenderRepaintBoundary;
     final image = await b.toImage(pixelRatio: 2);
     final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File(
-      'build/video/$name/f${(_n++).toString().padLeft(5, '0')}.png',
-    ).writeAsBytesSync(png!.buffer.asUint8List());
+    File('build/video/$name/f${(_n++).toString().padLeft(5, '0')}.png')
+        .writeAsBytesSync(png!.buffer.asUint8List());
   });
 
   /// Идёт время [d]: кадр каждые 33 мс.
@@ -77,7 +79,12 @@ class Video {
     }
   }
 
-  Future<void> _glide(Offset from, Offset to, int frames, [TestGesture? g]) async {
+  Future<void> _glide(
+    Offset from,
+    Offset to,
+    int frames, [
+    TestGesture? g,
+  ]) async {
     for (var i = 1; i <= frames; i++) {
       final p = Offset.lerp(from, to, Curves.easeInOut.transform(i / frames))!;
       finger.value = (p, g != null);

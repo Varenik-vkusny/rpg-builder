@@ -69,7 +69,7 @@ void main() {
     await t.pumpAndSettle();
 
     Future<void> thread(String from, String to) async {
-      final a = t.getCenter(find.byKey(Key('token-$from')));
+      final a = t.getCenter(find.byKey(Key('thread-$from')));
       final b = t.getCenter(find.byKey(Key('token-$to')));
       final g = await t.startGesture(a);
       for (var i = 1; i <= 12; i++) {

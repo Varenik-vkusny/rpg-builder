@@ -258,6 +258,7 @@ extension _Canvas on _HolstState {
   /// Жетон на холсте или на полке: касание — выбрать, на связанных — метки, остальное гаснет.
   Widget _token(HolstToken t, Color? hue, {double? width = 148}) {
     final near = _near;
+    final s = Theme.of(context).colorScheme;
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
       opacity: _sel != null && !near.contains(t.id) ? .28 : 1,
@@ -268,15 +269,6 @@ extension _Canvas on _HolstState {
         child: GestureDetector(
           key: Key('token-${t.slug}'),
           onTap: () => _tapToken(t.id),
-          // В «Строить» палец, поведённый от объекта, тянет нить.
-          onPanStart: _mode == HolstMode.build
-              ? (d) => _threadStart(t.id, d)
-              : null,
-          onPanUpdate: _mode == HolstMode.build ? _threadMove : null,
-          onPanEnd: _mode == HolstMode.build ? (_) => _threadEnd() : null,
-          onPanCancel: _mode == HolstMode.build
-              ? () => _set(() => _drag = null)
-              : null,
           // Держать — поднять и перенести (только объекты мест, не полки).
           onLongPressStart:
               _mode == HolstMode.build && t.placeId != null && width != null
@@ -300,6 +292,17 @@ extension _Canvas on _HolstState {
               _set(() => _markOpen = t.id);
             },
             target: _drag?.over == t.id,
+            // В «Строить» нить тянут от кружка; по остальному жетону — листают холст.
+            handle: _mode == HolstMode.build
+                ? ThreadHandle(
+                    key: Key('thread-${t.slug}'),
+                    color: hue ?? s.onSurfaceVariant,
+                    onStart: (d) => _threadStart(t.id, d),
+                    onUpdate: _threadMove,
+                    onEnd: _threadEnd,
+                    onCancel: () => _set(() => _drag = null),
+                  )
+                : null,
             lifted: _lift?.id == t.id || (_flying[t.id] ?? 0) > _flyNear,
           ),
         ),

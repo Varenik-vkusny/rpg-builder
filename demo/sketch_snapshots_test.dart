@@ -68,7 +68,9 @@ void main() {
     await tapShown(t, find.byKey(const Key('sketch-attach')));
     await shot(t, 'sketch-1-source');
     await tapShown(t, find.byKey(const Key('sketch-camera')));
-    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await t.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
     await shot(t, 'sketch-2-attached');
 
     await tapShown(t, find.byKey(const Key('assistant-propose')));

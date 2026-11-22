@@ -15,9 +15,10 @@ import 'holst_look_test.dart' show drawnTags, token;
 /// Широкий экран: в тестах шрифт шире настоящего, а полка должна быть видна целиком.
 const wide = Size(1100, 800);
 
-/// Провести нить от жетона [from] к жетону [to].
+/// Провести нить от ручки жетона [from] к жетону [to].
 Future<void> thread(WidgetTester t, String from, String to) async {
-  final a = t.getCenter(token(from)), b = t.getCenter(token(to));
+  final a = t.getCenter(find.byKey(Key('thread-$from')));
+  final b = t.getCenter(token(to));
   final g = await t.startGesture(a);
   for (var i = 1; i <= 12; i++) {
     await g.moveTo(Offset.lerp(a, b, i / 12)!);
@@ -160,7 +161,7 @@ void main() {
       await thread(t, 'zasada', 'slizen');
       expect(snack(t), 'Уже связаны: Засада и Слизень');
       // Отпустили на пустом холсте.
-      final a = t.getCenter(token('storozh'));
+      final a = t.getCenter(find.byKey(const Key('thread-storozh')));
       final g = await t.startGesture(a);
       await g.moveTo(a + const Offset(120, 0));
       await t.pump();
@@ -176,7 +177,19 @@ void main() {
     final c = await ashMines();
     await pumpHolst(t, c, size: wide);
     final before = await sets(c);
-    await thread(t, 'slizen', 'kirka');
+    expect(
+      find.byKey(const Key('thread-slizen')),
+      findsNothing,
+      reason: 'ручки нет',
+    );
+    final a = t.getCenter(token('slizen')), b = t.getCenter(token('kirka'));
+    final g = await t.startGesture(a);
+    for (var i = 1; i <= 12; i++) {
+      await g.moveTo(Offset.lerp(a, b, i / 12)!);
+      await t.pump(const Duration(milliseconds: 16));
+    }
+    await g.up();
+    await settle(t);
     expect(find.byKey(const Key('holst-wheel')), findsNothing);
     expect(await sets(c), before);
   });

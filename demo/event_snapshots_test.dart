@@ -67,7 +67,11 @@ void main() {
     addTearDown(t.view.reset);
 
     // Слизень 9-го уровня в сцене штольни 1–5: на блоке Копей ещё и значок проблемы.
-    await pumpApp(t, content: await minesWithEvents(slimeLevel: 9), wrap: frame);
+    await pumpApp(
+      t,
+      content: await minesWithEvents(slimeLevel: 9),
+      wrap: frame,
+    );
     await signUp(t, 'author@test.dev');
     await createWorld(t, 'Пепельные копи');
     await openWorld(t, 'Пепельные копи');
