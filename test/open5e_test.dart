@@ -152,9 +152,9 @@ void main() {
       expect(find.textContaining('CC BY 4.0'), findsNothing);
       expect(find.textContaining('запомнит источник'), findsNothing);
       expect(
-        find.textContaining('srd-2024_war-pick'),
+        find.byKey(const Key('open5e-item-preview')),
         findsOneWidget,
-        reason: '«было → стало» показывает образец',
+        reason: 'короткая карточка предмета вместо экрана плана',
       );
       await tapButton(t, 'open5e-import');
 

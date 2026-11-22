@@ -25,7 +25,10 @@ IconData characterIcon(Character c) => switch (c.role) {
   Role.npc => Symbols.person_rounded,
 };
 
-IconData itemIcon(Item i) => switch (i.kind) {
+IconData itemIcon(Item i) => itemKindIcon(i.kind);
+
+/// Значок предмета по виду — один на списки, страницы и справочник.
+IconData itemKindIcon(ItemKind k) => switch (k) {
   ItemKind.weapon => Symbols.swords_rounded,
   ItemKind.armor => Symbols.shield_rounded,
   ItemKind.consumable => Symbols.science_rounded,

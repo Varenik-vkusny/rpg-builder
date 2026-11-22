@@ -1,24 +1,22 @@
-// Библиотека Open5e (4.6): поиск образца → план «создать предмет» → проверка на копии →
-// «Импортировать» одним набором изменений (в историю, с откатом). Враги (5д) — правкой
-// вручную с той же проверкой на копии (open5e_enemy.dart).
+// Библиотека Open5e (4.6): поиск образца → короткая карточка → «Импортировать» одним набором
+// изменений (в историю, с откатом). Враги (5д) — правкой вручную с той же проверкой на копии.
 import 'package:flutter/material.dart';
 
 import '../help/help.dart';
 import '../assistant/change_set.dart';
 import '../assistant/plan.dart';
 import '../assistant/plan_preview.dart';
-import '../assistant/plan_view.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../content/manual_save.dart';
 import '../ui/messages.dart';
-import '../ui/parts.dart';
 import '../worlds/world.dart';
 import 'open5e_api.dart';
 import 'open5e_dedupe.dart';
 import 'open5e_enemy.dart';
 import 'open5e_enemy_view.dart';
 import 'open5e_import.dart';
+import 'open5e_item_view.dart';
 import 'ru_names.dart';
 
 class Open5eScreen extends StatefulWidget {
@@ -332,15 +330,13 @@ class _Open5eScreenState extends State<Open5eScreen> {
   ];
 
   List<Widget> _importPart(Open5eItem o) {
-    final preview = _preview!;
+    // Только то, что принесёт сам импорт, а не весь мир; ошибка блокирует кнопку.
+    final problems = _preview!.fresh;
+    final broken = problems.any((p) => p.severity == Severity.error);
     return [
       const SizedBox(height: 16),
-      // Ошибка — плашкой со значком и словом, не одним красным цветом (инвариант 27.09).
-      if (preview.hasErrors)
-        const NoticeBanner(
-          Notice.error,
-          'В плане ошибки — «Импортировать» недоступно',
-        ),
+      ItemPreview(o: o, title: _title(o.key, o.name), problems: problems),
+      const SizedBox(height: 12),
       // Друг под другом: в ряд «Импортировать» не влезало при крупном шрифте.
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -348,7 +344,7 @@ class _Open5eScreenState extends State<Open5eScreen> {
         children: [
           FilledButton(
             key: const Key('open5e-import'),
-            onPressed: _busy || preview.hasErrors ? null : _import,
+            onPressed: _busy || broken ? null : _import,
             child: const Text('Импортировать'),
           ),
           OutlinedButton(
@@ -358,8 +354,6 @@ class _Open5eScreenState extends State<Open5eScreen> {
           ),
         ],
       ),
-      const SizedBox(height: 16),
-      PlanView(plan: _plan!, preview: preview),
     ];
   }
 }
