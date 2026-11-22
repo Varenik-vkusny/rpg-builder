@@ -10,7 +10,6 @@ import 'history.dart';
 import '../ui/messages.dart';
 import '../ui/parts.dart';
 import '../ui/theme.dart';
-import 'plan_cards.dart';
 import 'plan_labels.dart';
 
 /// История наборов изменений мира (3.7): что меняли, «было → стало», откат любого
@@ -151,6 +150,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        ..._revertArea(s),
         Row(
           spacing: 8,
           children: [
@@ -162,43 +162,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Expanded(child: Text('«${s.request}»')),
           ],
         ),
-        const SizedBox(height: 12),
-        for (final op in s.ops) ..._op(op, show),
-        ..._revertArea(s),
+        const SizedBox(height: 8),
+        for (final op in s.ops) _op(op, show),
       ],
     );
   }
 
-  /// Операция набора: метка, заголовок, «было → стало» по каждому полю.
-  List<Widget> _op(
-    JournalOp op,
-    String? Function(JournalOp, String, String?) show,
-  ) => [
-    Row(
-      spacing: 8,
-      children: [
-        ChangeTag(_change(op.action)),
-        Expanded(
-          child: Text(
-            journalOpTitle(op.action, op.type, '«${op.title}»'),
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-        ),
-      ],
-    ),
-    const SizedBox(height: 8),
-    for (final (k, was, now) in op.changes)
-      Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: BeforeAfter(
-          icon: fieldIcons[fieldLabel(k.replaceAll(RegExp(r'_id$'), ''))],
-          label: fieldLabel(k.replaceAll(RegExp(r'_id$'), '')),
-          before: show(op, k, was),
-          after: show(op, k, now),
-        ),
-      ),
-    const SizedBox(height: 8),
-  ];
+  /// Операция набора одной строкой: «новое: Кирка», «убрано: Житель»,
+  /// «Слизень: атака 3 → 4» (только изменённые поля).
+  Widget _op(JournalOp op, String? Function(JournalOp, String, String?) show) {
+    String field(String k) =>
+        fieldLabel(k.replaceAll(RegExp(r'_id$'), '')).toLowerCase();
+    // Каждое значение короче по отдельности: «стало» видно всегда (ревью 22.11).
+    String short(String? v) =>
+        v == null ? '—' : (v.length > 32 ? '${v.substring(0, 31)}…' : v);
+    final link = journalLinkWord(op.type);
+    final what = link == null ? op.title : '$link ${op.title}';
+    final text = switch (op.action) {
+      'create' => 'новое: $what',
+      'delete' => 'убрано: $what',
+      _ =>
+        '$what: ${[for (final (k, was, now) in op.changes) '${field(k)} ${short(show(op, k, was))} → ${short(show(op, k, now))}'].join(', ')}',
+    };
+    return Padding(
+      key: Key('history-op-${op.label}'),
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(text),
+    );
+  }
 
   /// Конфликты и ошибка отката, кнопка «Откатить».
   List<Widget> _revertArea(ChangeSetEntry s) => [
@@ -216,22 +207,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
         key: Key('revert-error-${s.id}'),
         title: 'Не удалось откатить — в мире ничего не изменилось',
       ),
-    if (s.canRevert) ...[
-      const SizedBox(height: 8),
+    if (s.canRevert)
       FilledButton.tonalIcon(
         key: Key('revert-${s.id}'),
         icon: const Icon(Symbols.undo_rounded),
         label: const Text('Откатить'),
         onPressed: _busy == null ? () => _revert(s) : null,
       ),
-    ],
+    const SizedBox(height: 12),
   ];
-
-  static Change _change(String action) => switch (action) {
-    'create' => Change.create,
-    'delete' => Change.delete,
-    _ => Change.update,
-  };
 
   Widget _statusIcon(SetStatus status) {
     final s = Theme.of(context).colorScheme;

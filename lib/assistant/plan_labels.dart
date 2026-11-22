@@ -54,10 +54,18 @@ const _types = {
   OpType.eventItem: 'Предмет в событии',
 };
 
-/// Заголовок операции из журнала: «Изменить · Локация «Штольня №3»».
-String journalOpTitle(String action, String type, String what) {
+/// Вид связи из журнала словом («добыча», «шаг квеста»); у самих объектов — null:
+/// их строка в истории начинается с названия.
+String? journalLinkWord(String type) {
   final t = opTypeByName(type);
-  return '${_actions[OpAction.values.byName(action)]} · ${t == null ? type : _types[t]} $what';
+  return switch (t) {
+    OpType.loot ||
+    OpType.questStep ||
+    OpType.questReward ||
+    OpType.eventEnemy ||
+    OpType.eventItem => _types[t]!.toLowerCase(),
+    _ => null,
+  };
 }
 
 /// Заголовок операции по частям для карточки: «Изменить · Шаг квеста «Обвал», шаг 2»

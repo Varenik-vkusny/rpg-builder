@@ -43,7 +43,7 @@ void main() {
     expect(find.textContaining('Применён'), findsOneWidget);
     await t.tap(find.text(flood));
     await t.pumpAndSettle();
-    expect(find.textContaining('Изменить · Локация'), findsOneWidget);
+    expect(find.textContaining('shtolnya_3: описание'), findsOneWidget);
 
     await tapButton(t, 'revert-set-0');
     await tapButton(t, 'confirm-yes');
