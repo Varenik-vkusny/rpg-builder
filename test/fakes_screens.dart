@@ -7,6 +7,7 @@ import 'package:rpg_builder/open5e/open5e_api.dart';
 import 'package:rpg_builder/ui/object_page.dart';
 
 import 'fakes_db.dart';
+import 'fakes_worlds.dart';
 
 /// Подменённый ассистент: отдаёт заранее заданные планы по очереди
 /// и запоминает просьбы. Кончились планы — ошибка, как у упавшей функции.

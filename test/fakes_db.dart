@@ -5,7 +5,6 @@ import 'package:rpg_builder/assistant/change_set.dart';
 import 'package:rpg_builder/assistant/history.dart';
 import 'package:rpg_builder/assistant/plan.dart';
 import 'package:rpg_builder/assistant/plan_apply.dart';
-import 'package:rpg_builder/auth/auth_service.dart';
 import 'package:rpg_builder/check/world_check.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/content_repo.dart';
@@ -15,62 +14,9 @@ import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/content/manual_edit.dart';
 import 'package:rpg_builder/content/quest.dart';
 import 'package:rpg_builder/content/slug.dart';
-import 'package:rpg_builder/worlds/world.dart';
-import 'package:rpg_builder/worlds/worlds_repo.dart';
 
 import 'fakes_journal.dart';
 
-class FakeAuth implements AuthService {
-  final _changes = StreamController<bool>.broadcast();
-  String? user;
-
-  @override
-  Stream<bool> get signedInChanges => _changes.stream;
-  @override
-  bool get isSignedIn => user != null;
-
-  @override
-  Future<void> signIn(String email, String password) async {
-    user = email;
-    _changes.add(true);
-  }
-
-  @override
-  Future<void> signUp(String email, String password) => signIn(email, password);
-
-  @override
-  Future<void> signOut() async {
-    user = null;
-    _changes.add(false);
-  }
-}
-
-/// Хранит миры по владельцу — как это делает RLS в базе.
-class FakeWorlds implements WorldsRepo {
-  FakeWorlds(this.auth);
-  final FakeAuth auth;
-  final _byOwner = <String, List<World>>{};
-
-  @override
-  Future<List<World>> listMine() async =>
-      List.of(_byOwner[auth.user] ?? const []);
-
-  @override
-  Future<World> create(NewWorld w) async {
-    final world = World(
-      id: '${_byOwner.length}-${w.title}',
-      title: w.title,
-      setting: w.setting,
-      tone: w.tone,
-      levelMin: w.levelMin,
-      levelMax: w.levelMax,
-    );
-    _byOwner.putIfAbsent(auth.user!, () => []).add(world);
-    return world;
-  }
-}
-
-/// Содержимое по мирам. Миры у авторов разные, так что изоляция — через FakeWorlds.
 class FakeContent implements ContentRepo {
   final _locations = <String, List<Location>>{};
 

@@ -9,19 +9,27 @@ import 'worlds_repo.dart';
 const _maxLevel = 20;
 
 class NewWorldScreen extends StatefulWidget {
-  const NewWorldScreen({super.key, required this.repo});
+  const NewWorldScreen({super.key, required this.repo, this.editing});
 
   final WorldsRepo repo;
+
+  /// Мир, который переименовывают; null — создаётся новый.
+  final World? editing;
 
   @override
   State<NewWorldScreen> createState() => _NewWorldScreenState();
 }
 
 class _NewWorldScreenState extends State<NewWorldScreen> {
-  final _title = TextEditingController();
-  final _setting = TextEditingController();
-  final _tone = TextEditingController();
-  RangeValues _levels = const RangeValues(1, 10);
+  late final _title = TextEditingController(text: widget.editing?.title);
+  late final _setting = TextEditingController(text: widget.editing?.setting);
+  late final _tone = TextEditingController(text: widget.editing?.tone);
+  late RangeValues _levels = widget.editing == null
+      ? const RangeValues(1, 10)
+      : RangeValues(
+          widget.editing!.levelMin.toDouble(),
+          widget.editing!.levelMax.toDouble(),
+        );
   bool _busy = false;
   String? _error;
 
@@ -45,16 +53,25 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
       _error = null;
     });
     try {
-      await widget.repo.create(
-        NewWorld(
-          title: title,
-          setting: _setting.text.trim(),
-          tone: _tone.text.trim(),
-          levelMin: _levels.start.round(),
-          levelMax: _levels.end.round(),
-        ),
+      final draft = NewWorld(
+        title: title,
+        setting: _setting.text.trim(),
+        tone: _tone.text.trim(),
+        levelMin: _levels.start.round(),
+        levelMax: _levels.end.round(),
       );
-      if (mounted) closeDone(context, 'Мир создан: $title');
+      final old = widget.editing;
+      if (old == null) {
+        await widget.repo.create(draft);
+      } else {
+        await widget.repo.update(old.id, draft);
+      }
+      if (mounted) {
+        closeDone(
+          context,
+          old == null ? 'Мир создан: $title' : 'Мир сохранён: $title',
+        );
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -68,7 +85,7 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Новый мир')),
+      appBar: AppBar(title: Text(widget.editing == null ? 'Новый мир' : 'Мир')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -111,7 +128,7 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
           FilledButton(
             key: const Key('world-save'),
             onPressed: _busy ? null : _save,
-            child: const Text('Создать'),
+            child: Text(widget.editing == null ? 'Создать' : 'Сохранить'),
           ),
         ],
       ),

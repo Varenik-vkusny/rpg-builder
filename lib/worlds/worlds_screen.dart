@@ -8,6 +8,7 @@ import '../open5e/open5e_api.dart';
 import 'new_world_screen.dart';
 import 'world_home.dart';
 import '../ui/cover_card.dart';
+import '../ui/messages.dart';
 import '../ui/parts.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
@@ -46,6 +47,60 @@ class _WorldsScreenState extends State<WorldsScreen> {
       MaterialPageRoute(builder: (_) => NewWorldScreen(repo: widget.repo)),
     );
     if (created == true) _reload();
+  }
+
+  Future<void> _manage(World w) async {
+    final what = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: const Key('world-rename'),
+              leading: const Icon(Symbols.edit_rounded),
+              title: const Text('Переименовать'),
+              onTap: () => Navigator.of(context).pop('rename'),
+            ),
+            ListTile(
+              key: const Key('world-delete'),
+              leading: const Icon(Symbols.delete_rounded),
+              title: const Text('Удалить'),
+              onTap: () => Navigator.of(context).pop('delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || what == null) return;
+    if (what == 'rename') {
+      final saved = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => NewWorldScreen(repo: widget.repo, editing: w),
+        ),
+      );
+      if (saved == true) _reload();
+    } else {
+      await _delete(w);
+    }
+  }
+
+  Future<void> _delete(World w) async {
+    final yes = await confirmAction(
+      context,
+      title: 'Удалить «${w.title}»?',
+      text: 'Мир и вся его история удалятся навсегда.',
+      action: 'Удалить',
+    );
+    if (!yes) return;
+    try {
+      await widget.repo.delete(w.id);
+      if (mounted) showDone(context, 'Мир удалён: ${w.title}');
+    } catch (e) {
+      if (mounted) showDone(context, 'Не удалось удалить: $e');
+    }
+    _reload();
   }
 
   @override
@@ -100,6 +155,7 @@ class _WorldsScreenState extends State<WorldsScreen> {
                     icon: Symbols.public_rounded,
                     seed: w.id,
                     caption: _subtitle(w),
+                    onLongPress: () => _manage(w),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => WorldHome(

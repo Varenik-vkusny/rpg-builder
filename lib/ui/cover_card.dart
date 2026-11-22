@@ -15,6 +15,7 @@ class CoverCard extends StatelessWidget {
     this.counters = const [],
     this.caption,
     this.onTap,
+    this.onLongPress,
     this.height = 128,
   });
 
@@ -26,6 +27,7 @@ class CoverCard extends StatelessWidget {
   final List<Counter> counters;
   final String? caption;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final double height;
 
   /// Номер цвета по ключу: один и тот же ключ — один и тот же цвет между запусками.
@@ -46,6 +48,7 @@ class CoverCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: SizedBox(
           height: height,
           child: Stack(
