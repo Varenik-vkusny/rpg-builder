@@ -103,6 +103,8 @@ void main() {
       expect(find.text(_tooLong), findsOneWidget, reason: kind);
       await t.pageBack();
       await t.pumpAndSettle();
+      // Введённое не сохранено — «назад» спрашивает, бросить ли (22.11).
+      await tapButton(t, 'confirm-yes');
     }
     expect(await content.locations(minesId), hasLength(2));
     expect(await content.events(minesId), isEmpty);

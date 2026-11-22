@@ -19,6 +19,12 @@ Future<void> tapKey(WidgetTester t, String key) async {
 Future<void> back(WidgetTester t) async {
   await t.binding.handlePopRoute();
   await t.pumpAndSettle();
+  // Форма с введённым спрашивает, бросить ли (22.11) — бросаем.
+  final discard = find.byKey(const Key('confirm-yes'));
+  if (discard.evaluate().isNotEmpty) {
+    await t.tap(discard);
+    await t.pumpAndSettle();
+  }
 }
 
 /// Всё, во что автор что-то вводит или что выбирает.

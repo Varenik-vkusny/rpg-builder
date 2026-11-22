@@ -11,6 +11,7 @@ import 'manual_edit.dart';
 import 'manual_create.dart';
 import 'manual_save.dart';
 import 'nesting.dart';
+import '../ui/discard_guard.dart';
 
 class NewLocationScreen extends StatefulWidget {
   const NewLocationScreen({
@@ -38,7 +39,11 @@ class NewLocationScreen extends StatefulWidget {
   State<NewLocationScreen> createState() => _NewLocationScreenState();
 }
 
-class _NewLocationScreenState extends State<NewLocationScreen> {
+class _NewLocationScreenState extends State<NewLocationScreen>
+    with DiscardGuard<NewLocationScreen> {
+  @override
+  List<Object?> get formValues => [_title, _description, _levels, _parentId];
+
   final _title = TextEditingController();
   final _description = TextEditingController();
   late RangeValues _levels;
@@ -148,7 +153,9 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => guardPop(_form(context));
+
+  Widget _form(BuildContext context) {
     final w = widget.world;
     return Scaffold(
       appBar: AppBar(

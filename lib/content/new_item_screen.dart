@@ -10,6 +10,7 @@ import 'item.dart';
 import 'manual_edit.dart';
 import 'manual_create.dart';
 import 'manual_save.dart';
+import '../ui/discard_guard.dart';
 
 class NewItemScreen extends StatefulWidget {
   const NewItemScreen({
@@ -33,7 +34,18 @@ class NewItemScreen extends StatefulWidget {
   State<NewItemScreen> createState() => _NewItemScreenState();
 }
 
-class _NewItemScreenState extends State<NewItemScreen> {
+class _NewItemScreenState extends State<NewItemScreen>
+    with DiscardGuard<NewItemScreen> {
+  @override
+  List<Object?> get formValues => [
+    _title,
+    _level,
+    _stat,
+    _price,
+    _kind,
+    _rarity,
+  ];
+
   final _title = TextEditingController();
   final _level = TextEditingController();
   final _stat = TextEditingController();
@@ -182,7 +194,9 @@ class _NewItemScreenState extends State<NewItemScreen> {
       );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => guardPop(_form(context));
+
+  Widget _form(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_editing ? 'Изменить предмет' : 'Новый предмет'),

@@ -11,6 +11,7 @@ import 'event.dart';
 import 'event_edit.dart';
 import 'manual_create.dart';
 import 'manual_save.dart';
+import '../ui/discard_guard.dart';
 
 /// Форма события (5б.1): сцена в месте — враги с числом и предметы.
 class NewEventScreen extends StatefulWidget {
@@ -45,7 +46,17 @@ class _EnemyRow {
   final amount = TextEditingController(text: '1');
 }
 
-class _NewEventScreenState extends State<NewEventScreen> {
+class _NewEventScreenState extends State<NewEventScreen>
+    with DiscardGuard<NewEventScreen> {
+  @override
+  List<Object?> get formValues => [
+    _title,
+    _description,
+    _locationId,
+    for (final e in _enemies) ...[e.characterId, e.amount],
+    ..._items,
+  ];
+
   final _title = TextEditingController();
   final _description = TextEditingController();
   String? _locationId;
@@ -279,7 +290,9 @@ class _NewEventScreenState extends State<NewEventScreen> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => guardPop(_form(context));
+
+  Widget _form(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_editing ? 'Изменить событие' : 'Новое событие'),

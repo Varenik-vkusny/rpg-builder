@@ -15,6 +15,7 @@ import 'manual_create.dart';
 import 'manual_save.dart';
 import 'quest.dart';
 import 'quest_form_parts.dart';
+import '../ui/discard_guard.dart';
 
 class NewQuestScreen extends StatefulWidget {
   const NewQuestScreen({
@@ -46,7 +47,17 @@ class NewQuestScreen extends StatefulWidget {
   State<NewQuestScreen> createState() => _NewQuestScreenState();
 }
 
-class _NewQuestScreenState extends State<NewQuestScreen> {
+class _NewQuestScreenState extends State<NewQuestScreen>
+    with DiscardGuard<NewQuestScreen> {
+  @override
+  List<Object?> get formValues => [
+    _title,
+    _description,
+    _giverId,
+    for (final s in _steps) ...[s.kind, s.targetId, s.amount],
+    for (final r in _rewards) r.itemId,
+  ];
+
   final _title = TextEditingController();
   final _description = TextEditingController();
   String? _giverId;
@@ -180,7 +191,9 @@ class _NewQuestScreenState extends State<NewQuestScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => guardPop(_form(context));
+
+  Widget _form(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_editing ? 'Изменить квест' : 'Новый квест'),

@@ -12,6 +12,7 @@ import 'location.dart';
 import 'manual_edit.dart';
 import 'manual_create.dart';
 import 'manual_save.dart';
+import '../ui/discard_guard.dart';
 
 class NewCharacterScreen extends StatefulWidget {
   const NewCharacterScreen({
@@ -45,7 +46,20 @@ class _LootRow {
   final chance = TextEditingController();
 }
 
-class _NewCharacterScreenState extends State<NewCharacterScreen> {
+class _NewCharacterScreenState extends State<NewCharacterScreen>
+    with DiscardGuard<NewCharacterScreen> {
+  @override
+  List<Object?> get formValues => [
+    _title,
+    _description,
+    _level,
+    _hp,
+    _attack,
+    _role,
+    _locationId,
+    for (final r in _loot) ...[r.itemId, r.chance],
+  ];
+
   final _title = TextEditingController();
   final _description = TextEditingController();
   final _level = TextEditingController(text: '1');
@@ -252,7 +266,9 @@ class _NewCharacterScreenState extends State<NewCharacterScreen> {
       );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => guardPop(_form(context));
+
+  Widget _form(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_editing ? 'Изменить персонажа' : 'Новый персонаж'),

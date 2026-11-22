@@ -5,6 +5,7 @@ import '../ui/input_rules.dart';
 import '../ui/messages.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
+import '../ui/discard_guard.dart';
 
 const _maxLevel = 20;
 
@@ -20,7 +21,11 @@ class NewWorldScreen extends StatefulWidget {
   State<NewWorldScreen> createState() => _NewWorldScreenState();
 }
 
-class _NewWorldScreenState extends State<NewWorldScreen> {
+class _NewWorldScreenState extends State<NewWorldScreen>
+    with DiscardGuard<NewWorldScreen> {
+  @override
+  List<Object?> get formValues => [_title, _setting, _tone, _levels];
+
   late final _title = TextEditingController(text: widget.editing?.title);
   late final _setting = TextEditingController(text: widget.editing?.setting);
   late final _tone = TextEditingController(text: widget.editing?.tone);
@@ -83,7 +88,9 @@ class _NewWorldScreenState extends State<NewWorldScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => guardPop(_form(context));
+
+  Widget _form(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.editing == null ? 'Новый мир' : 'Мир')),
       body: ListView(
