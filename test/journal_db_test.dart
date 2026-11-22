@@ -174,18 +174,29 @@ void main() {
   });
 
   test('журнал: враг без добычи роль сменить может', () async {
-    await a.from('loot').delete().eq('project_id', world.id);
+    // Свой враг без добычи и без связей: Слизень — цель «убить» в квесте, его роль
+    // стережёт другая защита (role_keeps_links, 22.11).
+    await a.from('characters').insert({
+      'project_id': world.id,
+      'slug': 'krysa_bez_dobychi',
+      'title': 'Крыса',
+      'description': '',
+      'role': 'enemy',
+      'level': 1,
+      'hp': 5,
+      'attack': 1,
+    });
     await a
         .from('characters')
         .update({'role': 'npc'})
         .eq('project_id', world.id)
-        .eq('slug', 'slizen');
-    final slime = await a
+        .eq('slug', 'krysa_bez_dobychi');
+    final rat = await a
         .from('characters')
         .select('role')
         .eq('project_id', world.id)
-        .eq('slug', 'slizen')
+        .eq('slug', 'krysa_bez_dobychi')
         .single();
-    expect(slime['role'], 'npc');
+    expect(rat['role'], 'npc');
   });
 }

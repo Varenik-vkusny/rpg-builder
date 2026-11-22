@@ -4,6 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:rpg_builder/content/character.dart';
+import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/manual_edit.dart';
 import 'package:rpg_builder/content/manual_save.dart';
 import 'package:rpg_builder/content/quest.dart';
@@ -125,26 +127,30 @@ void main() {
     },
   );
 
-  testWidgets('правка вручную: у предмета вид и у персонажа роль не меняются', (
-    t,
-  ) async {
-    await openMines(t);
-    await open(t, 'kirka');
-    expect(find.text('Изменить предмет'), findsOneWidget);
-    final kinds = find.byWidgetPredicate(
-      (w) => w is ChoiceChip && w.onSelected == null,
-    );
-    expect(kinds, findsWidgets);
-    // Назад из формы — на страницу предмета, ещё раз — в мир.
-    await t.pageBack();
-    await t.pumpAndSettle();
-    await t.pageBack();
-    await t.pumpAndSettle();
-    await open(t, 'slizen');
-    expect(find.text('Изменить персонажа'), findsOneWidget);
-    expect(
-      find.byWidgetPredicate((w) => w is ChoiceChip && w.onSelected == null),
-      findsWidgets,
-    );
-  });
+  // Владелец 22.11 (заход 1 репетиции): роль и вид меняются формой правки — через
+  // историю; смену, которая ломает квест или событие, проверка не пускает с причиной.
+  testWidgets(
+    'правка вручную: вид предмета меняется; роль, ломающая квест, — нет',
+    (t) async {
+      final content = await openMines(t);
+      await open(t, 'kirka');
+      expect(find.text('Изменить предмет'), findsOneWidget);
+      await tapButton(t, 'item-kind-misc');
+      await tapButton(t, 'item-save');
+      final w = await content.snapshotOf(minesId);
+      expect(w.items.firstWhere((i) => i.slug == 'kirka').kind, ItemKind.misc);
+      expect(content.journal.last.entry.request, 'Правка вручную: Кирка');
+
+      // Бригадир выдаёт квест — врагом стать не может, автор видит причину.
+      await open(t, 'brigadir');
+      await tapButton(t, 'character-role-enemy');
+      await tapButton(t, 'character-save');
+      expect(find.textContaining('квест выдаёт только житель'), findsOneWidget);
+      final after = await content.snapshotOf(minesId);
+      expect(
+        after.characters.firstWhere((c) => c.slug == 'brigadir').role,
+        Role.npc,
+      );
+    },
+  );
 }

@@ -309,9 +309,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen>
                       key: Key('character-role-${r.name}'),
                       label: Text(r.label),
                       selected: _role == r,
-                      onSelected: _editing
-                          ? null
-                          : (_) => setState(() => _role = r),
+                      onSelected: (_) => setState(() => _role = r),
                     ),
                 ],
               ),

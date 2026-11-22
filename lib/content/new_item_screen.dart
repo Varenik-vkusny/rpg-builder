@@ -231,9 +231,7 @@ class _NewItemScreenState extends State<NewItemScreen>
                       key: Key('item-kind-${k.name}'),
                       label: Text(k.label),
                       selected: _kind == k,
-                      onSelected: _editing
-                          ? null
-                          : (_) => setState(() => _kind = k),
+                      onSelected: (_) => setState(() => _kind = k),
                     ),
                 ],
               ),

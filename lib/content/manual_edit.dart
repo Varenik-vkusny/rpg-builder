@@ -114,13 +114,14 @@ ManualEdit editLocation(String worldId, Location old, NewLocation now) {
   );
 }
 
-/// Вид предмета не меняется (как и в плане): урон и защита держатся на нём.
+/// Вид предмета меняется формой (22.11): урон и защиту форма даёт по новому виду.
 ManualEdit editItem(String worldId, Item old, NewItem now) {
   final row = rowDiff(
     worldId,
     old.id,
     {
       'title': old.title,
+      'kind': old.kind.name,
       'rarity': old.rarity.name,
       'level': old.level,
       'damage': old.damage,
@@ -129,6 +130,7 @@ ManualEdit editItem(String worldId, Item old, NewItem now) {
     },
     {
       'title': now.title,
+      'kind': now.kind.name,
       'rarity': now.rarity.name,
       'level': now.level,
       'damage': now.damage,
@@ -147,7 +149,7 @@ ManualEdit editItem(String worldId, Item old, NewItem now) {
         id: old.id,
         slug: old.slug,
         title: now.title,
-        kind: old.kind,
+        kind: now.kind,
         rarity: now.rarity,
         level: now.level,
         damage: now.damage,
@@ -161,7 +163,8 @@ ManualEdit editItem(String worldId, Item old, NewItem now) {
   );
 }
 
-/// Роль не меняется (как и в плане). Добыча — по разнице: убрать, поменять шанс, добавить.
+/// Роль меняется формой (22.11): не враг — добыча уходит тем же набором; квест и событие,
+/// которые держатся на роли, ловит проверка (role_rules.dart). Добыча — по разнице.
 ManualEdit editCharacter(
   String worldId,
   Character old,
@@ -174,6 +177,7 @@ ManualEdit editCharacter(
     {
       'title': old.title,
       'description': old.description,
+      'role': old.role.name,
       'location_id': old.locationId,
       'level': old.level,
       'hp': old.hp,
@@ -182,35 +186,18 @@ ManualEdit editCharacter(
     {
       'title': now.title,
       'description': now.description,
+      'role': now.role.name,
       'location_id': now.locationId,
       'level': now.level,
       'hp': now.hp,
       'attack': now.attack,
     },
   );
-  final was = {for (final l in old.loot) l.itemId: l.chance};
-  final will = {for (final l in now.loot) l.itemId: l.chance};
-  String label(String itemId) => '${old.slug}/${itemSlugs[itemId] ?? itemId}';
-  Map<String, dynamic> lootRow(String itemId, [double? chance]) => {
-    'project_id': worldId,
-    'character_id': old.id,
-    'item_id': itemId,
-    'chance': ?chance,
-  };
+  final enemy = now.role == Role.enemy;
   return ManualEdit(
     title: 'Правка вручную: ${now.title}',
     slug: old.slug,
-    ops: [
-      if (row != null) rowOp('update', 'character', old.slug, row),
-      for (final id in was.keys)
-        if (!will.containsKey(id))
-          rowOp('delete', 'loot', label(id), lootRow(id))
-        else if (will[id] != was[id])
-          rowOp('update', 'loot', label(id), lootRow(id, will[id])),
-      for (final id in will.keys)
-        if (!was.containsKey(id))
-          rowOp('create', 'loot', label(id), lootRow(id, will[id])),
-    ],
+    ops: _characterOps(worldId, old, now, row, itemSlugs, enemy: enemy),
     applyTo: (w) => replaceObject(
       w,
       old.id,
@@ -219,9 +206,9 @@ ManualEdit editCharacter(
         slug: old.slug,
         title: now.title,
         description: now.description,
-        role: old.role,
+        role: now.role,
         locationId: now.locationId,
-        loot: old.role == Role.enemy ? now.loot : const [],
+        loot: enemy ? now.loot : const [],
         level: now.level,
         hp: now.hp,
         attack: now.attack,
@@ -366,3 +353,39 @@ ManualEdit deleteObject(
   ],
   applyTo: (w) => replaceObject(w, id, null),
 );
+
+/// Операции правки персонажа: добыча убирается до смены роли (база не даёт врагу
+/// с добычей стать жителем), потом сам персонаж, потом шансы и новая добыча.
+List<Map<String, dynamic>> _characterOps(
+  String worldId,
+  Character old,
+  NewCharacter now,
+  Map<String, dynamic>? row,
+  Map<String, String> itemSlugs, {
+  required bool enemy,
+}) {
+  final was = {for (final l in old.loot) l.itemId: l.chance};
+  final will = {
+    if (enemy)
+      for (final l in now.loot) l.itemId: l.chance,
+  };
+  String label(String itemId) => '${old.slug}/${itemSlugs[itemId] ?? itemId}';
+  Map<String, dynamic> lootRow(String itemId, [double? chance]) => {
+    'project_id': worldId,
+    'character_id': old.id,
+    'item_id': itemId,
+    'chance': ?chance,
+  };
+  return [
+    for (final id in was.keys)
+      if (!will.containsKey(id))
+        rowOp('delete', 'loot', label(id), lootRow(id)),
+    if (row != null) rowOp('update', 'character', old.slug, row),
+    for (final id in was.keys)
+      if (will.containsKey(id) && will[id] != was[id])
+        rowOp('update', 'loot', label(id), lootRow(id, will[id])),
+    for (final id in will.keys)
+      if (!was.containsKey(id))
+        rowOp('create', 'loot', label(id), lootRow(id, will[id])),
+  ];
+}

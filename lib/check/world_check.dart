@@ -5,6 +5,7 @@ import '../content/event.dart';
 import '../content/item.dart';
 import '../content/location.dart';
 import '../content/quest.dart';
+import 'role_rules.dart';
 import 'nesting_rules.dart';
 import 'warning_rules.dart';
 
@@ -65,7 +66,8 @@ List<Problem> checkWorld(WorldSnapshot w) => [
 ];
 
 /// Ошибки: ссылка на несуществующий объект, квест без шагов или выдающего,
-/// событие без места, вложенность мест (место в самом себе, глубже трёх уровней).
+/// событие без места, вложенность мест (место в самом себе, глубже трёх уровней),
+/// роли, на которых держатся квест и событие (role_rules.dart).
 List<Problem> errorRules(WorldSnapshot w) {
   final ids = _Ids(w);
   return [
@@ -81,6 +83,7 @@ List<Problem> errorRules(WorldSnapshot w) {
     ],
     for (final q in w.quests) ..._questErrors(q, ids),
     for (final e in w.events) ..._eventErrors(e, ids),
+    ...roleErrors(w),
   ];
 }
 
