@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../ui/theme.dart';
+import 'door_inside.dart';
 import 'holst_parts.dart';
 import 'holst_scene.dart';
 
@@ -30,7 +31,11 @@ class DoorTile extends StatelessWidget {
     final hue = placeHue(context, door.place);
     Color tint(double a) =>
         Color.alphaBlend(hue.withValues(alpha: a), s.surface);
-    final inside = door.inside.isEmpty ? 'пусто' : door.inside.join(', ');
+    final small = TextStyle(
+      fontSize: 12,
+      height: 1.3,
+      color: s.onSurfaceVariant,
+    );
     // Дверь нажимается целиком (замечание владельца 17.10), стрелка — для озвучки.
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -92,16 +97,9 @@ class DoorTile extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 40),
                     child: mark != null
                         ? _DoorMark(mark!)
-                        : Text(
-                            'внутри: $inside',
-                            maxLines: 2,
-                            overflow: TextOverflow.clip,
-                            style: TextStyle(
-                              fontSize: 12,
-                              height: 1.3,
-                              color: s.onSurfaceVariant,
-                            ),
-                          ),
+                        : door.inside.isEmpty
+                        ? Text('пусто', style: small)
+                        : DoorInside(names: door.inside, style: small),
                   ),
                 ],
               ),
