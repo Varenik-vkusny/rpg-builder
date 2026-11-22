@@ -33,6 +33,7 @@ import 'holst_bars.dart';
 import 'glyph_picker.dart';
 import 'glyphs.dart';
 import 'holst_doors.dart';
+import 'ru_place.dart';
 import 'holst_help.dart';
 import 'holst_legend.dart';
 import 'holst_links.dart';

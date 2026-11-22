@@ -1,8 +1,8 @@
-import 'package:rpg_builder/content/character.dart';
 // Прибор С5: объекты из палитры получают разные имена по виду — «Враг 1», «Враг 2»,
 // «Житель 1»; проверка мира не ругается на «название повторяется».
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/check/world_check.dart';
+import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/map/gesture_create.dart';
 
 import 'holst_build_test.dart' show build, drag, placeCenter, snack;
@@ -16,7 +16,7 @@ void main() {
     await pumpHolst(t, c);
     await build(t);
     await drag(t, 'enemy', placeCenter(t, 'baraki'));
-    expect(snack(t), 'Создано: Враг 1 в «Бараки»');
+    expect(snack(t), 'Создано: Враг 1 в Бараках');
     await drag(t, 'enemy', placeCenter(t, 'baraki'));
     expect(snack(t), startsWith('Создано: Враг 2'));
     await drag(t, 'enemy', placeCenter(t, 'baraki'));
@@ -60,4 +60,18 @@ void main() {
       expect(nextTitle(NewKind.enemy, w), 'Враг 3');
     },
   );
+
+  testWidgets('полоса: место в предложном падеже; не угадать — запасной вид', (
+    t,
+  ) async {
+    final c = await ashMines();
+    await pumpHolst(t, c);
+    await build(t);
+    await drag(t, 'npc', placeCenter(t, 'rynok'));
+    expect(snack(t), 'Создано: Житель 1 в Рынке');
+    await drag(t, 'event', placeCenter(t, 'baraki'));
+    expect(snack(t), 'Создано: Событие 1 в Бараках');
+    await drag(t, 'enemy', placeCenter(t, 'shtolnya_3'));
+    expect(snack(t), 'Создано: Враг 1 в Штольне №3');
+  });
 }

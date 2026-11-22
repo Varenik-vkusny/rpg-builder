@@ -62,7 +62,7 @@ extension _Build on _HolstState {
     final where = switch (kind) {
       NewKind.item => ' на полке',
       NewKind.place => '',
-      _ => ' в «${place!.title}»',
+      _ => ' ${inPlace(place!.title)}',
     };
     await _gesture(
       made.edit,

@@ -64,7 +64,7 @@ void main() {
     final sets = c.journal.length;
     await drag(t, 'enemy', placeCenter(t, 'baraki'));
 
-    expect(snack(t), 'Создано: Враг 1 в «Бараки»');
+    expect(snack(t), 'Создано: Враг 1 в Бараках');
     // «проверено · в истории» автору не пишем (владелец 19.11).
     expect(snackSub(t), isNull);
     expect(c.journal.length, sets + 1);
