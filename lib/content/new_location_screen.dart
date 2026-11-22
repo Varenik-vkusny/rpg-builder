@@ -8,6 +8,7 @@ import 'content_repo.dart';
 import 'form_kit.dart';
 import 'location.dart';
 import 'manual_edit.dart';
+import 'manual_create.dart';
 import 'manual_save.dart';
 import 'nesting.dart';
 
@@ -105,16 +106,19 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
       }
       return;
     }
-    try {
-      await widget.repo.createLocation(widget.world.id, now);
-      if (mounted) closeDone(context, 'Создано: $title');
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _error = 'Не удалось сохранить: $e';
-        });
-      }
+    final error = await createManually(
+      widget.repo,
+      widget.world.id,
+      (w) => createLocationEdit(widget.world.id, w, now),
+    );
+    if (!mounted) return;
+    if (error == null) {
+      closeDone(context, 'Создано: $title');
+    } else {
+      setState(() {
+        _busy = false;
+        _error = error;
+      });
     }
   }
 

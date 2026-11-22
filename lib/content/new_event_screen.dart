@@ -9,6 +9,7 @@ import 'content_repo.dart';
 import 'form_kit.dart';
 import 'event.dart';
 import 'event_edit.dart';
+import 'manual_create.dart';
 import 'manual_save.dart';
 
 /// Форма события (5б.1): сцена в месте — враги с числом и предметы.
@@ -153,11 +154,11 @@ class _NewEventScreenState extends State<NewEventScreen> {
         editEvent(widget.world.id, widget.editing!, now, slugs),
       );
     } else {
-      try {
-        await widget.repo.createEvent(widget.world.id, now);
-      } catch (e) {
-        error = 'Не удалось сохранить: $e';
-      }
+      error = await createManually(
+        widget.repo,
+        widget.world.id,
+        (w) => createEventEdit(widget.world.id, w, now),
+      );
     }
     _done(error, _editing ? 'Сохранено: $title' : 'Создано: $title');
   }

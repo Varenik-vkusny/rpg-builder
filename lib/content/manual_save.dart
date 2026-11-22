@@ -38,6 +38,22 @@ Future<String?> saveManualEdit(
   }
 }
 
+/// Создание формой (правило 11): свежий снимок мира — для уникального slug и проверки,
+/// дальше тот же путь, что у правки: правила на копии, набор в историю.
+Future<String?> createManually(
+  ContentRepo repo,
+  String worldId,
+  ManualEdit Function(WorldSnapshot) build,
+) async {
+  final WorldSnapshot world;
+  try {
+    world = await repo.snapshot(worldId);
+  } catch (e) {
+    return 'Не удалось сохранить — в мире ничего не изменилось: $e';
+  }
+  return saveManualEdit(repo, worldId, world, build(world));
+}
+
 /// Удаление: на объект ссылаются — нельзя (сначала убери ссылки). Своя добыча врага,
 /// свои шаги и награды квеста уходят вместе с ним и возвращаются откатом.
 Future<String?> deleteManually(

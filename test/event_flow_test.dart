@@ -122,12 +122,13 @@ void main() {
     await tapButton(t, 'event-save');
     expect(find.text('Изменить событие'), findsNothing);
     expect((await content.events(minesId)).single.enemies.single.amount, 5);
+    // Создание формой тоже в истории (правило 11, 22.11): сначала «создано», потом правка.
     expect(
-      content.journal.single.entry.request,
-      'Правка вручную: Засада у лебёдки',
+      [for (final j in content.journal) j.entry.request],
+      ['Создано вручную: Засада у лебёдки', 'Правка вручную: Засада у лебёдки'],
     );
     expect(
-      [for (final op in content.journal.single.entry.ops) op.type],
+      [for (final op in content.journal.last.entry.ops) op.type],
       ['event_enemy'],
     );
 
@@ -198,9 +199,18 @@ void main() {
       await t.binding.handlePopRoute();
       await t.pumpAndSettle();
     }
-    expect((await content.characters(minesId)).map((c) => c.slug), contains('krysa'));
-    expect((await content.items(minesId)).map((i) => i.slug), contains('fonar'));
-    expect((await content.locations(minesId)).map((l) => l.slug), contains('rynok'));
+    expect(
+      (await content.characters(minesId)).map((c) => c.slug),
+      contains('krysa'),
+    );
+    expect(
+      (await content.items(minesId)).map((i) => i.slug),
+      contains('fonar'),
+    );
+    expect(
+      (await content.locations(minesId)).map((l) => l.slug),
+      contains('rynok'),
+    );
 
     await tapButton(t, 'open-$slug');
     await tapButton(t, 'object-edit');
