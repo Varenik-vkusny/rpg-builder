@@ -83,46 +83,52 @@ void main() {
       '${st.kind.name}:${s.titles[st.targetId]}',
   ].join(' → ');
 
-  test('шаг «пройти событие»: ложится в базу, держит событие, откат убирает шаг', () async {
-    final before = steps(await w());
-    await addEventStep();
-    expect(steps(await w()), '$before → event:Засада у лебёдки');
+  test(
+    'шаг «пройти событие»: ложится в базу, держит событие, откат убирает шаг',
+    () async {
+      final before = steps(await w());
+      await addEventStep();
+      expect(steps(await w()), '$before → event:Засада у лебёдки');
 
-    // Событие под шагом квеста база удалить не даёт — и набором, и напрямую.
-    await expectLater(
-      repo.applyManualEdit(
-        world.id,
-        deleteObject(
+      // Событие под шагом квеста база удалить не даёт — и набором, и напрямую.
+      await expectLater(
+        repo.applyManualEdit(
           world.id,
-          type: 'event',
-          id: ambush.id,
-          slug: ambush.slug,
-          title: ambush.title,
+          deleteObject(
+            world.id,
+            type: 'event',
+            id: ambush.id,
+            slug: ambush.slug,
+            title: ambush.title,
+          ),
         ),
-      ),
-      throwsA(isA<PostgrestException>()),
-    );
-    expect((await w()).events, hasLength(1));
+        throwsA(isA<PostgrestException>()),
+      );
+      expect((await w()).events, hasLength(1));
 
-    await revertLast();
-    expect(steps(await w()), before);
-  });
+      await revertLast();
+      expect(steps(await w()), before);
+    },
+  );
 
-  test('новый квест с шагом «пройти событие» создаётся одной транзакцией', () async {
-    final s = await w();
-    final q = await repo.createQuest(
-      world.id,
-      NewQuest(
-        title: 'Лебёдка',
-        description: '',
-        giverId: id(s, 'brigadir'),
-        steps: [QuestStep(kind: StepKind.event, targetId: ambush.id)],
-      ),
-    );
-    final back = (await w()).quests.firstWhere((x) => x.id == q.id);
-    expect(back.steps.single.kind, StepKind.event);
-    expect(back.steps.single.targetId, ambush.id);
-  });
+  test(
+    'новый квест с шагом «пройти событие» создаётся одной транзакцией',
+    () async {
+      final s = await w();
+      final q = await repo.createQuest(
+        world.id,
+        NewQuest(
+          title: 'Лебёдка',
+          description: '',
+          giverId: id(s, 'brigadir'),
+          steps: [QuestStep(kind: StepKind.event, targetId: ambush.id)],
+        ),
+      );
+      final back = (await w()).quests.firstWhere((x) => x.id == q.id);
+      expect(back.steps.single.kind, StepKind.event);
+      expect(back.steps.single.targetId, ambush.id);
+    },
+  );
 
   test('база не пускает шаг «пройти событие» без события, с лишней целью, '
       'с количеством', () async {

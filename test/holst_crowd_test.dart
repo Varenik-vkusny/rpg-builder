@@ -100,7 +100,7 @@ void main() {
       await drag(t, 'enemy', placeCenter(t, 'baraki'));
       await settle(t);
       final made = (await c.snapshotOf(holstWorld.id)).characters
-          .firstWhere((x) => x.title == 'Новый враг');
+          .firstWhere((x) => x.title == 'Враг 1');
       expect(made.locationId, barracks);
       expect(find.byKey(Key('token-${made.slug}')), findsOneWidget);
     },
@@ -164,7 +164,7 @@ void main() {
       await drag(t, 'enemy', placeCenter(t, 'baraki'));
       await settle(t);
       final made = (await c.snapshotOf(holstWorld.id)).characters
-          .firstWhere((x) => x.title == 'Новый враг');
+          .firstWhere((x) => x.title == 'Враг 1');
       expect(find.byKey(Key('token-${made.slug}')), findsOneWidget);
       expect(t.takeException(), isNull);
     },

@@ -26,10 +26,14 @@ String server(String name, String fromBuild) {
   final file = File('.env');
   if (file.existsSync()) {
     for (final line in file.readAsLinesSync()) {
-      if (line.startsWith('$name=')) return line.substring(name.length + 1).trim();
+      if (line.startsWith('$name=')) {
+        return line.substring(name.length + 1).trim();
+      }
     }
   }
-  fail('Не задан $name: нет ни в сборке, ни в окружении, ни в .env (см. README.md)');
+  fail(
+    'Не задан $name: нет ни в сборке, ни в окружении, ни в .env (см. README.md)',
+  );
 }
 
 String get _url => server('SUPABASE_URL', supabaseUrl);
@@ -62,10 +66,7 @@ Future<SupabaseClient> author(String email, String password) async {
 Future<SupabaseClient> testAuthor() async {
   final t = await author(env('RPGB_TEST_EMAIL_T'), env('RPGB_TEST_PASSWORD'));
   final hourAgo = DateTime.now().toUtc().subtract(const Duration(hours: 1));
-  await t
-      .from('projects')
-      .delete()
-      .lt('created_at', hourAgo.toIso8601String());
+  await t.from('projects').delete().lt('created_at', hourAgo.toIso8601String());
   return t;
 }
 

@@ -95,13 +95,18 @@ void main() {
       // План чистый — строки проверки нет (владелец 19.11: «ошибок 0» автору не нужно).
       expect(k('holst-plan-check'), findsNothing);
       // Новое — только «стало», без «— →».
-      for (final e in find
-          .descendant(of: k('holst-plan'), matching: find.byType(RichText))
-          .evaluate()) {
+      for (final e
+          in find
+              .descendant(of: k('holst-plan'), matching: find.byType(RichText))
+              .evaluate()) {
         final x = (e.widget as RichText).text.toPlainText();
         expect(x.contains('—  →') || x.startsWith('→'), isFalse, reason: x);
         // Убранное — только «было»: «Ключ 35%», без «→ —».
-        expect(x.contains('→  —') || x.trimRight().endsWith('→'), isFalse, reason: x);
+        expect(
+          x.contains('→  —') || x.trimRight().endsWith('→'),
+          isFalse,
+          reason: x,
+        );
       }
       // Утопленник — новый, зелёный; Штольня — изменена; в мире пока ничего.
       final drowned = find.descendant(
@@ -217,7 +222,10 @@ void main() {
     expect(text(t, 'holst-plan-check'), startsWith('Не получится: '));
     expect(text(t, 'holst-plan-check'), isNot(contains('ошибок')));
     // Причина — из проверки, а не запасная фраза.
-    expect(text(t, 'holst-plan-check'), isNot(contains('нарушает правила мира')));
+    expect(
+      text(t, 'holst-plan-check'),
+      isNot(contains('нарушает правила мира')),
+    );
     // Причина — словами автора, без «Операция 1 (…)» и ключа «nikto» (владелец 20.11).
     expect(
       text(t, 'holst-plan-check'),

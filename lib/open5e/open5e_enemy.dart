@@ -9,7 +9,7 @@ import '../check/world_check.dart';
 import '../content/character.dart';
 import '../content/manual_edit.dart';
 import '../content/slug.dart';
-import '../map/gesture_create.dart' show newId;
+import '../content/new_id.dart';
 import 'open5e_api.dart';
 import 'open5e_import.dart' show open5eSource;
 

@@ -149,7 +149,13 @@ void main() {
 
     // Правка: поля, которые видны только у существующего объекта (добыча, шаги, награды,
     // враги и предметы события).
-    for (final slug in ['shtolnya_3', 'klyuch', 'slizen', 'obval', ambush.slug]) {
+    for (final slug in [
+      'shtolnya_3',
+      'klyuch',
+      'slizen',
+      'obval',
+      ambush.slug,
+    ]) {
       await tapKey(t, 'open-$slug');
       await tapKey(t, 'object-edit');
       await checkForm(t, 'правка $slug');

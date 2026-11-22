@@ -13,20 +13,26 @@ import 'package:supabase/supabase.dart';
 import 'db_helpers.dart';
 
 /// `20261008000021_applied_migrations.sql` → `applied_migrations`.
-String migrationName(String file) =>
-    file.replaceFirst(RegExp(r'^\d{14}_'), '').replaceFirst(RegExp(r'\.sql$'), '');
+String migrationName(String file) => file
+    .replaceFirst(RegExp(r'^\d{14}_'), '')
+    .replaceFirst(RegExp(r'\.sql$'), '');
 
 void main() {
   test('папка миграций совпадает с накатанными на базу', () async {
-    final files = Directory('supabase/migrations')
-        .listSync()
-        .whereType<File>()
-        .map((f) => f.uri.pathSegments.last)
-        .where((n) => RegExp(r'^\d{14}_.+\.sql$').hasMatch(n))
-        .toList()
-      ..sort();
+    final files =
+        Directory('supabase/migrations')
+            .listSync()
+            .whereType<File>()
+            .map((f) => f.uri.pathSegments.last)
+            .where((n) => RegExp(r'^\d{14}_.+\.sql$').hasMatch(n))
+            .toList()
+          ..sort();
     final inFolder = files.map(migrationName).toList();
-    expect(inFolder, isNotEmpty, reason: 'в папке миграций не нашлось ни одной');
+    expect(
+      inFolder,
+      isNotEmpty,
+      reason: 'в папке миграций не нашлось ни одной',
+    );
 
     final t = await testAuthor();
     final rows = await t.rpc('applied_migrations') as List<dynamic>;
@@ -47,9 +53,7 @@ void main() {
   test('без входа список миграций не отдаётся', () async {
     await expectLater(
       anonymous().rpc('applied_migrations'),
-      throwsA(
-        isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
-      ),
+      throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '42501')),
     );
   });
 }

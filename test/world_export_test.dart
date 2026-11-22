@@ -132,56 +132,66 @@ void main() {
       },
     ]);
     final step = ((json['quests'] as List).single as Map)['steps'] as List;
-    expect(step.last, {'kind': 'event', 'target': 'zasada_u_lebedki', 'amount': 1});
+    expect(step.last, {
+      'kind': 'event',
+      'target': 'zasada_u_lebedki',
+      'amount': 1,
+    });
     // Файл целиком читается JsonUtility: без null, словарей и вложенных массивов.
     expect(jsonUtilityProblems(jsonDecode(exportJson(mines, w))), isEmpty);
     // События есть и в мире без событий — пустым массивом, а не пропуском поля.
-    final empty = exportWorld(mines, await (await minesContent()).snapshot(minesId));
+    final empty = exportWorld(
+      mines,
+      await (await minesContent()).snapshot(minesId),
+    );
     expect(empty['events'], isEmpty);
     expect(empty.keys, contains('events'));
   });
 
-  test('экспорт: у места родитель по slug; место верхнего уровня — «»', () async {
-    final c = await minesContent();
-    final kopi = await c.createLocation(
-      minesId,
-      const NewLocation(
-        title: 'Копи',
-        description: '',
-        levelMin: 1,
-        levelMax: 6,
-      ),
-    );
-    await c.createLocation(
-      minesId,
-      NewLocation(
-        title: 'Колодец',
-        description: '',
-        levelMin: 2,
-        levelMax: 3,
-        parentId: kopi.id,
-      ),
-    );
-    final json = exportWorld(mines, await c.snapshot(minesId));
-    final parents = {
-      for (final l in (json['locations'] as List).cast<Map>())
-        l['slug']: l['parent'],
-    };
-    expect(parents['kolodets'], 'kopi');
-    expect(parents['kopi'], '');
-    // Только эти поля: положение блока на карте — раскладка автора, в игру не идёт.
-    for (final l in (json['locations'] as List).cast<Map>()) {
-      expect(l.keys.toSet(), {
-        'slug',
-        'name',
-        'description',
-        'levelMin',
-        'levelMax',
-        'parent',
-      });
-    }
-    expect(jsonUtilityProblems(jsonDecode(jsonEncode(json))), isEmpty);
-  });
+  test(
+    'экспорт: у места родитель по slug; место верхнего уровня — «»',
+    () async {
+      final c = await minesContent();
+      final kopi = await c.createLocation(
+        minesId,
+        const NewLocation(
+          title: 'Копи',
+          description: '',
+          levelMin: 1,
+          levelMax: 6,
+        ),
+      );
+      await c.createLocation(
+        minesId,
+        NewLocation(
+          title: 'Колодец',
+          description: '',
+          levelMin: 2,
+          levelMax: 3,
+          parentId: kopi.id,
+        ),
+      );
+      final json = exportWorld(mines, await c.snapshot(minesId));
+      final parents = {
+        for (final l in (json['locations'] as List).cast<Map>())
+          l['slug']: l['parent'],
+      };
+      expect(parents['kolodets'], 'kopi');
+      expect(parents['kopi'], '');
+      // Только эти поля: положение блока на карте — раскладка автора, в игру не идёт.
+      for (final l in (json['locations'] as List).cast<Map>()) {
+        expect(l.keys.toSet(), {
+          'slug',
+          'name',
+          'description',
+          'levelMin',
+          'levelMax',
+          'parent',
+        });
+      }
+      expect(jsonUtilityProblems(jsonDecode(jsonEncode(json))), isEmpty);
+    },
+  );
 
   test('экспорт: прибор C#-совместимости краснеет на словаре, null и без schemaVersion', () {
     // Словарь «slug → предмет» — JsonUtility его не читает.

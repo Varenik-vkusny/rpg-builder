@@ -139,7 +139,7 @@ void main() {
     expect(r.applied, isTrue);
     final history = await c.history(holstWorld.id);
     expect(history.first.id, r.setId);
-    expect(history.first.request, 'Холст: создано «Новый враг»');
+    expect(history.first.request, 'Холст: создано «Враг 1»');
     final now = await c.snapshotOf(holstWorld.id);
     expect(
       now.characters.where((x) => x.id == made.id).single.locationId,

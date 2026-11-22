@@ -115,10 +115,10 @@ void main() {
       expect(t.widget<InkWell>(k('holst-start-library')).onTap, isNotNull);
       await t.tap(k('holst-start-place'));
       await settle(t);
-      expect(snack(t), 'Создано: Новое место');
-      expect(c.journal.single.entry.request, 'Холст: создано «Новое место»');
+      expect(snack(t), 'Создано: Место 1');
+      expect(c.journal.single.entry.request, 'Холст: создано «Место 1»');
       expect(k('holst-empty'), findsNothing);
-      expect(k('hplace-novoe_mesto'), findsOneWidget);
+      expect(k('hplace-mesto_1'), findsOneWidget);
     },
   );
 
@@ -130,7 +130,7 @@ void main() {
       await t.tap(k('holst-start-ask'));
       await settle(t);
       expect(k('holst-phrase'), findsOneWidget);
-      expect(t.widget<Text>(k('holst-scope')).data, 'Новое место');
+      expect(t.widget<Text>(k('holst-scope')).data, 'Место 1');
     },
   );
 

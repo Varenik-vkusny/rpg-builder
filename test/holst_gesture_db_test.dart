@@ -46,7 +46,7 @@ void main() {
 
   for (final kind in NewKind.values) {
     test(
-      'жест «${newTitle(kind)}»: в базе, в истории, откат — как было',
+      'жест «${paletteName(kind)}»: в базе, в истории, откат — как было',
       () async {
         final w = await repo.snapshot(world.id);
         final place = w.locations.first;
@@ -69,7 +69,7 @@ void main() {
         expect(ids, contains(made.id));
         expect(
           (await repo.history(world.id)).first.request,
-          'Холст: создано «${newTitle(kind)}»',
+          'Холст: создано «${made.title}»',
         );
         expect(await undoGesture(repo, world.id, r.setId!), isNull);
         final back = await repo.snapshot(world.id);

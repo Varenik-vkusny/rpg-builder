@@ -13,17 +13,16 @@ const worldId = '0-Пепельные копи';
 /// Копи › Штольня №3 › Забой и «Рынок» рядом; по жителю в каждом месте.
 Future<FakeContent> nestedMines() async {
   final c = FakeContent();
-  Future<Location> place(String title, [Location? parent]) =>
-      c.createLocation(
-        worldId,
-        NewLocation(
-          title: title,
-          description: '',
-          levelMin: 1,
-          levelMax: 5,
-          parentId: parent?.id,
-        ),
-      );
+  Future<Location> place(String title, [Location? parent]) => c.createLocation(
+    worldId,
+    NewLocation(
+      title: title,
+      description: '',
+      levelMin: 1,
+      levelMax: 5,
+      parentId: parent?.id,
+    ),
+  );
   Future<void> who(String title, Location l) => c.createCharacter(
     worldId,
     NewCharacter(

@@ -69,7 +69,10 @@ void main() {
   test('событие создаётся с врагами и предметами; чужой автор его не видит; '
       'slug не меняется', () async {
     expect(ambush.slug, 'zasada_u_lebedki');
-    expect(show(await w()), 'Засада у лебёдки @ Штольня №3 | Слизень × 3 | Ключ');
+    expect(
+      show(await w()),
+      'Засада у лебёдки @ Штольня №3 | Слизень × 3 | Ключ',
+    );
     // У связей свои id — по ним идут правка и откат.
     expect(ambush.enemies.single.id, isNotNull);
     expect(ambush.items.single.id, isNotNull);
@@ -202,9 +205,7 @@ void main() {
           title: 'Засада',
           description: ambush.description,
           locationId: id(s, 'rynok'),
-          enemies: [
-            EventEnemy(characterId: id(s, 'slizen'), amount: 5),
-          ],
+          enemies: [EventEnemy(characterId: id(s, 'slizen'), amount: 5)],
           itemIds: [id(s, 'kirka')],
         ),
         {

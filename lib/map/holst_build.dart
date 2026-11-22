@@ -66,7 +66,7 @@ extension _Build on _HolstState {
     };
     await _gesture(
       made.edit,
-      done: 'Создано: ${newTitle(kind)}$where',
+      done: 'Создано: ${made.title}$where',
       marks: {made.id: Mark.isNew},
     );
   }
@@ -85,7 +85,7 @@ extension _Build on _HolstState {
     );
     final ok = await _gesture(
       made.edit,
-      done: 'Создано: ${newTitle(NewKind.place)}',
+      done: 'Создано: ${made.title}',
       marks: {made.id: Mark.isNew},
     );
     if (!ok || !mounted || !ask) return;

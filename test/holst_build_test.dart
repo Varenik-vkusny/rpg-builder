@@ -64,13 +64,13 @@ void main() {
     final sets = c.journal.length;
     await drag(t, 'enemy', placeCenter(t, 'baraki'));
 
-    expect(snack(t), 'Создано: Новый враг в «Бараки»');
+    expect(snack(t), 'Создано: Враг 1 в «Бараки»');
     // «проверено · в истории» автору не пишем (владелец 19.11).
-      expect(snackSub(t), isNull);
+    expect(snackSub(t), isNull);
     expect(c.journal.length, sets + 1);
-    expect(c.journal.last.entry.request, 'Холст: создано «Новый враг»');
+    expect(c.journal.last.entry.request, 'Холст: создано «Враг 1»');
     final w = await c.snapshotOf(holstWorld.id);
-    final made = w.characters.firstWhere((x) => x.title == 'Новый враг');
+    final made = w.characters.firstWhere((x) => x.title == 'Враг 1');
     final barracks = w.locations.firstWhere((l) => l.slug == 'baraki');
     expect(made.locationId, barracks.id);
     // На холсте — внутри Бараков, с зелёной рамкой «новое».
@@ -102,7 +102,7 @@ void main() {
     await settle(t);
     expect(await characters(c), before);
     expect(snack(t), 'Отменено');
-    expect(find.textContaining('Новый житель'), findsNothing);
+    expect(find.textContaining('Житель 1'), findsNothing);
     expect(c.journal.last.entry.summary, startsWith('Откат:'));
   });
 
@@ -137,10 +137,10 @@ void main() {
       await pumpHolst(t, c);
       await build(t);
       await drag(t, 'item', placeCenter(t, 'lebedka'));
-      expect(snack(t), 'Создано: Новый предмет на полке');
+      expect(snack(t), 'Создано: Предмет 1 на полке');
       // Новый предмет нельзя получить — это предупреждение, жест применён и помечен.
       final w = await c.snapshotOf(holstWorld.id);
-      final item = w.items.firstWhere((i) => i.title == 'Новый предмет');
+      final item = w.items.firstWhere((i) => i.title == 'Предмет 1');
       expect(
         t.widget<HolstSnack>(find.byType(HolstSnack)).data.tone,
         GestureTone.warn,
@@ -159,9 +159,9 @@ void main() {
       expect(warn, findsOneWidget);
 
       await drag(t, 'place', placeCenter(t, 'lebedka'));
-      expect(snack(t), 'Создано: Новое место');
+      expect(snack(t), 'Создано: Место 1');
       final w2 = await c.snapshotOf(holstWorld.id);
-      final place = w2.locations.firstWhere((l) => l.title == 'Новое место');
+      final place = w2.locations.firstWhere((l) => l.title == 'Место 1');
       expect(place.parentId, isNull);
       expect(find.byKey(Key('hplace-${place.slug}')), findsOneWidget);
     },

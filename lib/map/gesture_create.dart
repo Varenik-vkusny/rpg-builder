@@ -1,42 +1,49 @@
 // Жест «из палитры в место» (5е): враг, житель, событие, предмет или место — одной
 // строковой операцией «создать», как правка вручную. id новой строки даёт приложение:
 // тогда копия мира для проверки и запись в базу говорят об одном и том же объекте.
-import 'dart:math';
-
 import '../check/world_check.dart';
 import '../content/character.dart';
 import '../content/event.dart';
 import '../content/item.dart';
 import '../content/location.dart';
 import '../content/manual_edit.dart';
+import '../content/new_id.dart';
 import '../content/slug.dart';
 
 /// Что тащат из палитры.
 enum NewKind { enemy, npc, event, item, place }
 
-String newTitle(NewKind k) => switch (k) {
-  NewKind.enemy => 'Новый враг',
-  NewKind.npc => 'Новый житель',
-  NewKind.event => 'Новое событие',
-  NewKind.item => 'Новый предмет',
-  NewKind.place => 'Новое место',
+/// Вид словами автора: «Враг», «Житель»… — основа имени нового объекта.
+String paletteName(NewKind k) => switch (k) {
+  NewKind.enemy => 'Враг',
+  NewKind.npc => 'Житель',
+  NewKind.event => 'Событие',
+  NewKind.item => 'Предмет',
+  NewKind.place => 'Место',
 };
 
-final _rnd = Random.secure();
-
-/// uuid версии 4 — id новой строки.
-String newId() {
-  final b = List<int>.generate(16, (_) => _rnd.nextInt(256));
-  b[6] = (b[6] & 0x0f) | 0x40;
-  b[8] = (b[8] & 0x3f) | 0x80;
-  final h = [for (final x in b) x.toRadixString(16).padLeft(2, '0')].join();
-  return '${h.substring(0, 8)}-${h.substring(8, 12)}-${h.substring(12, 16)}-'
-      '${h.substring(16, 20)}-${h.substring(20)}';
+/// Имя нового объекта: вид и первый свободный номер среди объектов этого вида —
+/// «Враг 1», «Враг 2», «Житель 1». Одинаковых имён жест не плодит (проверка мира
+/// ругается на «название повторяется»).
+String nextTitle(NewKind k, WorldSnapshot w) {
+  // Как проверка «название повторяется»: персонажи — одним видом, без регистра и
+  // пробелов по краям (ревью 22.11: житель «Враг 1» или «враг 1» занимали номер).
+  final used = switch (k) {
+    NewKind.enemy || NewKind.npc => [for (final c in w.characters) c.title],
+    NewKind.event => [for (final e in w.events) e.title],
+    NewKind.item => [for (final i in w.items) i.title],
+    NewKind.place => [for (final l in w.locations) l.title],
+  }.map((t) => t.trim().toLowerCase()).toSet();
+  var n = 1;
+  while (used.contains('${paletteName(k)} $n'.toLowerCase())) {
+    n++;
+  }
+  return '${paletteName(k)} $n';
 }
 
 /// Новый объект жестом. [placeId] — место, куда бросили (у предмета — null: он на полке;
 /// у места — родитель, null — верхний уровень). [levels] — уровни нового места.
-({ManualEdit edit, String id}) createByGesture(
+({ManualEdit edit, String id, String title}) createByGesture(
   String worldId,
   WorldSnapshot w,
   NewKind kind, {
@@ -44,7 +51,7 @@ String newId() {
   (int, int) levels = (1, 3),
 }) {
   final id = newId();
-  final title = newTitle(kind);
+  final title = nextTitle(kind, w);
   Iterable<String> taken = switch (kind) {
     NewKind.enemy || NewKind.npc => w.characters.map((c) => c.slug),
     NewKind.event => w.events.map((e) => e.slug),
@@ -147,6 +154,7 @@ String newId() {
   };
   return (
     id: id,
+    title: title,
     edit: ManualEdit(
       title: 'Холст: создано «$title»',
       slug: slug,

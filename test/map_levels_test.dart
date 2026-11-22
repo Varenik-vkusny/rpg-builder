@@ -151,7 +151,9 @@ void main() {
     },
   );
 
-  testWidgets('озвучка: у кнопки входа своя подпись, у блока — своя', (t) async {
+  testWidgets('озвучка: у кнопки входа своя подпись, у блока — своя', (
+    t,
+  ) async {
     final semantics = t.ensureSemantics();
     await openWorldOf(t, await nestedMines());
     await openMap(t);

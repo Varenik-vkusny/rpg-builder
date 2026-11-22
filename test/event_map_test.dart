@@ -97,7 +97,9 @@ void main() {
     });
   });
 
-  testWidgets('карта: ⚡ свои и «+N» внутри; у места без событий ⚡ нет', (t) async {
+  testWidgets('карта: ⚡ свои и «+N» внутри; у места без событий ⚡ нет', (
+    t,
+  ) async {
     final semantics = t.ensureSemantics();
     await openWorldOf(t, await minesWithEvents());
     await openMap(t);
@@ -167,10 +169,8 @@ void main() {
     await open(t, 'shtolnya_3');
 
     expect(find.text('События · 2'), findsOneWidget);
-    Finder on(String event, Finder what) => find.descendant(
-      of: find.byKey(Key('event-$event')),
-      matching: what,
-    );
+    Finder on(String event, Finder what) =>
+        find.descendant(of: find.byKey(Key('event-$event')), matching: what);
     // Своё событие: на карточке — сколько врагов в сцене всего, места не подписано.
     expect(on('zasada_u_lebedki', find.text('3')), findsOneWidget);
     expect(on('zasada_u_lebedki', find.text('Штольня №3')), findsNothing);

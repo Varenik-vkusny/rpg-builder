@@ -174,7 +174,7 @@ class _DashedBox extends CustomPainter {
   bool shouldRepaint(_DashedBox old) => old.color != color;
 }
 
-/// Призрак под пальцем: жетон с пунктиром «Новый враг».
+/// Призрак под пальцем: жетон с пунктиром «Враг».
 class _Ghost extends StatelessWidget {
   const _Ghost(this.kind);
 
@@ -196,7 +196,7 @@ class _Ghost extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                newTitle(kind),
+                paletteName(kind),
                 maxLines: 2,
                 overflow: TextOverflow.clip,
                 style: const TextStyle(fontWeight: FontWeight.w600),
