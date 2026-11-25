@@ -223,6 +223,7 @@ class _NewQuestScreenState extends State<NewQuestScreen>
           ).help('quest.description'),
           DropdownButtonFormField<String>(
             key: const Key('quest-giver'),
+            isExpanded: true,
             initialValue: _giverId,
             decoration: const InputDecoration(labelText: 'Выдаёт'),
             items: [

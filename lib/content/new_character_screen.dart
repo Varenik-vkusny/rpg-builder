@@ -227,6 +227,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen>
           flex: 3,
           child: DropdownButtonFormField<String>(
             key: Key('loot-item-$i'),
+            isExpanded: true,
             initialValue: row.itemId,
             decoration: const InputDecoration(labelText: 'Предмет'),
             items: [
@@ -317,6 +318,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen>
           ).help('character.role', top: 16),
           DropdownButtonFormField<String?>(
             key: const Key('character-location'),
+            isExpanded: true,
             initialValue: _locationId,
             decoration: const InputDecoration(labelText: 'Локация'),
             items: [

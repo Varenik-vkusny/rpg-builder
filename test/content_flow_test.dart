@@ -179,6 +179,23 @@ void main() {
     expectLoot('Ключ от лебёдки', '35%');
   });
 
+  // Найдено демо-снимками 25.11: на узком экране выбранный предмет добычи
+  // («Ключ от лебёдки») вылезал за край строки — жёлто-чёрная полоса.
+  testWidgets('добыча: длинное название на телефоне 360 не вылезает за край', (
+    t,
+  ) async {
+    await worldWithShaftAndKey(t);
+    await startEnemy(t, 'Пепельный слизень');
+    t.view.physicalSize = const Size(360, 800);
+    await t.pumpAndSettle();
+    await t.ensureVisible(find.byKey(const Key('loot-add')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('loot-add')));
+    await t.pumpAndSettle();
+    await choose(t, const Key('loot-item-0'), 'Ключ от лебёдки');
+    expect(t.takeException(), isNull);
+  });
+
   for (final bad in ['0', '100.5', '-3', 'много']) {
     testWidgets('персонаж: шанс добычи «$bad» не принимается', (t) async {
       await worldWithShaftAndKey(t);
