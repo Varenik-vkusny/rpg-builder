@@ -93,6 +93,15 @@ void main() {
     await t.tap(find.byKey(const Key('holst-wheel-done')));
     await hi(t, 'holst-10-linked', settle: false);
 
+    // Обвал — первым на полке, а полку прокрутили к Кирке: вернуть её назад.
+    await t.drag(
+      find.descendant(
+        of: find.byKey(const Key('holst-shelf')),
+        matching: find.byType(ListView),
+      ),
+      const Offset(160, 0),
+    );
+    await t.pumpAndSettle();
     await thread('storozh', 'obval');
     await hi(t, 'holst-11-menu', settle: false);
   });

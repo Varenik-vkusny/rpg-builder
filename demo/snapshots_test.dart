@@ -27,7 +27,7 @@ void main() {
     await t.tap(find.byKey(const Key('holst-lists')));
     await t.pumpAndSettle();
 
-    await t.tap(find.byKey(const Key('new-location')));
+    await tapShown(t, find.byKey(const Key('new-location')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const Key('location-title')), 'Штольня №3');
     await t.enterText(
@@ -38,7 +38,7 @@ void main() {
     await t.tap(find.byKey(const Key('location-save')));
     await shot(t, '2.1-world');
 
-    await t.tap(find.byKey(const Key('new-item')));
+    await tapShown(t, find.byKey(const Key('new-item')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const Key('item-title')), 'Ключ от лебёдки');
     await t.tap(find.byKey(const Key('item-kind-quest')));
@@ -46,7 +46,7 @@ void main() {
     await shot(t, '2.2-form');
     await t.tap(find.byKey(const Key('item-save')));
     await t.pumpAndSettle();
-    await t.tap(find.byKey(const Key('new-item')));
+    await tapShown(t, find.byKey(const Key('new-item')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const Key('item-title')), 'Кирка');
     await t.tap(find.byKey(const Key('item-rarity-rare')));
@@ -56,7 +56,7 @@ void main() {
     await t.tap(find.byKey(const Key('item-save')));
     await shot(t, '2.2-world');
 
-    await t.tap(find.byKey(const Key('new-character')));
+    await tapShown(t, find.byKey(const Key('new-character')));
     await t.pumpAndSettle();
     await t.enterText(
       find.byKey(const Key('character-title')),
@@ -173,8 +173,10 @@ void main() {
     await t.pumpAndSettle();
 
     // Второй аккаунт: чужого мира и его содержимого не видит.
+    // Мир открывается холстом: из списков — назад на холст, оттуда — к мирам.
     await t.pageBack();
     await t.pumpAndSettle();
+    await tapShown(t, find.byKey(const Key('holst-back')));
     await tapShown(t, find.byKey(const Key('sign-out')));
     await signUp(t, 'second@test.dev');
     await shot(t, '2.4-second-account');

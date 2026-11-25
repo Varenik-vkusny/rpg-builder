@@ -47,6 +47,8 @@ void main() {
 
     // Откатили → набор «Откачен», рядом обратный набор; мир как был.
     await tapShown(t, find.byKey(const Key('revert-set-0')));
+    // Откат спрашивает «Откатить набор?» (вопрос перед откатом).
+    await tapShown(t, find.byKey(const Key('confirm-yes')));
     await shot(t, '3.7-reverted');
     await t.pageBack();
     await t.pumpAndSettle();

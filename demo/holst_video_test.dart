@@ -44,7 +44,11 @@ void main() {
     );
     final sh = t.getCenter(shelf);
     await v.drag(sh, sh - const Offset(160, 0), frames: 18);
-    await v.drag(t.getCenter(k('token-slizen')), t.getCenter(k('token-kirka')));
+    // Связь тянется от кружка у жетона: по самому жетону холст листается (22.11).
+    await v.drag(
+      t.getCenter(k('thread-slizen')),
+      t.getCenter(k('token-kirka')),
+    );
     await v.wait(s * .6);
     final drum = t.getCenter(k('holst-wheel-drum'));
     await v.drag(drum, drum - const Offset(0, 144), frames: 20);
@@ -54,7 +58,7 @@ void main() {
 
     // Квест → житель: меню «Поговорить / Убить».
     await v.drag(
-      t.getCenter(k('token-storozh')),
+      t.getCenter(k('thread-storozh')),
       t.getCenter(k('token-obval')),
     );
     await v.wait(s * .8);

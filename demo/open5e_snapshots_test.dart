@@ -36,7 +36,7 @@ void main() {
 
     await tapShown(t, find.byKey(const Key('open5e-import')));
     await t.scrollUntilVisible(
-      find.text('War Pick'),
+      find.text('Боевая кирка'),
       200,
       scrollable: find.byType(Scrollable).first,
     );

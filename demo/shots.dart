@@ -31,6 +31,14 @@ Future<void> shot(
 }
 
 Future<void> tapShown(WidgetTester t, Finder f) async {
+  // Список мира ленивый: кнопка ниже экрана ещё не построена — докрутить до неё.
+  if (f.evaluate().isEmpty) {
+    await t.scrollUntilVisible(
+      f,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
   await t.ensureVisible(f);
   await t.pumpAndSettle();
   await t.tap(f);

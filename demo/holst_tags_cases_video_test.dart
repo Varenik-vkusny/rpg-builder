@@ -57,7 +57,11 @@ void main() {
       find.descendant(of: k('holst-shelf'), matching: find.byType(ListView)),
     );
     await v.drag(shelf, shelf - const Offset(160, 0), frames: 18);
-    await v.drag(t.getCenter(k('token-slizen')), t.getCenter(k('token-kirka')));
+    // Связь тянется от кружка у жетона: по самому жетону холст листается (22.11).
+    await v.drag(
+      t.getCenter(k('thread-slizen')),
+      t.getCenter(k('token-kirka')),
+    );
     v.hide();
     await v.wait(s * 1.5);
     final drum = t.getCenter(k('holst-wheel-drum'));
@@ -69,7 +73,7 @@ void main() {
     await pan(t, v, const Offset(-100, -140));
     // Ещё одна связь: квест → житель через меню.
     await v.drag(
-      t.getCenter(k('token-storozh')),
+      t.getCenter(k('thread-storozh')),
       t.getCenter(k('token-obval')),
     );
     await v.wait(s * .6);
