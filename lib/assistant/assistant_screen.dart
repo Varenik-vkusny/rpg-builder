@@ -5,6 +5,7 @@ import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../help/help.dart';
 import '../ui/messages.dart';
+import '../ui/parts.dart';
 import '../worlds/world.dart';
 import 'assistant_service.dart';
 import 'assistant_flow.dart';
@@ -328,8 +329,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
             isExpanded: true,
             decoration: InputDecoration(labelText: _type.label),
             items: [
-              for (final (slug, title) in _objects)
-                DropdownMenuItem(value: slug, child: Text(title)),
+              for (final (slug, title) in _objects) nameItem(slug, title),
             ],
             onChanged: (v) => setState(() => _slug = v),
           ).help('assistant.scope.object'),

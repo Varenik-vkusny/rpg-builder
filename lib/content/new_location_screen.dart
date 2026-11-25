@@ -12,6 +12,7 @@ import 'manual_create.dart';
 import 'manual_save.dart';
 import 'nesting.dart';
 import '../ui/discard_guard.dart';
+import '../ui/parts.dart';
 
 class NewLocationScreen extends StatefulWidget {
   const NewLocationScreen({
@@ -249,11 +250,7 @@ class _ParentPicker extends StatelessWidget {
       decoration: const InputDecoration(labelText: 'Внутри места'),
       items: [
         const DropdownMenuItem(value: null, child: Text('Верхний уровень')),
-        for (final l in parents)
-          DropdownMenuItem(
-            value: l.id,
-            child: Text(pathOf(locations, l), overflow: TextOverflow.ellipsis),
-          ),
+        for (final l in parents) nameItem<String?>(l.id, pathOf(locations, l)),
       ],
       onChanged: onChanged,
     ).help('location.parent');

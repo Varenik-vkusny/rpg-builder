@@ -13,6 +13,7 @@ import 'manual_edit.dart';
 import 'manual_create.dart';
 import 'manual_save.dart';
 import '../ui/discard_guard.dart';
+import '../ui/parts.dart';
 
 class NewCharacterScreen extends StatefulWidget {
   const NewCharacterScreen({
@@ -230,10 +231,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen>
             isExpanded: true,
             initialValue: row.itemId,
             decoration: const InputDecoration(labelText: 'Предмет'),
-            items: [
-              for (final it in widget.items)
-                DropdownMenuItem(value: it.id, child: Text(it.title)),
-            ],
+            items: [for (final it in widget.items) nameItem(it.id, it.title)],
             onChanged: (v) => setState(() => row.itemId = v),
           ).help('loot.item'),
         ),
@@ -324,7 +322,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen>
             items: [
               const DropdownMenuItem(value: null, child: Text('Без локации')),
               for (final l in widget.locations)
-                DropdownMenuItem(value: l.id, child: Text(l.title)),
+                nameItem<String?>(l.id, l.title),
             ],
             onChanged: (v) => setState(() => _locationId = v),
           ).help('character.location'),

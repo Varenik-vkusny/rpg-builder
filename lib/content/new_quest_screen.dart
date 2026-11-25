@@ -16,6 +16,7 @@ import 'manual_save.dart';
 import 'quest.dart';
 import 'quest_form_parts.dart';
 import '../ui/discard_guard.dart';
+import '../ui/parts.dart';
 
 class NewQuestScreen extends StatefulWidget {
   const NewQuestScreen({
@@ -226,10 +227,7 @@ class _NewQuestScreenState extends State<NewQuestScreen>
             isExpanded: true,
             initialValue: _giverId,
             decoration: const InputDecoration(labelText: 'Выдаёт'),
-            items: [
-              for (final g in _givers)
-                DropdownMenuItem(value: g.id, child: Text(g.title)),
-            ],
+            items: [for (final g in _givers) nameItem(g.id, g.title)],
             onChanged: (v) => setState(() => _giverId = v),
           ).help('quest.giver'),
           if (_givers.isEmpty)

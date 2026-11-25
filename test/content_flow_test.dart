@@ -194,6 +194,17 @@ void main() {
     await t.pumpAndSettle();
     await choose(t, const Key('loot-item-0'), 'Ключ от лебёдки');
     expect(t.takeException(), isNull);
+    // Не влезло — многоточие, а не обрубок «Ключ от» (будто другое название).
+    final shown = t.widget<Text>(
+      find
+          .descendant(
+            of: find.byKey(const Key('loot-item-0')),
+            matching: find.text('Ключ от лебёдки'),
+          )
+          .first,
+    );
+    expect(shown.overflow, TextOverflow.ellipsis);
+    expect(shown.maxLines, 1);
   });
 
   for (final bad in ['0', '100.5', '-3', 'много']) {

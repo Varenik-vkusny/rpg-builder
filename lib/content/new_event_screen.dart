@@ -12,6 +12,7 @@ import 'event_edit.dart';
 import 'manual_create.dart';
 import 'manual_save.dart';
 import '../ui/discard_guard.dart';
+import '../ui/parts.dart';
 
 /// Форма события (5б.1): сцена в месте — враги с числом и предметы.
 class NewEventScreen extends StatefulWidget {
@@ -223,10 +224,7 @@ class _NewEventScreenState extends State<NewEventScreen>
             initialValue: row.characterId,
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Враг'),
-            items: [
-              for (final c in _foes)
-                DropdownMenuItem(value: c.id, child: Text(c.title)),
-            ],
+            items: [for (final c in _foes) nameItem(c.id, c.title)],
             onChanged: (v) => setState(() => row.characterId = v),
           ).help('event.enemy'),
         ),
@@ -253,10 +251,7 @@ class _NewEventScreenState extends State<NewEventScreen>
           initialValue: _items[i],
           isExpanded: true,
           decoration: const InputDecoration(labelText: 'Предмет'),
-          items: [
-            for (final it in _w.items)
-              DropdownMenuItem(value: it.id, child: Text(it.title)),
-          ],
+          items: [for (final it in _w.items) nameItem(it.id, it.title)],
           onChanged: (v) => setState(() => _items[i] = v),
         ).help('event.item'),
       ),
@@ -325,10 +320,7 @@ class _NewEventScreenState extends State<NewEventScreen>
             initialValue: _locationId,
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Место'),
-            items: [
-              for (final l in _w.locations)
-                DropdownMenuItem(value: l.id, child: Text(l.title)),
-            ],
+            items: [for (final l in _w.locations) nameItem(l.id, l.title)],
             onChanged: (v) => setState(() => _locationId = v),
           ).help('event.location'),
           if (_w.locations.isEmpty)

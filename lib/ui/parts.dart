@@ -345,3 +345,10 @@ class LinkRow extends StatelessWidget {
     );
   }
 }
+
+/// Вариант выпадающего списка с именем автора: одна строка, не влезло — многоточие,
+/// а не обрубок слова («Ключ от» вместо «Ключ от лебёдки», найдено 25.11).
+DropdownMenuItem<T> nameItem<T>(T value, String name) => DropdownMenuItem(
+  value: value,
+  child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+);

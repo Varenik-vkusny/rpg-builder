@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../help/help.dart';
+import '../ui/parts.dart';
 import 'character.dart';
 import 'event.dart';
 import 'item.dart';
@@ -115,8 +116,7 @@ Widget questStepRow(
               initialValue: s.targetId,
               hint: const Text('Цель'),
               items: [
-                for (final t in targets.entries)
-                  DropdownMenuItem(value: t.key, child: Text(t.value)),
+                for (final t in targets.entries) nameItem(t.key, t.value),
               ],
               onChanged: (v) => update(() => s.targetId = v),
             ).help('quest.step.target'),
@@ -156,10 +156,7 @@ Widget questRewardRow(
         isExpanded: true,
         initialValue: reward.itemId,
         hint: const Text('Предмет'),
-        items: [
-          for (final it in items)
-            DropdownMenuItem(value: it.id, child: Text(it.title)),
-        ],
+        items: [for (final it in items) nameItem(it.id, it.title)],
         onChanged: (v) => update(() => reward.itemId = v),
       ).help('quest.reward'),
     ),
