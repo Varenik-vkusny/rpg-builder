@@ -58,10 +58,11 @@ class _WorldsScreenState extends State<WorldsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              key: const Key('world-rename'),
+              // «Изменить», а не «Переименовать»: открывает всю форму мира (владелец 25.11).
+              key: const Key('world-edit'),
               leading: const Icon(Symbols.edit_rounded),
-              title: const Text('Переименовать'),
-              onTap: () => Navigator.of(context).pop('rename'),
+              title: const Text('Изменить'),
+              onTap: () => Navigator.of(context).pop('edit'),
             ),
             ListTile(
               key: const Key('world-delete'),
@@ -74,7 +75,7 @@ class _WorldsScreenState extends State<WorldsScreen> {
       ),
     );
     if (!mounted || what == null) return;
-    if (what == 'rename') {
+    if (what == 'edit') {
       final saved = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => NewWorldScreen(repo: widget.repo, editing: w),

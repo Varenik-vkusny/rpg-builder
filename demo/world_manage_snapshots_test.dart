@@ -19,7 +19,7 @@ void main() {
     await t.pump(const Duration(seconds: 3));
     await t.longPress(find.text('Пепельные копи'));
     await shot(t, 'world-1-sheet');
-    await t.tap(find.byKey(const Key('world-rename')));
+    await t.tap(find.byKey(const Key('world-edit')));
     await t.pumpAndSettle();
     await shot(t, 'world-2-rename');
     await t.pageBack();

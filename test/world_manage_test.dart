@@ -1,4 +1,4 @@
-// Переименовать и удалить свой мир из «Мои миры»: долгое нажатие → лист действий.
+// Изменить и удалить свой мир из «Мои миры»: долгое нажатие → лист действий.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,13 +17,15 @@ Future<void> startWith(WidgetTester t, String title) async {
 
 void main() {
   testWidgets(
-    'переименовать: форма с заполненными полями, в списке новое имя',
+    // Владелец 25.11: кнопка «Изменить» — она открывает всю форму мира, не только имя.
+    'изменить: форма с заполненными полями, в списке новое имя',
     (t) async {
       await startWith(t, 'Пепельные копи');
       await longPressWorld(t, 'Пепельные копи');
-      expect(find.text('Переименовать'), findsOneWidget);
+      expect(find.text('Изменить'), findsOneWidget);
+      expect(find.text('Переименовать'), findsNothing);
       expect(find.text('Удалить'), findsOneWidget);
-      await t.tap(find.byKey(const Key('world-rename')));
+      await t.tap(find.byKey(const Key('world-edit')));
       await t.pumpAndSettle();
       expect(find.text('Пепельные копи'), findsOneWidget); // в поле
       expect(find.text('Сохранить'), findsOneWidget);
@@ -35,12 +37,12 @@ void main() {
     },
   );
 
-  testWidgets('переименовать: пустое и слишком длинное название не уходят', (
+  testWidgets('изменить: пустое и слишком длинное название не уходят', (
     t,
   ) async {
     await startWith(t, 'Пепельные копи');
     await longPressWorld(t, 'Пепельные копи');
-    await t.tap(find.byKey(const Key('world-rename')));
+    await t.tap(find.byKey(const Key('world-edit')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const Key('world-title')), '   ');
     await t.tap(find.byKey(const Key('world-save')));
