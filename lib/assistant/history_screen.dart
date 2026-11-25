@@ -137,12 +137,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
         '${s.createdAt.month.toString().padLeft(2, '0')} '
         '${s.createdAt.hour.toString().padLeft(2, '0')}:'
         '${s.createdAt.minute.toString().padLeft(2, '0')}';
+    final title = s.summary.isEmpty ? s.request : s.summary;
+    // Под «Откатить» — только то, что говорит больше заголовка (владелец 25.11):
+    // просьба автора, если она не и есть заголовок; одна операция «новое/убрано: X»
+    // при X в заголовке («Создано вручную: Причал») — повтор, не показываем.
+    final single = s.ops.length == 1 ? s.ops.single : null;
+    final opsRepeatTitle =
+        single != null &&
+        single.action != 'update' &&
+        single.title.isNotEmpty &&
+        title.contains(single.title);
     return ExpansionTile(
       key: Key('history-${s.id}'),
       maintainState: true,
       shape: const RoundedRectangleBorder(),
       leading: _statusIcon(s.status),
-      title: Text(s.summary.isEmpty ? s.request : s.summary),
+      title: Text(title),
       subtitle: Text(
         '${s.status.label} · $when'
         '${s.revertsId == null ? '' : ' · откат набора'}',
@@ -151,19 +161,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
       expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ..._revertArea(s),
-        Row(
-          spacing: 8,
-          children: [
-            Icon(
-              Symbols.chat_bubble_rounded,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            Expanded(child: Text('«${s.request}»')),
-          ],
-        ),
-        const SizedBox(height: 8),
-        for (final op in s.ops) _op(op, show),
+        if (s.request != title) ...[
+          Row(
+            spacing: 8,
+            children: [
+              Icon(
+                Symbols.chat_bubble_rounded,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              Expanded(child: Text('«${s.request}»')),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (!opsRepeatTitle)
+          for (final op in s.ops) _op(op, show),
       ],
     );
   }

@@ -2,7 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:rpg_builder/content/location.dart';
+import 'package:rpg_builder/content/manual_create.dart';
+import 'package:rpg_builder/content/manual_save.dart';
+
 import 'apply_flow_test.dart' show tapButton;
+import 'assistant_fixtures.dart' show minesId;
 import 'history_flow_test.dart' show flood, flooded, openHistory;
 
 void main() {
@@ -38,5 +43,37 @@ void main() {
     expect(button, lessThan(firstOp));
     await tapButton(t, 'revert-set-0');
     expect(find.byKey(const Key('confirm-yes')), findsOneWidget);
+  });
+
+  // Владелец 25.11: под «Откатить» не повторять заголовок — ни «Создано вручную: Причал»
+  // в кавычках, ни строкой «новое: Причал». Просьба автора и операции, которые говорят
+  // больше заголовка, остаются.
+  testWidgets('история: раскрытый набор не повторяет заголовок', (t) async {
+    final content = await flooded(t);
+    await createManually(
+      content,
+      minesId,
+      (w) => createLocationEdit(
+        minesId,
+        w,
+        const NewLocation(
+          title: 'Причал',
+          description: '',
+          levelMin: 1,
+          levelMax: 3,
+        ),
+      ),
+    );
+    await openHistory(t);
+    await t.tap(find.text('Создано вручную: Причал'));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('revert-set-1')), findsOneWidget);
+    expect(find.text('«Создано вручную: Причал»'), findsNothing);
+    expect(find.text('новое: Причал'), findsNothing);
+    // Набор ассистента: просьба автора не равна заголовку — видна, операции видны.
+    await t.tap(find.text(flood));
+    await t.pumpAndSettle();
+    expect(find.textContaining('«затопи её'), findsOneWidget);
+    expect(find.text('новое: utoplennik'), findsOneWidget);
   });
 }
