@@ -10,7 +10,7 @@ final _water = RegExp(
   caseSensitive: false,
 );
 
-/// Одна фраза: точка только в конце (пояснение «Потом не меняется.» — вторая, короткая).
+/// Одна фраза: точка только в конце (короткое пояснение может быть второй фразой).
 int _sentences(String s) => RegExp(r'[.!?](\s|$)').allMatches(s).length;
 
 void main() {
@@ -51,6 +51,18 @@ void main() {
     expect(fieldHelp['character.attack']!.example, contains('10'));
     expect(fieldHelp['item.level']!.example, contains('13'));
     expect(fieldHelp['item.damage']!.example, contains('13'));
+  });
+
+  // Роль персонажа и вид предмета меняются в форме правки с 22.11 — справка не должна
+  // говорить обратное (найдено дизайном 25.11: «Потом не меняется»).
+  test('справка роли и вида предмета не обещает «не меняется»', () {
+    for (final key in ['character.role', 'item.kind']) {
+      expect(
+        fieldHelp[key]!.what.toLowerCase(),
+        isNot(contains('не меняется')),
+        reason: key,
+      );
+    }
   });
 
   test('текст экрана: от 1 до 3 строк, каждая — одна фраза без воды', () {
