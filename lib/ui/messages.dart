@@ -37,20 +37,26 @@ Future<bool> confirmAction(
 /// Сколько висит «сделано».
 const doneDuration = Duration(seconds: 2);
 
-OverlayEntry? _shown;
+/// Убрать полосу, которая сейчас на экране.
+VoidCallback? _hideShown;
 
 /// «Сделано»: полоса внизу экрана, исчезает сама. Новое сообщение сменяет прежнее.
 /// Полоса не перехватывает нажатия: то, что под ней, остаётся доступным сразу.
 void showDone(BuildContext context, String text) {
   final overlay = Overlay.of(context, rootOverlay: true);
-  if (_shown?.mounted ?? false) _shown!.remove();
+  _hideShown?.call();
   late final OverlayEntry entry;
-  entry = OverlayEntry(
-    builder: (_) => _DoneToast(text, () {
-      if (entry.mounted) entry.remove();
-    }),
-  );
-  _shown = entry;
+  // Убирается один раз: после remove() полоса ещё «mounted» до следующего кадра,
+  // и срок прежней полосы мог убрать её второй раз (найдено 25.11).
+  var hidden = false;
+  void hide() {
+    if (hidden) return;
+    hidden = true;
+    if (entry.mounted) entry.remove();
+  }
+
+  entry = OverlayEntry(builder: (_) => _DoneToast(text, hide));
+  _hideShown = hide;
   overlay.insert(entry);
 }
 

@@ -2,6 +2,7 @@
 // с названием того, что создано, сохранено или удалено. При отказе и ошибке его нет.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/ui/messages.dart';
 
 import 'apply_flow_test.dart' show tapButton;
 import 'assistant_fixtures.dart';
@@ -215,5 +216,32 @@ void main() {
     await tapButton(t, 'open5e-srd-2024_war-pick');
     await tapButton(t, 'open5e-import');
     expectDone('Импортировано: Боевая кирка');
+  });
+
+  // Найдено демо-снимками 25.11: новое «сделано» сменило прежнее за миг до его
+  // срока — таймер прежнего убирал уже убранную полосу (в тесте — падение,
+  // на телефоне — ошибка в фоне).
+  testWidgets('«сделано» сменилось перед сроком прежнего — без ошибки', (
+    t,
+  ) async {
+    late BuildContext ctx;
+    await t.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (c) {
+            ctx = c;
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    showDone(ctx, 'первое');
+    await t.pump(); // полоса построена — её срок пошёл
+    await t.pump(const Duration(milliseconds: 1999));
+    showDone(ctx, 'второе');
+    await t.pump(const Duration(milliseconds: 2));
+    expect(t.takeException(), isNull);
+    expectDone('второе');
+    await gone(t);
   });
 }
