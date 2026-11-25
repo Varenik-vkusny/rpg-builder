@@ -207,7 +207,8 @@ void main() {
       await tapButton(t, 'open-$slug');
       await tapButton(t, 'object-edit');
       await tapButton(t, 'object-delete');
-      expect(find.textContaining('шаг 4 квеста «Обвал»'), findsOneWidget);
+      expect(find.byKey(const Key('refusal')), findsOneWidget);
+      expect(find.text('Шаг 4 квеста «Обвал»'), findsOneWidget);
       expect((await content.events(minesId)).single.id, eventId);
     },
   );

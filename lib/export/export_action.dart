@@ -2,10 +2,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../help/help.dart';
 import '../check/world_check.dart';
+import '../ui/messages.dart';
 import '../worlds/world.dart';
 import 'world_export.dart';
 
@@ -20,7 +21,9 @@ Future<void> exportAndShare(
       .where((p) => p.severity == Severity.error)
       .toList();
   final messenger = ScaffoldMessenger.of(context);
-  if (errors.isNotEmpty && !await _confirmErrors(context, errors)) return;
+  if (errors.isNotEmpty && !await _confirmErrors(context, world, errors)) {
+    return;
+  }
   final name = exportFileName(world);
   final bytes = utf8.encode(exportJson(world, snapshot));
   try {
@@ -40,36 +43,31 @@ Future<void> exportAndShare(
   }
 }
 
-Future<bool> _confirmErrors(BuildContext context, List<Problem> errors) async =>
-    await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        key: const Key('export-errors'),
-        title: const Row(
-          children: [
-            Expanded(child: Text('В мире есть ошибки')),
-            HelpAction('export'),
-          ],
-        ),
-        content: Text(
-          [
-            'Ошибок в мире: ${errors.length}. Игра может споткнуться о них.',
-            for (final e in errors.take(3)) '• ${e.message}',
-            if (errors.length > 3) '…и ещё ${errors.length - 3}',
-          ].join('\n'),
-        ),
-        actions: [
-          TextButton(
-            key: const Key('export-cancel'),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Отмена'),
-          ),
-          TextButton(
-            key: const Key('export-anyway'),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Всё равно экспортировать'),
-          ),
-        ],
+/// Вид А: жёлтая шторка «В мире ошибки», ошибки строками с ❗, «Всё равно».
+Future<bool> _confirmErrors(
+  BuildContext context,
+  World world,
+  List<Problem> errors,
+) => confirmAction(
+  context,
+  title: 'В мире ошибки',
+  icon: Symbols.ios_share_rounded,
+  kind: SheetKind.warn,
+  subject: SheetSubject(Symbols.public_rounded, world.title),
+  facts: [
+    for (final e in errors.take(3))
+      SheetFact(Symbols.error_rounded, e.message, tone: FactTone.hot),
+    if (errors.length > 3)
+      SheetFact(
+        Symbols.error_rounded,
+        'И ещё ${errors.length - 3}',
+        tone: FactTone.hot,
       ),
-    ) ??
-    false;
+  ],
+  action: 'Всё равно',
+  actionIcon: Symbols.ios_share_rounded,
+  main: SheetMain.plain,
+  sheetKey: const Key('export-errors'),
+  yesKey: const Key('export-anyway'),
+  noKey: const Key('export-cancel'),
+);

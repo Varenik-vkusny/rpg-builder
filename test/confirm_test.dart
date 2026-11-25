@@ -1,9 +1,11 @@
 // Вопрос перед удалением объекта и перед откатом набора: без «да» мир не меняется.
-// Спрашивать о невозможном незачем: объект со ссылками и откат с конфликтом отклоняются
-// сразу, без вопроса.
+// Спрашивать о невозможном незачем: объект со ссылками — шторка отказа со связями,
+// откат с конфликтом — причина сразу, без вопроса. Вид А (25.11): шторка — вопрос,
+// с чем (имя плашкой), последствия строками.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/item.dart';
+import 'package:rpg_builder/content/manual_save.dart';
 
 import 'apply_flow_test.dart' show tapButton;
 import 'assistant_fixtures.dart';
@@ -13,15 +15,48 @@ import 'manual_edit_flow_test.dart' show open, openMines;
 
 final _question = find.byKey(const Key('confirm'));
 
+/// Плашка «с чем» в шторке показывает [name].
+void expectSubject(String name) => expect(
+  find.descendant(
+    of: find.byKey(const Key('sheet-subject')),
+    matching: find.text(name),
+  ),
+  findsOneWidget,
+);
+
 void main() {
+  // Ревью 25.11: шторка отказа срабатывает до записи, но сама защита записи (правило 11)
+  // должна держать и без окна — прямой вызов удаления объекта со ссылками отклонён.
+  test('удаление объекта со ссылками отклоняется и без окна', () async {
+    final content = await minesContent();
+    final w = await content.snapshotOf(minesId);
+    final key = w.items.firstWhere((i) => i.slug == 'klyuch');
+    final error = await deleteManually(
+      content,
+      minesId,
+      w,
+      type: 'item',
+      id: key.id,
+      slug: key.slug,
+      title: key.title,
+    );
+    expect(error, contains('Нельзя удалить «Ключ»'));
+    expect(
+      (await content.items(minesId)).map((i) => i.slug),
+      contains('klyuch'),
+    );
+    expect(content.journal, isEmpty);
+  });
+
   testWidgets('удаление: вопрос с названием; «Отмена» — объект на месте, форма '
       'открыта', (t) async {
     final content = await openMines(t);
     await open(t, 'rynok');
     await tapButton(t, 'object-delete');
     expect(_question, findsOneWidget);
-    expect(find.text('Удалить «Рынок»?'), findsOneWidget);
-    expect(find.textContaining('можно откатить'), findsOneWidget);
+    expect(find.text('Удалить?'), findsOneWidget);
+    expectSubject('Рынок');
+    expect(find.text('Откат — в истории'), findsOneWidget);
 
     await tapButton(t, 'confirm-no');
     expect(_question, findsNothing);
@@ -65,7 +100,8 @@ void main() {
       await openWorld(t, 'Пепельные копи');
       await open(t, 'fonar');
       await tapButton(t, 'object-delete');
-      expect(find.text('Удалить «Фонарь»?'), findsOneWidget);
+      expect(find.text('Удалить?'), findsOneWidget);
+      expectSubject('Фонарь');
       expect(
         (await content.items(minesId)).map((i) => i.slug),
         contains('fonar'),
@@ -78,14 +114,20 @@ void main() {
     },
   );
 
-  testWidgets('удаление объекта со ссылками: вопроса нет, сразу причина', (
+  testWidgets('удаление объекта со ссылками: вопроса нет — отказ со связями', (
     t,
   ) async {
     final content = await openMines(t);
     await open(t, 'klyuch');
     await tapButton(t, 'object-delete');
     expect(_question, findsNothing);
-    expect(find.textContaining('Нельзя удалить «Ключ»'), findsOneWidget);
+    expect(find.byKey(const Key('refusal')), findsOneWidget);
+    expect(find.text('Нельзя удалить'), findsOneWidget);
+    expectSubject('Ключ');
+    expect(find.textContaining('Роняет: «'), findsWidgets);
+    await tapButton(t, 'refusal-ok');
+    expect(find.byKey(const Key('refusal')), findsNothing);
+    expect(find.text('Изменить предмет'), findsOneWidget);
     expect(content.journal, isEmpty);
   });
 

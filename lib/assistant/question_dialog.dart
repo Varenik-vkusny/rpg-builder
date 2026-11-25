@@ -1,21 +1,29 @@
+// Окно «Ассистент уточняет» — шторка вида А (25.11): вопрос коротко, варианты рядами,
+// совет отмечен плашкой «советую», «Свой вариант» с полем; «Отмена» | «Ответить».
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
+import '../ui/action_sheet.dart';
 import 'assistant_service.dart';
 
-/// Окно «Ассистент уточняет»: вопрос, варианты с пояснением (первый — совет ассистента)
-/// и «Свой вариант». Возвращает ответ автора или null, если он закрыл окно.
+/// Вопрос и варианты (первый — совет ассистента) и «Свой вариант».
+/// Возвращает ответ автора или null, если он закрыл окно.
 Future<String?> askAuthor(BuildContext context, AuthorQuestion q) =>
-    showDialog<String>(context: context, builder: (_) => _QuestionDialog(q));
+    showActionSheet<String>(
+      context,
+      kind: SheetKind.ai,
+      builder: (_) => _QuestionSheet(q),
+    );
 
-class _QuestionDialog extends StatefulWidget {
-  const _QuestionDialog(this.q);
+class _QuestionSheet extends StatefulWidget {
+  const _QuestionSheet(this.q);
   final AuthorQuestion q;
 
   @override
-  State<_QuestionDialog> createState() => _QuestionDialogState();
+  State<_QuestionSheet> createState() => _QuestionSheetState();
 }
 
-class _QuestionDialogState extends State<_QuestionDialog> {
+class _QuestionSheetState extends State<_QuestionSheet> {
   /// Номер выбранного варианта; равен числу вариантов — «Свой вариант».
   int _choice = 0;
   final _own = TextEditingController();
@@ -34,67 +42,116 @@ class _QuestionDialogState extends State<_QuestionDialog> {
     return text.isEmpty ? null : text;
   }
 
-  Widget _option(int i, String label, Widget? subtitle) => RadioListTile<int>(
-    key: Key('question-option-$i'),
-    value: i,
-    contentPadding: EdgeInsets.zero,
-    title: Text(label),
-    subtitle: subtitle,
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final q = widget.q;
-    return AlertDialog(
-      key: const Key('question-dialog'),
-      title: const Text('Ассистент уточняет'),
-      content: SingleChildScrollView(
-        child: RadioGroup<int>(
-          groupValue: _choice,
-          onChanged: (v) => setState(() => _choice = v!),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _option(int i, String label, {bool advice = false}) {
+    final s = Theme.of(context).colorScheme;
+    final on = _choice == i;
+    return Semantics(
+      selected: on,
+      button: true,
+      child: InkWell(
+        key: Key('question-option-$i'),
+        onTap: () => setState(() => _choice = i),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: s.surfaceContainer,
+            border: Border.all(color: on ? s.onSurface : s.outlineVariant),
+          ),
+          child: Row(
+            spacing: 12,
             children: [
-              Text(q.question, key: const Key('question-text')),
-              const SizedBox(height: 8),
-              for (final (i, o) in q.options.indexed)
-                _option(
-                  i,
-                  i == 0 ? '${o.label} (советую)' : o.label,
-                  Text(o.description),
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: on ? s.onSurface : s.outline,
+                    width: 2,
+                  ),
                 ),
-              _option(
-                q.options.length,
-                'Свой вариант',
-                _isOwn
-                    ? TextField(
-                        key: const Key('question-own'),
-                        controller: _own,
-                        autofocus: true,
-                        onChanged: (_) => setState(() {}),
-                        decoration: const InputDecoration(
-                          hintText: 'Как сделать',
-                        ),
-                      )
+                alignment: Alignment.center,
+                child: on
+                    ? Container(width: 10, height: 10, color: s.onSurface)
                     : null,
               ),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (advice)
+                Container(
+                  key: const Key('question-advice'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  color: s.primary,
+                  child: Text(
+                    'СОВЕТУЮ',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: .6,
+                      color: s.onPrimary,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          key: const Key('question-cancel'),
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Отмена'),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = widget.q;
+    return SheetLayout(
+      key: const Key('question-dialog'),
+      kind: SheetKind.ai,
+      icon: Symbols.auto_awesome_rounded,
+      title: 'Уточнение',
+      body: [
+        Text(
+          q.question,
+          key: const Key('question-text'),
+          style: const TextStyle(fontSize: 16, height: 1.35),
         ),
-        FilledButton(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 6,
+          children: [
+            for (final (i, o) in q.options.indexed)
+              _option(i, o.label, advice: i == 0),
+            _option(q.options.length, 'Свой вариант'),
+            if (_isOwn)
+              TextField(
+                key: const Key('question-own'),
+                controller: _own,
+                autofocus: true,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(hintText: 'Как сделать'),
+              ),
+          ],
+        ),
+      ],
+      actions: [
+        sheetCancel(context, 'Отмена', const Key('question-cancel'), null),
+        sheetMain(
+          context,
+          label: 'Ответить',
+          icon: Symbols.check_rounded,
+          style: SheetMain.primary,
           key: const Key('question-answer'),
           onPressed: _answer == null
               ? null
               : () => Navigator.of(context).pop(_answer),
-          child: const Text('Ответить'),
         ),
       ],
     );

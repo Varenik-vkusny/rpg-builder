@@ -19,7 +19,10 @@ import 'new_location_screen.dart';
 import 'new_quest_screen.dart';
 import 'quest.dart';
 
-IconData characterIcon(Character c) => switch (c.role) {
+IconData characterIcon(Character c) => roleIcon(c.role);
+
+/// Значок персонажа по роли — один на списки, формы и окна.
+IconData roleIcon(Role r) => switch (r) {
   Role.enemy => Symbols.skull_rounded,
   Role.merchant => Symbols.storefront_rounded,
   Role.npc => Symbols.person_rounded,

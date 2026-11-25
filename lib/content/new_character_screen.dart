@@ -12,6 +12,7 @@ import 'location.dart';
 import 'manual_edit.dart';
 import 'manual_create.dart';
 import 'manual_save.dart';
+import 'world_pages.dart' show roleIcon;
 import '../ui/discard_guard.dart';
 import '../ui/parts.dart';
 
@@ -50,16 +51,21 @@ class _LootRow {
 class _NewCharacterScreenState extends State<NewCharacterScreen>
     with DiscardGuard<NewCharacterScreen> {
   @override
-  List<Object?> get formValues => [
-    _title,
-    _description,
-    _level,
-    _hp,
-    _attack,
-    _role,
-    _locationId,
-    for (final r in _loot) ...[r.itemId, r.chance],
-  ];
+  Map<String, Object?> get formFields => {
+    'Имя': _title,
+    'Описание': _description,
+    'Уровень': _level,
+    'Здоровье': _hp,
+    'Атака': _attack,
+    'Роль': _role,
+    'Локация': _locationId,
+    'Добыча': [
+      for (final r in _loot) ...[r.itemId, r.chance],
+    ],
+  };
+
+  @override
+  IconData get formIcon => roleIcon(_role);
 
   final _title = TextEditingController();
   final _description = TextEditingController();
@@ -272,13 +278,7 @@ class _NewCharacterScreenState extends State<NewCharacterScreen>
       appBar: AppBar(
         title: Text(_editing ? 'Изменить персонажа' : 'Новый персонаж'),
         actions: [
-          if (_editing)
-            IconButton(
-              key: const Key('object-delete'),
-              tooltip: 'Удалить',
-              icon: const Icon(Symbols.delete_rounded),
-              onPressed: _busy ? null : _delete,
-            ),
+          if (_editing) DeleteAction(onPressed: _busy ? null : _delete),
         ],
       ),
       body: ListView(

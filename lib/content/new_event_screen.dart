@@ -50,13 +50,18 @@ class _EnemyRow {
 class _NewEventScreenState extends State<NewEventScreen>
     with DiscardGuard<NewEventScreen> {
   @override
-  List<Object?> get formValues => [
-    _title,
-    _description,
-    _locationId,
-    for (final e in _enemies) ...[e.characterId, e.amount],
-    ..._items,
-  ];
+  Map<String, Object?> get formFields => {
+    'Название': _title,
+    'Описание': _description,
+    'Место': _locationId,
+    'Враги': [
+      for (final e in _enemies) ...[e.characterId, e.amount],
+    ],
+    'Предметы': _items,
+  };
+
+  @override
+  IconData get formIcon => Symbols.bolt_rounded;
 
   final _title = TextEditingController();
   final _description = TextEditingController();
@@ -292,13 +297,7 @@ class _NewEventScreenState extends State<NewEventScreen>
       appBar: AppBar(
         title: Text(_editing ? 'Изменить событие' : 'Новое событие'),
         actions: [
-          if (_editing)
-            IconButton(
-              key: const Key('object-delete'),
-              tooltip: 'Удалить',
-              icon: const Icon(Symbols.delete_rounded),
-              onPressed: _busy ? null : _delete,
-            ),
+          if (_editing) DeleteAction(onPressed: _busy ? null : _delete),
         ],
       ),
       body: ListView(

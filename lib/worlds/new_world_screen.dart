@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../help/help.dart';
 import '../ui/input_rules.dart';
@@ -24,7 +25,15 @@ class NewWorldScreen extends StatefulWidget {
 class _NewWorldScreenState extends State<NewWorldScreen>
     with DiscardGuard<NewWorldScreen> {
   @override
-  List<Object?> get formValues => [_title, _setting, _tone, _levels];
+  Map<String, Object?> get formFields => {
+    'Название': _title,
+    'Сеттинг': _setting,
+    'Тон': _tone,
+    'Уровни': _levels,
+  };
+
+  @override
+  IconData get formIcon => Symbols.public_rounded;
 
   late final _title = TextEditingController(text: widget.editing?.title);
   late final _setting = TextEditingController(text: widget.editing?.setting);

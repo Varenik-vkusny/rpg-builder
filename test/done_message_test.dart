@@ -147,8 +147,9 @@ void main() {
       await quietMines(t);
       await open(t, 'klyuch');
       await tapButton(t, 'object-delete');
-      expect(find.textContaining('Нельзя удалить «Ключ»'), findsOneWidget);
+      expect(find.text('Нельзя удалить'), findsOneWidget);
       expect(_done, findsNothing);
+      await tapButton(t, 'refusal-ok');
       await t.enterText(find.byKey(const Key('item-title')), '');
       await tapButton(t, 'item-save');
       expect(find.text('Нужно название предмета'), findsOneWidget);

@@ -61,11 +61,17 @@ void main() {
     await longPressWorld(t, 'Пепельные копи');
     await t.tap(find.byKey(const Key('world-delete')));
     await t.pumpAndSettle();
-    expect(find.text('Удалить «Пепельные копи»?'), findsOneWidget);
+    // Вид А: необратимое — «Удалить мир?», имя плашкой, «Без отката» красным.
+    expect(find.text('Удалить мир?'), findsOneWidget);
     expect(
-      find.text('Мир и вся его история удалятся навсегда.'),
+      find.descendant(
+        of: find.byKey(const Key('sheet-subject')),
+        matching: find.text('Пепельные копи'),
+      ),
       findsOneWidget,
     );
+    expect(find.text('Без отката'), findsOneWidget);
+    expect(find.text('Удалить навсегда'), findsOneWidget);
     await t.tap(find.byKey(const Key('confirm-no')));
     await t.pumpAndSettle();
     expect(find.text('Пепельные копи'), findsOneWidget);

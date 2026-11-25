@@ -94,9 +94,10 @@ void main() {
     final content = await openMines(t);
     await open(t, 'klyuch');
     await tapButton(t, 'object-delete');
-    expect(find.textContaining('Нельзя удалить «Ключ»'), findsOneWidget);
-    expect(find.textContaining('роняет: «Слизень»'), findsOneWidget);
-    expect(find.textContaining('шаг 3 квеста «Обвал»'), findsOneWidget);
+    expect(find.byKey(const Key('refusal')), findsOneWidget);
+    expect(find.text('Нельзя удалить'), findsOneWidget);
+    expect(find.text('Роняет: «Слизень»'), findsOneWidget);
+    expect(find.text('Шаг 3 квеста «Обвал»'), findsOneWidget);
     expect(
       (await content.items(minesId)).map((i) => i.slug),
       contains('klyuch'),

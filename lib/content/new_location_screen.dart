@@ -43,7 +43,15 @@ class NewLocationScreen extends StatefulWidget {
 class _NewLocationScreenState extends State<NewLocationScreen>
     with DiscardGuard<NewLocationScreen> {
   @override
-  List<Object?> get formValues => [_title, _description, _levels, _parentId];
+  Map<String, Object?> get formFields => {
+    'Название': _title,
+    'Описание': _description,
+    'Уровни': _levels,
+    'Внутри места': _parentId,
+  };
+
+  @override
+  IconData get formIcon => Symbols.landscape_rounded;
 
   final _title = TextEditingController();
   final _description = TextEditingController();
@@ -162,13 +170,7 @@ class _NewLocationScreenState extends State<NewLocationScreen>
       appBar: AppBar(
         title: Text(_editing ? 'Изменить локацию' : 'Новая локация'),
         actions: [
-          if (_editing)
-            IconButton(
-              key: const Key('object-delete'),
-              tooltip: 'Удалить',
-              icon: const Icon(Symbols.delete_rounded),
-              onPressed: _busy ? null : _delete,
-            ),
+          if (_editing) DeleteAction(onPressed: _busy ? null : _delete),
         ],
       ),
       body: ListView(

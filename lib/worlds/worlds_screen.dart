@@ -49,29 +49,33 @@ class _WorldsScreenState extends State<WorldsScreen> {
     if (created == true) _reload();
   }
 
+  /// Шторка мира (вид А): имя шапкой, «Изменить», «Удалить» красным.
   Future<void> _manage(World w) async {
-    final what = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              // «Изменить», а не «Переименовать»: открывает всю форму мира (владелец 25.11).
-              key: const Key('world-edit'),
-              leading: const Icon(Symbols.edit_rounded),
-              title: const Text('Изменить'),
-              onTap: () => Navigator.of(context).pop('edit'),
-            ),
-            ListTile(
-              key: const Key('world-delete'),
-              leading: const Icon(Symbols.delete_rounded),
-              title: const Text('Удалить'),
-              onTap: () => Navigator.of(context).pop('delete'),
-            ),
-          ],
-        ),
+    final what = await showActionSheet<String>(
+      context,
+      builder: (context) => SheetLayout(
+        key: const Key('world-sheet'),
+        kind: SheetKind.plain,
+        icon: Symbols.public_rounded,
+        title: w.title,
+        body: [
+          _menuRow(
+            context,
+            key: const Key('world-edit'),
+            icon: Symbols.edit_rounded,
+            label: 'Изменить',
+            value: 'edit',
+          ),
+          _menuRow(
+            context,
+            key: const Key('world-delete'),
+            icon: Symbols.delete_forever_rounded,
+            label: 'Удалить',
+            value: 'delete',
+            danger: true,
+          ),
+        ],
+        actions: const [],
       ),
     );
     if (!mounted || what == null) return;
@@ -87,12 +91,66 @@ class _WorldsScreenState extends State<WorldsScreen> {
     }
   }
 
+  Widget _menuRow(
+    BuildContext context, {
+    required Key key,
+    required IconData icon,
+    required String label,
+    required String value,
+    bool danger = false,
+  }) {
+    final s = Theme.of(context).colorScheme;
+    final color = danger ? s.error : s.onSurface;
+    return InkWell(
+      key: key,
+      onTap: () => Navigator.of(context).pop(value),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 56),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: s.outlineVariant)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          spacing: 14,
+          children: [
+            Icon(icon, color: danger ? s.error : s.onSurfaceVariant),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Удаление мира необратимо: красная заливка «Удалить навсегда», «Без отката».
   Future<void> _delete(World w) async {
+    final (objects, sets) = await _sizeOf(w);
+    if (!mounted) return;
     final yes = await confirmAction(
       context,
-      title: 'Удалить «${w.title}»?',
-      text: 'Мир и вся его история удалятся навсегда.',
-      action: 'Удалить',
+      title: 'Удалить мир?',
+      icon: Symbols.delete_forever_rounded,
+      kind: SheetKind.danger,
+      subject: SheetSubject(Symbols.public_rounded, w.title),
+      facts: [
+        if (objects != null)
+          SheetFact(Symbols.landscape_rounded, 'Объектов: $objects'),
+        if (sets != null)
+          SheetFact(Symbols.history_rounded, 'Наборов истории: $sets'),
+        const SheetFact(
+          Symbols.delete_forever_rounded,
+          'Без отката',
+          tone: FactTone.hot,
+        ),
+      ],
+      action: 'Удалить навсегда',
+      actionIcon: Symbols.delete_forever_rounded,
     );
     if (!yes) return;
     try {
@@ -102,6 +160,25 @@ class _WorldsScreenState extends State<WorldsScreen> {
       if (mounted) showDone(context, 'Не удалось удалить: $e');
     }
     _reload();
+  }
+
+  /// Сколько уйдёт вместе с миром; не узнали — шторка обойдётся без чисел.
+  Future<(int?, int?)> _sizeOf(World w) async {
+    try {
+      final (snap, history) = await (
+        widget.content.snapshot(w.id),
+        widget.content.history(w.id),
+      ).wait;
+      final objects =
+          snap.locations.length +
+          snap.items.length +
+          snap.characters.length +
+          snap.quests.length +
+          snap.events.length;
+      return (objects, history.length);
+    } catch (_) {
+      return (null, null);
+    }
   }
 
   @override

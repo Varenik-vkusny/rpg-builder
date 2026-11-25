@@ -151,70 +151,54 @@ extension _Move on _HolstState {
     return Duration(milliseconds: _flying[id] ?? _flying[placeId] ?? _flyNear);
   }
 
-  /// Окно жёлтой метки: текст предупреждения, «Оставить» и «Откатить».
+  /// Окно жёлтой метки — структура вида А: значок и «Предупреждение» → с чем
+  /// (значок и имя) → причина строкой → «Откатить» | «Оставить» (главная).
   Widget? _markSheet() {
     final id = _markOpen;
     final w = id == null ? null : _warns[id];
     if (w == null) return null;
     final s = Theme.of(context).colorScheme;
     final c = AppColors.of(context);
+    final token = [
+      for (final t in [..._scene.onCanvas, ..._scene.shelf])
+        if (t.id == id) t,
+    ].firstOrNull;
     return Positioned(
-      left: 8,
-      right: 8,
-      bottom: HolstShelf.height + 8,
+      left: 0,
+      right: 0,
+      bottom: HolstShelf.height,
       child: Material(
         key: const Key('holst-mark-sheet'),
         color: s.surfaceContainerHigh,
-        shape: Border.all(color: c.warn),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Symbols.warning_rounded, color: c.warn, fill: 1),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      w.text,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
+        shape: Border(top: BorderSide(color: c.warn, width: 3)),
+        child: SheetLayout(
+          kind: SheetKind.warn,
+          icon: Symbols.warning_rounded,
+          title: 'Предупреждение',
+          subject: token == null
+              ? null
+              : SheetSubject(tokenIcon(token), token.title),
+          facts: [
+            SheetFact(Symbols.warning_rounded, w.text, tone: FactTone.warn),
+          ],
+          actions: [
+            OutlinedButton.icon(
+              key: const Key('holst-mark-back'),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52)),
+              onPressed: () {
+                _set(() => _markOpen = null);
+                _undo(w.setId, done: w.undone);
+              },
+              icon: const Icon(Symbols.undo_rounded),
+              label: const Text('Откатить'),
             ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: s.outlineVariant)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Row(
-                  spacing: 8,
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        key: const Key('holst-mark-keep'),
-                        onPressed: () => _set(() => _markOpen = null),
-                        child: const Text('Оставить'),
-                      ),
-                    ),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        key: const Key('holst-mark-back'),
-                        onPressed: () {
-                          _set(() => _markOpen = null);
-                          _undo(w.setId, done: w.undone);
-                        },
-                        icon: const Icon(Symbols.undo_rounded),
-                        label: const Text('Откатить'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            sheetMain(
+              context,
+              label: 'Оставить',
+              icon: Symbols.check_rounded,
+              style: SheetMain.primary,
+              key: const Key('holst-mark-keep'),
+              onPressed: () => _set(() => _markOpen = null),
             ),
           ],
         ),

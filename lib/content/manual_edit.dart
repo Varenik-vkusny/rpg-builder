@@ -6,10 +6,11 @@
 // меняемые столбцы + id и мир; пустое поле (убрать локацию) передаётся как null.
 import '../check/world_check.dart';
 import 'character.dart';
-import 'event.dart';
 import 'item.dart';
 import 'location.dart';
 import 'quest.dart';
+
+export 'references.dart';
 
 /// Правка вручную: что меняем и какие строки пишем.
 class ManualEdit {
@@ -298,44 +299,6 @@ ManualEdit editQuest(String worldId, Quest old, NewQuest now) {
     ),
   );
 }
-
-/// События, на которых стоит объект [id]: его место, враг или предмет сцены.
-List<Event> eventsOn(WorldSnapshot w, String id) => [
-  for (final e in w.events)
-    if (e.locationId == id ||
-        e.enemies.any((x) => x.characterId == id) ||
-        e.itemIds.contains(id))
-      e,
-];
-
-/// Кто ссылается на объект [id] — словами. Непусто — удалять нельзя.
-/// Своя добыча врага, свои шаги квеста, свои враги и предметы события — не ссылки:
-/// уходят вместе с ним.
-List<String> referencesTo(WorldSnapshot w, String id) => [
-  ...referencesWithoutEvents(w, id),
-  for (final e in w.events) ...[
-    if (e.locationId == id) 'здесь идёт событие «${e.title}»',
-    if (e.enemies.any((x) => x.characterId == id))
-      'стоит в событии «${e.title}»',
-    if (e.itemIds.contains(id)) 'лежит в событии «${e.title}»',
-  ],
-];
-
-/// То же, но без событий: их ассистент объясняет отдельно (см. eventsOn).
-List<String> referencesWithoutEvents(WorldSnapshot w, String id) => [
-  for (final l in w.locations)
-    if (l.parentId == id) 'вложено сюда: «${l.title}»',
-  for (final c in w.characters) ...[
-    if (c.locationId == id) 'живёт здесь: «${c.title}»',
-    if (c.loot.any((l) => l.itemId == id)) 'роняет: «${c.title}»',
-  ],
-  for (final q in w.quests) ...[
-    if (q.giverId == id) 'выдаёт квест «${q.title}»',
-    for (final (i, s) in q.steps.indexed)
-      if (s.targetId == id) 'шаг ${i + 1} квеста «${q.title}»',
-    if (q.rewardIds.contains(id)) 'награда за квест «${q.title}»',
-  ],
-];
 
 /// Удаление объекта одной операцией. Добыча врага, шаги и награды квеста уходят
 /// вместе с ним — база сама пишет их в журнал (откат вернёт).

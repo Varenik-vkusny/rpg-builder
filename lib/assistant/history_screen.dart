@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../help/help.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
+import '../content/delete_confirm.dart' show objectIcon;
 import '../content/quest.dart';
 import '../worlds/world.dart';
 import 'history.dart';
@@ -54,7 +55,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         setState(() => _conflicts[set.id] = conflicts);
         return;
       }
-      if (!mounted || !await _confirmRevert()) return;
+      final world = (await _data).$2;
+      if (!mounted || !await _confirmRevert(set, world)) return;
       await widget.repo.revertChangeSet(widget.world.id, set.id);
       _changed = true;
       if (mounted) showDone(context, 'Набор откачен');
@@ -68,12 +70,87 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  Future<bool> _confirmRevert() => confirmAction(
-    context,
-    title: 'Откатить набор?',
-    text: 'Мир вернётся к состоянию до этого набора изменений.',
-    action: 'Откатить',
-  );
+  /// Вид А: что откатываем и что вернётся. Одна операция — объект плашкой и что
+  /// с ним станет; несколько — набор плашкой и до трёх строк.
+  Future<bool> _confirmRevert(ChangeSetEntry set, WorldSnapshot world) {
+    final show = _shower(world);
+    String field(String k) =>
+        fieldLabel(k.replaceAll(RegExp(r'_id$'), '')).toLowerCase();
+    String back(JournalOp op) => [
+      for (final (k, was, _) in op.changes)
+        '${field(k)} → ${show(op, k, was) ?? '—'}',
+    ].join(', ');
+    SheetFact fact(JournalOp op, {required bool named}) {
+      final who = named ? '${op.title}: ' : '';
+      // Без имени строка начинается с глагола — с заглавной.
+      String say(String v) =>
+          named ? '$who$v' : v[0].toUpperCase() + v.substring(1);
+      return switch (op.action) {
+        'create' => SheetFact(Symbols.remove_rounded, say('уберётся')),
+        'delete' => SheetFact(Symbols.add_rounded, say('вернётся')),
+        _ => SheetFact(
+          Symbols.edit_rounded,
+          op.changes.isEmpty ? say('вернётся как было') : who,
+          changed: op.changes.isEmpty ? null : back(op),
+        ),
+      };
+    }
+
+    final single = set.ops.length == 1 ? set.ops.single : null;
+    return confirmAction(
+      context,
+      title: 'Откатить набор?',
+      icon: Symbols.undo_rounded,
+      subject: single == null
+          ? SheetSubject(
+              Symbols.history_rounded,
+              set.summary.isEmpty ? set.request : set.summary,
+            )
+          : SheetSubject(_opIcon(single, world), single.title),
+      facts: [
+        if (single != null)
+          fact(single, named: false)
+        else ...[
+          for (final op in set.ops.take(3)) fact(op, named: true),
+          if (set.ops.length > 3)
+            SheetFact(
+              Symbols.more_horiz_rounded,
+              'И ещё ${set.ops.length - 3}',
+            ),
+        ],
+      ],
+      action: 'Откатить',
+      actionIcon: Symbols.undo_rounded,
+    );
+  }
+
+  /// Значок объекта операции: по самому объекту, а убранного — по виду строки.
+  IconData _opIcon(JournalOp op, WorldSnapshot world) {
+    final id = (op.after?['id'] ?? op.before?['id'])?.toString();
+    final known = id != null && world.titles.containsKey(id);
+    if (known) return objectIcon(world, id);
+    return switch (op.type) {
+      'character' => Symbols.person_rounded,
+      'item' => Symbols.deployed_code_rounded,
+      'quest' => Symbols.flag_rounded,
+      'event' => Symbols.bolt_rounded,
+      _ => Symbols.landscape_rounded,
+    };
+  }
+
+  /// Значение поля словами: ссылки — названиями, вид шага — «поговорить / убить».
+  String? Function(JournalOp, String, String?) _shower(WorldSnapshot world) {
+    final labels = PlanLabels(() => world);
+    final titles = world.titles;
+    return (op, key, raw) {
+      if (raw == null) return null;
+      if (key.endsWith('_id')) return titles[raw] ?? '?';
+      if (op.type == 'quest_step' && key == 'kind') {
+        return StepKind.values.byName(raw).label;
+      }
+      return labels.value(key, num.tryParse(raw) ?? raw);
+    };
+  }
 
   @override
   Widget build(BuildContext context) => PopScope(
@@ -120,17 +197,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   );
 
   Widget _set(ChangeSetEntry s, WorldSnapshot world) {
-    final labels = PlanLabels(() => world);
-    final titles = world.titles;
-    String? show(JournalOp op, String key, String? raw) {
-      if (raw == null) return null;
-      if (key.endsWith('_id')) return titles[raw] ?? '?';
-      // У шага «вид» — поговорить / убить, а не вид предмета.
-      if (op.type == 'quest_step' && key == 'kind') {
-        return StepKind.values.byName(raw).label;
-      }
-      return labels.value(key, num.tryParse(raw) ?? raw);
-    }
+    final show = _shower(world);
 
     final when =
         '${s.createdAt.day.toString().padLeft(2, '0')}.'

@@ -168,9 +168,7 @@ void main() {
     await checkScreen(t, 'check');
     await back(t);
 
-    await tapKey(t, 'world-export');
-    await checkScreen(t, 'export');
-    await tapKey(t, 'export-cancel');
+    // Окно экспорта — шторка вида А без «?» (обход 25.11: «лишний «?»»).
 
     await tapKey(t, 'open5e-open');
     await checkScreen(t, 'open5e');

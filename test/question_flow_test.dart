@@ -27,8 +27,17 @@ void main() {
 
       expect(find.byKey(const Key('question-dialog')), findsOneWidget);
       expect(find.text(attack14.question), findsOneWidget);
-      expect(find.text('Поставить 10 (советую)'), findsOneWidget);
-      expect(find.text('будет предупреждение в проверке'), findsOneWidget);
+      // Вид А: совет — плашкой «СОВЕТУЮ» у первого варианта.
+      expect(find.text('Поставить 10'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('question-option-0')),
+          matching: find.byKey(const Key('question-advice')),
+        ),
+        findsOneWidget,
+      );
+      // Обход 25.11: пояснений под вариантами нет — варианты рядами, совет отмечен.
+      expect(find.text('будет предупреждение в проверке'), findsNothing);
       await t.tap(find.byKey(const Key('question-option-1')));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('question-answer')));

@@ -186,14 +186,15 @@ void main() {
     final slug = (await content.events(minesId)).single.slug;
 
     for (final (object, why) in [
-      ('krysa', 'стоит в событии «Нора»'),
-      ('fonar', 'лежит в событии «Нора»'),
-      ('rynok', 'здесь идёт событие «Нора»'),
+      ('krysa', 'Стоит в событии «Нора»'),
+      ('fonar', 'Лежит в событии «Нора»'),
+      ('rynok', 'Здесь идёт событие «Нора»'),
     ]) {
       await tapButton(t, 'open-$object');
       await tapButton(t, 'object-edit');
       await tapButton(t, 'object-delete');
-      expect(find.textContaining(why), findsOneWidget, reason: object);
+      expect(find.text(why), findsOneWidget, reason: object);
+      await tapButton(t, 'refusal-ok');
       await t.binding.handlePopRoute();
       await t.pumpAndSettle();
       await t.binding.handlePopRoute();

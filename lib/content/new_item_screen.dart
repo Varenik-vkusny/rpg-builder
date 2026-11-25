@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../help/help.dart';
 import '../check/world_check.dart';
@@ -10,6 +9,7 @@ import 'item.dart';
 import 'manual_edit.dart';
 import 'manual_create.dart';
 import 'manual_save.dart';
+import 'world_pages.dart' show itemKindIcon;
 import '../ui/discard_guard.dart';
 
 class NewItemScreen extends StatefulWidget {
@@ -37,14 +37,17 @@ class NewItemScreen extends StatefulWidget {
 class _NewItemScreenState extends State<NewItemScreen>
     with DiscardGuard<NewItemScreen> {
   @override
-  List<Object?> get formValues => [
-    _title,
-    _level,
-    _stat,
-    _price,
-    _kind,
-    _rarity,
-  ];
+  Map<String, Object?> get formFields => {
+    'Название': _title,
+    'Уровень': _level,
+    _statLabel: _stat,
+    'Цена': _price,
+    'Тип': _kind,
+    'Редкость': _rarity,
+  };
+
+  @override
+  IconData get formIcon => itemKindIcon(_kind);
 
   final _title = TextEditingController();
   final _level = TextEditingController();
@@ -201,13 +204,7 @@ class _NewItemScreenState extends State<NewItemScreen>
       appBar: AppBar(
         title: Text(_editing ? 'Изменить предмет' : 'Новый предмет'),
         actions: [
-          if (_editing)
-            IconButton(
-              key: const Key('object-delete'),
-              tooltip: 'Удалить',
-              icon: const Icon(Symbols.delete_rounded),
-              onPressed: _busy ? null : _delete,
-            ),
+          if (_editing) DeleteAction(onPressed: _busy ? null : _delete),
         ],
       ),
       body: ListView(

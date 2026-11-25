@@ -51,13 +51,18 @@ class NewQuestScreen extends StatefulWidget {
 class _NewQuestScreenState extends State<NewQuestScreen>
     with DiscardGuard<NewQuestScreen> {
   @override
-  List<Object?> get formValues => [
-    _title,
-    _description,
-    _giverId,
-    for (final s in _steps) ...[s.kind, s.targetId, s.amount],
-    for (final r in _rewards) r.itemId,
-  ];
+  Map<String, Object?> get formFields => {
+    'Название': _title,
+    'Описание': _description,
+    'Выдаёт': _giverId,
+    'Шаги': [
+      for (final s in _steps) ...[s.kind, s.targetId, s.amount],
+    ],
+    'Награды': [for (final r in _rewards) r.itemId],
+  };
+
+  @override
+  IconData get formIcon => Symbols.flag_rounded;
 
   final _title = TextEditingController();
   final _description = TextEditingController();
@@ -199,13 +204,7 @@ class _NewQuestScreenState extends State<NewQuestScreen>
       appBar: AppBar(
         title: Text(_editing ? 'Изменить квест' : 'Новый квест'),
         actions: [
-          if (_editing)
-            IconButton(
-              key: const Key('object-delete'),
-              tooltip: 'Удалить',
-              icon: const Icon(Symbols.delete_rounded),
-              onPressed: _busy ? null : _delete,
-            ),
+          if (_editing) DeleteAction(onPressed: _busy ? null : _delete),
         ],
       ),
       body: ListView(

@@ -274,7 +274,8 @@ void main() {
       final share = await openMinesWith(t, content);
       await tapButton(t, 'world-export');
       expect(find.byKey(const Key('export-errors')), findsOneWidget);
-      expect(find.textContaining('Ошибок в мире: 1'), findsOneWidget);
+      expect(find.text('В мире ошибки'), findsOneWidget);
+      expect(find.textContaining('«Призрак»'), findsOneWidget);
       await tapButton(t, 'export-cancel');
       expect(share.shared, isEmpty);
 

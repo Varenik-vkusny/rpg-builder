@@ -47,6 +47,8 @@ void main() {
     await tapShown(t, find.byKey(const Key('object-edit')));
     await tapShown(t, find.byKey(const Key('object-delete')));
     await shot(t, '4.1-delete-refused');
+    // Отказ — шторкой вида А с «Понятно» (25.11).
+    await tapShown(t, find.byKey(const Key('refusal-ok')));
     await t.pageBack();
     await t.pumpAndSettle();
     await t.pageBack(); // со страницы предмета — в мир
