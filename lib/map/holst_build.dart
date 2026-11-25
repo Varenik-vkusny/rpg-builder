@@ -62,7 +62,8 @@ extension _Build on _HolstState {
     final where = switch (kind) {
       NewKind.item => ' на полке',
       NewKind.place => '',
-      _ => ' ${inPlace(place!.title)}',
+      // Название места не склоняем (владелец 25.11): авторское имя не просклонять.
+      _ => ' в месте «${place!.title}»',
     };
     await _gesture(
       made.edit,

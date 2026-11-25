@@ -16,7 +16,7 @@ void main() {
     await pumpHolst(t, c);
     await build(t);
     await drag(t, 'enemy', placeCenter(t, 'baraki'));
-    expect(snack(t), 'Создано: Враг 1 в Бараках');
+    expect(snack(t), 'Создано: Враг 1 в месте «Бараки»');
     await drag(t, 'enemy', placeCenter(t, 'baraki'));
     expect(snack(t), startsWith('Создано: Враг 2'));
     await drag(t, 'enemy', placeCenter(t, 'baraki'));
@@ -61,17 +61,16 @@ void main() {
     },
   );
 
-  testWidgets('полоса: место в предложном падеже; не угадать — запасной вид', (
-    t,
-  ) async {
+  // Владелец 25.11: название места не склоняем — «в месте «Рынок»» для любого имени.
+  testWidgets('полоса: «в месте «…»», название места как есть', (t) async {
     final c = await ashMines();
     await pumpHolst(t, c);
     await build(t);
     await drag(t, 'npc', placeCenter(t, 'rynok'));
-    expect(snack(t), 'Создано: Житель 1 в Рынке');
+    expect(snack(t), 'Создано: Житель 1 в месте «Рынок»');
     await drag(t, 'event', placeCenter(t, 'baraki'));
-    expect(snack(t), 'Создано: Событие 1 в Бараках');
+    expect(snack(t), 'Создано: Событие 1 в месте «Бараки»');
     await drag(t, 'enemy', placeCenter(t, 'shtolnya_3'));
-    expect(snack(t), 'Создано: Враг 1 в Штольне №3');
+    expect(snack(t), 'Создано: Враг 1 в месте «Штольня №3»');
   });
 }
