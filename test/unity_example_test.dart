@@ -1,5 +1,7 @@
 // Прибор: пример для Unity (unity/RpgBuilderWorld.cs) не отстаёт от формата экспорта.
-// Краснеет, если версия в C# другая или экспорт выдаёт поле, которого нет в классах C#.
+// Краснеет, если версия в C# другая, экспорт выдаёт поле, которого нет в классах C#,
+// или C# читает поле, которого в экспорте нет либо у которого другой вид (число/строка/
+// массив). Сам JsonUtility здесь не запускается — это делает только Unity.
 import 'dart:convert';
 import 'dart:io';
 
@@ -57,6 +59,44 @@ List<String> _missing(
   return out;
 }
 
+/// Обратная сторона (ревью 26.11): каждое поле, которое читает C#, есть в экспорте и того
+/// же вида. Иначе поле, убранное из экспорта или сменившее тип, в Unity молча станет 0.
+List<String> _wrong(
+  Object? json,
+  String type,
+  String path,
+  Map<String, Map<String, String>> classes,
+) {
+  final out = <String>[];
+  if (json is List) {
+    for (final e in json) {
+      out.addAll(_wrong(e, type.replaceAll('[]', ''), path, classes));
+    }
+    return out;
+  }
+  if (json is! Map) return out;
+  final fields = classes[type] ?? const {};
+  for (final MapEntry(key: name, value: cs) in fields.entries) {
+    final where = '$path.$name';
+    if (!json.containsKey(name)) {
+      out.add('$where: в экспорте нет поля, а $type его читает');
+      continue;
+    }
+    final v = json[name];
+    final ok = switch (cs) {
+      'int' => v is int,
+      'float' || 'double' => v is num,
+      'string' => v is String,
+      'bool' => v is bool,
+      _ when cs.endsWith('[]') => v is List,
+      _ => v is Map,
+    };
+    if (!ok) out.add('$where: в C# $cs, в экспорте ${v.runtimeType}');
+    if (v is Map || v is List) out.addAll(_wrong(v, cs, where, classes));
+  }
+  return out;
+}
+
 void main() {
   final cs = File('unity/RpgBuilderWorld.cs').readAsStringSync();
   final classes = _csClasses(cs);
@@ -74,6 +114,7 @@ void main() {
       final w = await c.snapshot(minesId);
       final json = jsonDecode(exportJson(mines, w));
       expect(_missing(json, 'WorldFile', r'$', classes), isEmpty);
+      expect(_wrong(json, 'WorldFile', r'$', classes), isEmpty);
     },
   );
 
