@@ -94,10 +94,11 @@ extension _Move on _HolstState {
     _land(l.id, ok ? _flyFar : _flyNear);
   }
 
-  /// Почему перенос не применён — словами автора, а не правилом проверки.
+  /// Почему перенос не применён — словами автора, одной короткой строкой: полоса
+  /// отказа вида А причину не переносит (на 360 dp «…уже лежит внут…» обрезалось).
   String? _why(Problem p, String what, String into) => switch (p.rule) {
-    'location_cycle' => '«$into» уже лежит внутри «$what»',
-    'location_too_deep' => 'Мест в месте — не больше $maxNestingDepth уровней',
+    'location_cycle' => 'место внутрь себя нельзя',
+    'location_too_deep' => 'не глубже $maxNestingDepth уровней',
     _ => null,
   };
 
