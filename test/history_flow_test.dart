@@ -44,7 +44,7 @@ void main() {
     expect(find.byKey(const Key('history-off')), findsNothing);
     await t.tap(find.text(flood));
     await t.pumpAndSettle();
-    expect(find.textContaining('shtolnya_3 описание'), findsOneWidget);
+    expect(find.textContaining('Штольня №3 описание'), findsOneWidget);
 
     await tapButton(t, 'revert-set-0');
     await tapButton(t, 'confirm-yes');

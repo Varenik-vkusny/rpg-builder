@@ -23,11 +23,11 @@ void main() {
     expect(find.text('СТАЛО'), findsNothing);
     expect(find.textContaining('Изменить ·'), findsNothing);
     // Вид А: операция — ячейка цвета действия и имя. Создание — без полей.
-    expect(find.text('utoplennik'), findsOneWidget);
+    expect(find.text('Утопленник'), findsOneWidget);
     expect(find.textContaining('здоровье'), findsNothing);
-    expect(find.text('добыча slizen/klyuch'), findsOneWidget);
+    expect(find.text('добыча Слизень → Ключ'), findsOneWidget);
     // Изменение — имя и поле, ниже «было → стало».
-    expect(find.textContaining('shtolnya_3 описание'), findsOneWidget);
+    expect(find.textContaining('Штольня №3 описание'), findsOneWidget);
     expect(find.textContaining('затоплена по пояс'), findsOneWidget);
   });
 
@@ -75,6 +75,6 @@ void main() {
     await t.tap(find.text(flood));
     await t.pumpAndSettle();
     expect(find.textContaining('«затопи её'), findsOneWidget);
-    expect(find.text('utoplennik'), findsOneWidget);
+    expect(find.text('Утопленник'), findsOneWidget);
   });
 }

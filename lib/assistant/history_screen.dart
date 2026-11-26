@@ -192,9 +192,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final single = s.ops.length == 1 ? s.ops.single : null;
     final opsRepeatHead =
         single != null &&
-        single.title.isNotEmpty &&
+        opTitle(single, world).isNotEmpty &&
         (single.action != 'update' || line.field != null) &&
-        line.name.contains(single.title);
+        line.name.contains(opTitle(single, world));
     return Container(
       key: Key('history-${s.id}'),
       margin: const EdgeInsets.only(bottom: 8),
