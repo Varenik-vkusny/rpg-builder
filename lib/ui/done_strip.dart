@@ -52,7 +52,6 @@ class DoneStrip extends StatelessWidget {
     this.body,
     this.action,
     this.bottom,
-    this.hideCell = false,
     this.titleKey,
     this.subKey,
   });
@@ -63,7 +62,6 @@ class DoneStrip extends StatelessWidget {
   final Widget? body;
   final Widget? action;
   final Widget? bottom;
-  final bool hideCell;
   final Key? titleKey, subKey;
 
   @override
@@ -87,13 +85,12 @@ class DoneStrip extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (!hideCell)
-                    Container(
-                      key: const Key('done-cell'),
-                      width: 48,
-                      color: cellBg,
-                      child: Icon(icon, color: cellFg, fill: 1, size: 24),
-                    ),
+                  Container(
+                    key: const Key('done-cell'),
+                    width: 48,
+                    color: cellBg,
+                    child: Icon(icon, color: cellFg, fill: 1, size: 24),
+                  ),
                   Expanded(child: _text(context, err)),
                   ?action,
                 ],

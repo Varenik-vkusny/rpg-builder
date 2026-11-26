@@ -170,4 +170,18 @@ void main() {
       await t.pump(const Duration(seconds: 6));
     }
   });
+
+  // Ревью 26.11: значок и цвет ячейки проверены у каждого вида, не только у четырёх.
+  for (final (kind, bg, icon) in [
+    (DoneKind.applied, _c.okContainer, Symbols.check_rounded),
+    (DoneKind.rejected, Colors.transparent, Symbols.close_rounded),
+    (DoneKind.warn, _c.warn, Symbols.warning_rounded),
+    (DoneKind.info, Colors.transparent, Symbols.info_rounded),
+  ]) {
+    testWidgets('вид ${kind.name}: своя ячейка и значок', (t) async {
+      await pumpDone(t, 'полоса', kind);
+      final got = cell(t);
+      expect((got.bg, got.icon), (bg, icon));
+    });
+  }
 }
