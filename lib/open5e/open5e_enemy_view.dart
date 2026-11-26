@@ -10,7 +10,8 @@ import '../map/glyphs.dart';
 import '../ui/parts.dart';
 import 'open5e_api.dart';
 import 'open5e_enemy.dart';
-import 'open5e_result_row.dart';
+import '../assistant/history_line.dart' show Source, sourceIcon;
+import '../ui/cells.dart';
 
 String _cr(double cr) => switch (cr) {
   0.125 => '1/8',
@@ -20,26 +21,29 @@ String _cr(double cr) => switch (cr) {
 };
 
 /// Строка находки: имя по-русски [title]; опасность и здоровье ячейками; оригинал — в карточке.
-Widget enemyTile(Open5eCreature c, String title, VoidCallback onTap) =>
-    ResultRow(
-      key: Key('open5e-${c.key}'),
-      icon: Symbols.skull_rounded,
-      title: title,
-      source: c.document,
-      cells: [
-        ResultCell(
-          icon: Symbols.military_tech_rounded,
-          text: _cr(c.challenge),
-          tip: 'Опасность',
-        ),
-        ResultCell(
-          icon: Symbols.favorite_rounded,
-          text: '${c.hp}',
-          tip: 'Здоровье',
-        ),
-      ],
-      onTap: onTap,
-    );
+Widget enemyTile(Open5eCreature c, String title, VoidCallback onTap) => Padding(
+  padding: const EdgeInsets.only(bottom: 8),
+  child: ObjRow(
+    key: Key('open5e-${c.key}'),
+    icon: Symbols.skull_rounded,
+    title: title,
+    arrow: true,
+    extra: [
+      Cell(Symbols.military_tech_rounded, _cr(c.challenge), tip: 'Опасность'),
+      Cell(Symbols.favorite_rounded, '${c.hp}', tip: 'Здоровье'),
+      sourceCell(c.document),
+    ],
+    onTap: onTap,
+  ),
+);
+
+/// Источник находки — значком, название документа — подсказкой.
+Widget sourceCell(String document) => Cell(
+  sourceIcon(Source.import),
+  null,
+  key: const Key('open5e-source'),
+  tip: document,
+);
 
 /// Каким враг придёт в мир под именем [title]; [problems] — что появится в мире после импорта.
 class EnemyPreview extends StatelessWidget {

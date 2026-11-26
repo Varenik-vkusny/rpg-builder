@@ -18,7 +18,7 @@ import 'open5e_enemy.dart';
 import 'open5e_enemy_view.dart';
 import 'open5e_import.dart';
 import 'open5e_item_view.dart';
-import 'open5e_result_row.dart';
+import '../ui/cells.dart';
 import 'ru_names.dart';
 
 class Open5eScreen extends StatefulWidget {
@@ -328,16 +328,20 @@ class _Open5eScreenState extends State<Open5eScreen> {
         subtitle: Text('Ничего не нашлось'),
       ),
     for (final o in _found ?? const <Open5eItem>[])
-      ResultRow(
-        key: Key('open5e-${o.key}'),
-        icon: itemKindIcon(kindOf(o)),
-        title: _title(o.key, o.name),
-        source: o.document,
-        cells: [
-          ResultCell(text: kindOf(o).label),
-          ResultCell(text: rarityOf(o).label),
-        ],
-        onTap: () => _pick(o),
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: ObjRow(
+          key: Key('open5e-${o.key}'),
+          icon: itemKindIcon(kindOf(o)),
+          title: _title(o.key, o.name),
+          arrow: true,
+          extra: [
+            Cell(null, kindOf(o).label),
+            Cell(null, rarityOf(o).label),
+            sourceCell(o.document),
+          ],
+          onTap: () => _pick(o),
+        ),
       ),
   ];
 
