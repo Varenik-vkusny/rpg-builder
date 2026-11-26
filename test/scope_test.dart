@@ -135,7 +135,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Вне области'), findsOneWidget);
-    expect(find.text('location:rynok'), findsOneWidget);
+    expect(find.text('«Рынок»'), findsOneWidget);
+    expect(find.textContaining('location:'), findsNothing);
   });
 
   testWidgets('вне области: план в границах — отказа нет', (t) async {

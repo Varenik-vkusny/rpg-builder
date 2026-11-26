@@ -77,7 +77,9 @@ void main() {
     );
     await ask(t);
     expect(find.text('Вне области'), findsOneWidget);
-    expect(find.text('location:rynok'), findsOneWidget);
+    // Ключ области автору не показываем — только название.
+    expect(find.text('«Рынок»'), findsOneWidget);
+    expect(find.textContaining('location:'), findsNothing);
     final apply = find.byKey(const Key('plan-apply'));
     await t.ensureVisible(apply);
     expect(t.widget<FilledButton>(apply).onPressed, isNull);

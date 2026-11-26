@@ -25,20 +25,15 @@ void main() {
           children: [
             NoticeBanner(Notice.error, 'вне области', key: Key('e')),
             NoticeBanner(Notice.warning, 'атака выше потолка', key: Key('w')),
-            NoticeBanner(Notice.fix, 'опечатка', key: Key('f')),
           ],
         ),
         b,
       );
       final icons = {
-        for (final k in ['e', 'w', 'f']) _iconIn(t, find.byKey(Key(k))),
+        for (final k in ['e', 'w']) _iconIn(t, find.byKey(Key(k))),
       };
-      expect(icons, hasLength(3), reason: 'у каждой плашки свой значок');
-      for (final (k, word) in [
-        ('e', 'Ошибка'),
-        ('w', 'Предупреждение'),
-        ('f', 'Поправлено сервером'),
-      ]) {
+      expect(icons, hasLength(2), reason: 'у каждой плашки свой значок');
+      for (final (k, word) in [('e', 'Ошибка'), ('w', 'Предупреждение')]) {
         expect(
           find.descendant(
             of: find.byKey(Key(k)),

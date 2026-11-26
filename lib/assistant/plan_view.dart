@@ -50,7 +50,7 @@ class PlanView extends StatelessWidget {
           OpCard(
             key: Key('plan-op-$i'),
             result: r,
-            outside: preview.outside[i],
+            outside: preview.outsideNames[i],
           ),
       ],
     );
@@ -147,7 +147,7 @@ class PlanVerdict extends StatelessWidget {
 Future<void> showProblems(
   BuildContext context,
   List<Problem> problems, {
-  String title = 'Проверка на копии мира',
+  String title = 'Проверка',
   List<String> notes = const [],
 }) => showModalBottomSheet<void>(
   context: context,

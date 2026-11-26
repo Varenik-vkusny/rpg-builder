@@ -81,7 +81,7 @@ class _PlanReviewScreenState extends State<PlanReviewScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: OpCard(
                   result: ops[i],
-                  outside: widget.preview.outside[i],
+                  outside: widget.preview.outsideNames[i],
                 ),
               ),
             ),

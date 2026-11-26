@@ -52,6 +52,14 @@ Change changeOf(OpAction a) => switch (a) {
   OpAction.delete => Change.delete,
 };
 
+const _linkTypes = {
+  OpType.loot,
+  OpType.questStep,
+  OpType.questReward,
+  OpType.eventEnemy,
+  OpType.eventItem,
+};
+
 class OpCard extends StatelessWidget {
   const OpCard({super.key, required this.result, this.outside});
 
@@ -89,13 +97,16 @@ class OpCard extends StatelessWidget {
                         spacing: 8,
                         children: [
                           ChangeTag(changeOf(r.op.action)),
-                          Flexible(
-                            child: Text(
-                              type,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: s.onSurfaceVariant),
+                          // Вид объекта говорит значок; словом — только связи,
+                          // у которых своего значка нет (добыча, шаг квеста).
+                          if (_linkTypes.contains(r.op.type))
+                            Flexible(
+                              child: Text(
+                                type,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: s.onSurfaceVariant),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ],
@@ -107,26 +118,24 @@ class OpCard extends StatelessWidget {
               NoticeBanner(Notice.error, keys.join(', '), title: 'Вне области'),
             if (r.error case final e?)
               NoticeBanner(Notice.error, e, title: 'Не выполнить'),
-            for (final fix in r.op.repairs) NoticeBanner(Notice.fix, fix),
-            if (r.error == null) ..._changes(r),
+            if (r.error == null) ..._changes(r, name),
           ],
         ),
       ),
     );
   }
 
-  static List<Widget> _changes(OpResult r) {
-    if (r.op.action == OpAction.delete && r.changes.isEmpty) {
-      return [const Text('Удаляется целиком')];
-    }
+  static List<Widget> _changes(OpResult r, String name) {
     return [
       for (final c in r.changes)
-        BeforeAfter(
-          label: c.label,
-          before: c.before,
-          after: c.after,
-          icon: fieldIcons[c.label.split(' ').first] ?? fieldIcons[c.label],
-        ),
+        // «Название — Утопленник» под заголовком «Утопленник» — повтор.
+        if (!(c.label == 'Название' && c.before == null && c.after == name))
+          BeforeAfter(
+            label: c.label,
+            before: c.before,
+            after: c.after,
+            icon: fieldIcons[c.label.split(' ').first] ?? fieldIcons[c.label],
+          ),
     ];
   }
 }

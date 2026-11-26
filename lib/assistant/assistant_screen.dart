@@ -167,25 +167,6 @@ class _AssistantScreenState extends State<AssistantScreen> {
   List<Widget> _result(PlanRun run) => [
     SizedBox(key: _planTop, height: 0),
     const SizedBox(height: 24),
-    if (run.fixes > 0)
-      Align(
-        alignment: Alignment.centerLeft,
-        child: ActionChip(
-          key: const Key('plan-fixes'),
-          avatar: const Icon(Symbols.auto_fix_high_rounded),
-          label: Text('Ассистент исправил сам: ${run.fixes} из $maxFixes'),
-          onPressed: () => showProblems(
-            context,
-            const [],
-            title: 'Что ассистент исправил сам',
-            notes: [
-              for (final (i, problems) in run.caught.indexed)
-                for (final p in problems)
-                  'Поймано перед исправлением ${i + 1}: $p',
-            ],
-          ),
-        ),
-      ),
     const SizedBox(height: 8),
     PlanView(plan: run.proposal.plan, preview: run.preview),
   ];
@@ -197,8 +178,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
       Icon(Symbols.lock_rounded, size: 18, color: error),
       Expanded(
         child: Text(
-          'Ошибки остались и после $maxFixes исправлений — '
-          '«Применить» недоступно',
+          'В плане ошибки — «Применить» недоступно',
           key: const Key('plan-blocked'),
           style: TextStyle(color: error),
         ),

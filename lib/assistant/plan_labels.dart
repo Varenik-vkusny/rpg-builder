@@ -101,6 +101,16 @@ class PlanLabels {
     return '«${found.firstOrNull ?? slug}»';
   }
 
+  /// Ключ области «location:rynok» словами автора: «Рынок». Автору ключи не показываем:
+  /// нет такого объекта — слово «объект», а не slug.
+  String keyTitle(String key) {
+    final i = key.indexOf(':');
+    if (i < 0) return 'объект';
+    final type = key.substring(0, i), slug = key.substring(i + 1);
+    final t = titleOf(type, slug);
+    return t == '«$slug»' ? 'объект' : t;
+  }
+
   /// «Изменить · Локация «Штольня №3»», «Создать · Добыча «Утопленник» → «Ключ»».
   String opTitle(PlanOp op) {
     final what = switch (op.type) {

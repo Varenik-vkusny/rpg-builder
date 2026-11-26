@@ -54,15 +54,14 @@ class ChangeTag extends StatelessWidget {
 
 enum Notice {
   error('Ошибка', Symbols.error_rounded),
-  warning('Предупреждение', Symbols.warning_rounded),
-  fix('Поправлено сервером', Symbols.build_rounded);
+  warning('Предупреждение', Symbols.warning_rounded);
 
   const Notice(this.word, this.icon);
   final String word;
   final IconData icon;
 }
 
-/// Плашка с заголовком-словом и значком: ошибка, предупреждение, правка сервера.
+/// Плашка с заголовком-словом и значком: ошибка, предупреждение.
 class NoticeBanner extends StatelessWidget {
   const NoticeBanner(this.notice, this.text, {super.key, this.title});
   final Notice notice;
@@ -77,7 +76,6 @@ class NoticeBanner extends StatelessWidget {
     final line = switch (notice) {
       Notice.error => s.error,
       Notice.warning => AppColors.of(context).warn,
-      Notice.fix => s.outline,
     };
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),

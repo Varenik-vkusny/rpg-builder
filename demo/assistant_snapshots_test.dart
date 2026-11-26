@@ -61,7 +61,7 @@ void main() {
     );
     await shot(t, '3.3-diff');
     await t.scrollUntilVisible(
-      find.byKey(const Key('plan-fixes')),
+      find.byKey(const Key('plan-summary')),
       -200,
       scrollable: list,
     );

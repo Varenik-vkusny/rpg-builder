@@ -4,6 +4,7 @@ import '../check/world_check.dart';
 import 'assistant_service.dart';
 import 'plan.dart';
 import 'plan_apply.dart';
+import 'plan_labels.dart';
 import 'scope.dart';
 
 class PlanPreview {
@@ -13,6 +14,7 @@ class PlanPreview {
     this.outside,
     this.problems,
     this.fresh,
+    this.outsideNames,
   );
 
   /// Мир после плана — только в памяти.
@@ -21,6 +23,9 @@ class PlanPreview {
 
   /// Номера операций вне области → что именно вне её.
   final Map<int, List<String>> outside;
+
+  /// То же, но названиями объектов: ключи автору не показываем.
+  final Map<int, List<String>> outsideNames;
 
   /// Все проблемы копии: невыполнимые операции, вне области, ошибки и предупреждения мира.
   final List<Problem> problems;
@@ -46,6 +51,11 @@ PlanPreview previewPlan(WorldSnapshot world, Plan plan, Scope? scope) {
   final outside = scope == null
       ? const <int, List<String>>{}
       : outOfScope(plan, keys, eventKeysInScope(world, keys));
+  final labels = PlanLabels(() => world);
+  final names = {
+    for (final MapEntry(key: i, value: keys) in outside.entries)
+      i: [for (final k in keys) labels.keyTitle(k)],
+  };
   final problems = [
     for (final (i, r) in ops.indexed)
       if (r.error != null)
@@ -55,12 +65,12 @@ PlanPreview previewPlan(WorldSnapshot world, Plan plan, Scope? scope) {
           'op-$i',
           'Операция ${i + 1} (${r.title}): ${r.error}',
         ),
-    for (final MapEntry(key: i, value: keys) in outside.entries)
+    for (final i in outside.keys)
       Problem(
         Severity.error,
         'out_of_scope',
         'op-$i',
-        'Операция ${i + 1} вне области: ${keys.join(', ')}',
+        'Операция ${i + 1} вне области: ${names[i]!.join(', ')}',
       ),
     ...checkWorld(copy),
   ];
@@ -68,5 +78,5 @@ PlanPreview previewPlan(WorldSnapshot world, Plan plan, Scope? scope) {
   return PlanPreview(copy, ops, outside, problems, [
     for (final p in problems)
       if (!before.contains(_id(p))) p,
-  ]);
+  ], names);
 }
