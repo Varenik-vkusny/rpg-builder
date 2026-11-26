@@ -29,6 +29,9 @@ void main() {
     // Изменение — имя и поле, ниже «было → стало».
     expect(find.textContaining('Штольня №3 описание'), findsOneWidget);
     expect(find.textContaining('затоплена по пояс'), findsOneWidget);
+    // Шаг квеста — «Обвал, шаг 2», без повтора «шаг квеста» впереди (26.11).
+    expect(find.textContaining('Обвал, шаг 2'), findsOneWidget);
+    expect(find.textContaining('шаг квеста'), findsNothing);
   });
 
   testWidgets('история: «Откатить» выше первой операции набора', (t) async {

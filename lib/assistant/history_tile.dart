@@ -274,7 +274,8 @@ class OpRow extends StatelessWidget {
         v == null ? '—' : (v.length > 32 ? '${v.substring(0, 31)}…' : v);
     final link = journalLinkWord(op.type);
     final name = opTitle(op, world);
-    final what = link == null ? name : '$link $name';
+    // «Обвал, шаг 2» уже говорит, что это шаг: без «шаг квеста» впереди (26.11).
+    final what = link == null || name.contains(', шаг ') ? name : '$link $name';
     final verb = switch (op.action) {
       'create' => Verb.created,
       'delete' => Verb.deleted,
