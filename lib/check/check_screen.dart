@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../help/help.dart';
 import '../assistant/assistant_screen.dart';
@@ -7,6 +6,7 @@ import '../assistant/assistant_service.dart';
 import '../assistant/scope.dart';
 import '../content/content_repo.dart';
 import '../worlds/world.dart';
+import '../ui/check_cells.dart';
 import '../ui/theme.dart';
 import 'world_check.dart';
 
@@ -81,101 +81,102 @@ class _CheckScreenState extends State<CheckScreen> {
                 child: Text('Не удалось загрузить мир: ${snap.error}'),
               );
             }
-            final problems = checkWorld(snap.data!);
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              children: [
-                _summary(problems),
-                const SizedBox(height: 16),
-                for (final (i, p) in problems.indexed)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ProblemRow(
-                      p,
-                      fixKey: Key('fix-$i'),
-                      onFix: () => _fix(snap.data!, p),
-                    ),
-                  ),
-              ],
-            );
+            return _list(snap.data!, checkWorld(snap.data!));
           },
         ),
       ),
     );
   }
 
-  /// Итог сверху: «Проблем не найдено» или число ошибок и предупреждений.
-  Widget _summary(List<Problem> problems) {
-    final s = Theme.of(context).colorScheme;
-    final c = AppColors.of(context);
-    int count(Severity v) => problems.where((p) => p.severity == v).length;
-    final errors = count(Severity.error);
-    // Чистый мир — спокойная строка обычным цветом, без зелёной плашки (владелец 28.09).
-    final (bg, fg, icon) = problems.isEmpty
-        ? (s.surfaceContainerLow, s.onSurface, Symbols.task_alt_rounded)
-        : errors > 0
-        ? (s.errorContainer, s.onErrorContainer, Symbols.error_rounded)
-        : (c.warnContainer, c.onWarnContainer, Symbols.warning_rounded);
-    return Card(
-      color: bg,
-      child: ListTile(
-        key: const Key('check-summary'),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: Icon(icon, color: fg, fill: 1, size: 32),
-        title: Text(widget.world.title, style: TextStyle(color: fg)),
-        subtitle: Text(
-          problems.isEmpty
-              ? 'Проблем не найдено'
-              : 'Ошибок: $errors · '
-                    'Предупреждений: ${count(Severity.warning)}',
-          style: TextStyle(
-            color: fg,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+  Widget _list(WorldSnapshot w, List<Problem> problems) {
+    final errors = problems.where((p) => p.severity == Severity.error);
+    final warns = problems.where((p) => p.severity == Severity.warning);
+    Widget section(String title, Iterable<Problem> ps) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 16, bottom: 8),
+          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
         ),
-      ),
+        for (final p in ps)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ProblemRow(
+              p,
+              fixKey: Key('fix-${problems.indexOf(p)}'),
+              onFix: () => _fix(w, p),
+            ),
+          ),
+      ],
+    );
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+      children: [
+        CheckStrip(
+          key: const Key('check-summary'),
+          errors: errors.length,
+          warnings: warns.length,
+          big: true,
+        ),
+        if (errors.isNotEmpty) section('Ошибки', errors),
+        if (warns.isNotEmpty) section('Предупреждения', warns),
+      ],
     );
   }
 }
 
-/// Проблема мира: значок и слово «Ошибка» / «Предупреждение», текст, «Исправить».
+/// Проблема мира: ячейка цвета тяжести со значком слева; справа текст, слово
+/// «Ошибка» / «Предупреждение» цветом и «Исправить».
 class ProblemRow extends StatelessWidget {
   const ProblemRow(this.problem, {super.key, required this.onFix, this.fixKey});
   final Problem problem;
   final VoidCallback onFix;
   final Key? fixKey;
 
-  static IconData iconOf(Severity s) =>
-      s == Severity.error ? Symbols.error_rounded : Symbols.warning_rounded;
-
   @override
   Widget build(BuildContext context) {
-    final error = problem.severity == Severity.error;
-    final tint = error
+    final tint = problem.severity == Severity.error
         ? Theme.of(context).colorScheme.error
         : AppColors.of(context).warn;
     return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-        leading: Icon(iconOf(problem.severity), color: tint, fill: 1),
-        title: Text(problem.message),
-        // Кнопка — под текстом справа: рядом с текстом она зажимала его до разрыва слов.
-        // Не влезает рядом со словом (крупный шрифт) — переходит на строку ниже.
-        subtitle: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runSpacing: 4,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              problem.severity.label,
-              style: TextStyle(color: tint, fontWeight: FontWeight.w500),
-            ),
-            FilledButton.tonal(
-              key: fixKey,
-              // Высота из темы — 48 dp, минимум касания на Android (было 40).
-              onPressed: onFix,
-              child: const Text('Исправить'),
+            SeverityCell(problem.severity),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 6,
+                  children: [
+                    Text(problem.message, style: const TextStyle(fontSize: 15)),
+                    // Не влезает рядом со словом (крупный шрифт) — кнопка ниже.
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          problem.severity.label,
+                          style: TextStyle(
+                            color: tint,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        FilledButton.tonal(
+                          key: fixKey,
+                          // Высота из темы — 48 dp, минимум касания на Android.
+                          onPressed: onFix,
+                          child: const Text('Исправить'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

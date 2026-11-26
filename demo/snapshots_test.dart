@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/location.dart';
 
+import '../test/check_flow_test.dart' show expectStrip;
 import '../test/fakes.dart';
 import 'shots.dart';
 
@@ -140,7 +141,7 @@ void main() {
       ),
     );
     await tapShown(t, find.byKey(const Key('check-world')));
-    expect(find.text('Ошибок: 0 · Предупреждений: 2'), findsOneWidget);
+    expectStrip(t, 'check-summary', errors: 0, warnings: 2);
     await shot(t, '2.6-check-warnings');
     await t.pageBack();
     await t.pumpAndSettle();
@@ -170,7 +171,7 @@ void main() {
     );
     await shot(t, '2.7-world');
     await tapShown(t, find.byKey(const Key('check-world')));
-    expect(find.text('Ошибок: 0 · Предупреждений: 3'), findsOneWidget);
+    expectStrip(t, 'check-summary', errors: 0, warnings: 3);
     await shot(t, '2.7-check-attack');
     await t.pageBack();
     await t.pumpAndSettle();

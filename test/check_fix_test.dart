@@ -2,6 +2,7 @@
 // ассистент с областью и просьбой → план → применить → проверка перечитана.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/check/check_screen.dart' show ProblemRow;
 import 'package:rpg_builder/assistant/assistant_service.dart';
 import 'package:rpg_builder/assistant/plan.dart';
 import 'package:rpg_builder/assistant/scope.dart';
@@ -71,7 +72,7 @@ Future<void> openCheck(WidgetTester t, FakeContent c, FakeAssistant a) async {
 Finder fixFor(String text) => find.descendant(
   of: find.ancestor(
     of: find.textContaining(text),
-    matching: find.byType(ListTile),
+    matching: find.byType(ProblemRow),
   ),
   matching: find.text('Исправить'),
 );

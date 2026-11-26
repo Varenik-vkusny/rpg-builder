@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
+import '../ui/check_cells.dart';
 import '../ui/parts.dart';
 import '../ui/theme.dart';
 import 'plan.dart';
@@ -93,32 +94,28 @@ class PlanVerdict extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(AppStyle.of(context).radiusM),
         onTap: () => showProblems(context, preview.problems),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: e > 0 ? 14 : 10,
-          ),
+        child: IntrinsicHeight(
           child: Row(
             spacing: 12,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(
-                e > 0 ? Symbols.block_rounded : Symbols.warning_rounded,
-                color: fg,
-                fill: 1,
-              ),
+              // Ошибки: красная ячейка с числом; замок — на «Применить».
+              if (e > 0)
+                CheckCount(
+                  key: const Key('plan-error-cell'),
+                  severity: Severity.error,
+                  count: e,
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(left: 14),
+                  child: Icon(Symbols.warning_rounded, color: fg, fill: 1),
+                ),
               Expanded(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (e > 0)
-                      Text(
-                        'Нельзя применить',
-                        style: TextStyle(
-                          color: fg,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
                     Text(
                       counts,
                       key: const Key('plan-check-summary'),
@@ -134,7 +131,10 @@ class PlanVerdict extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Symbols.chevron_right_rounded, color: fg),
+              Padding(
+                padding: const EdgeInsets.only(right: 14),
+                child: Icon(Symbols.chevron_right_rounded, color: fg),
+              ),
             ],
           ),
         ),

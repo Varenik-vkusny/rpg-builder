@@ -6,6 +6,7 @@ import 'package:rpg_builder/check/check_screen.dart';
 import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/content/quest.dart';
+import 'package:rpg_builder/ui/theme.dart';
 import 'package:rpg_builder/worlds/world.dart';
 
 import 'fakes.dart';
@@ -25,6 +26,39 @@ class _BrokenContent extends FakeContent {
       rewardIds: [],
     ),
   ];
+}
+
+/// Итог проверки полосой: числа в ячейках, красная при ошибках, жёлтая при
+/// предупреждениях, ноль — без заливки (вид А, срез 3).
+void expectStrip(
+  WidgetTester t,
+  String stripKey, {
+  required int errors,
+  required int warnings,
+}) {
+  final theme = Theme.of(t.element(find.byKey(Key(stripKey))));
+  for (final (k, n, fill) in [
+    ('check-errors', errors, theme.colorScheme.error),
+    (
+      'check-warnings',
+      warnings,
+      AppColors.of(t.element(find.byKey(Key(stripKey)))).warn,
+    ),
+  ]) {
+    final cell = find.descendant(
+      of: find.byKey(Key(stripKey)),
+      matching: find.byKey(Key(k)),
+    );
+    expect(
+      find.descendant(of: cell, matching: find.text('$n')),
+      findsOneWidget,
+      reason: '$k: число $n',
+    );
+    final box = t.widget<Container>(
+      find.descendant(of: cell, matching: find.byType(Container)).first,
+    );
+    expect(box.color, n == 0 ? isNull : fill, reason: '$k: заливка');
+  }
 }
 
 void main() {
@@ -47,7 +81,7 @@ void main() {
     await t.tap(find.byKey(const Key('check-world')));
     await t.pumpAndSettle();
     expect(find.text('Проверка мира'), findsOneWidget);
-    expect(find.text('Проблем не найдено'), findsOneWidget);
+    expectStrip(t, 'check-summary', errors: 0, warnings: 0);
   });
 
   testWidgets('ошибки квеста видны списком с числом ошибок', (t) async {
@@ -61,7 +95,7 @@ void main() {
       ),
     );
     await t.pumpAndSettle();
-    expect(find.text('Ошибок: 2 · Предупреждений: 0'), findsOneWidget);
+    expectStrip(t, 'check-summary', errors: 2, warnings: 0);
     expect(find.text('«Пустой квест»: у квеста нет выдающего'), findsOneWidget);
     expect(find.text('«Пустой квест»: у квеста нет шагов'), findsOneWidget);
   });
@@ -89,7 +123,7 @@ void main() {
       ),
     );
     await t.pumpAndSettle();
-    expect(find.text('Ошибок: 0 · Предупреждений: 2'), findsOneWidget);
+    expectStrip(t, 'check-summary', errors: 0, warnings: 2);
     expect(
       find.text('«Кайло»: урон 14 выше потолка 8 (ур. 2, обычный)'),
       findsOneWidget,
@@ -127,7 +161,7 @@ void main() {
       ),
     );
     await t.pumpAndSettle();
-    expect(find.text('Ошибок: 0 · Предупреждений: 1'), findsOneWidget);
+    expectStrip(t, 'check-summary', errors: 0, warnings: 1);
     expect(
       find.text('«Утопленник»: атака 14 выше потолка 10 (ур. 3)'),
       findsOneWidget,

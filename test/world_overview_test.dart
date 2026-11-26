@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'apply_flow_test.dart' show tapButton;
+import 'check_flow_test.dart' show expectStrip;
 import 'manual_edit_flow_test.dart' show openMines;
 
 void main() {
@@ -11,7 +12,7 @@ void main() {
   ) async {
     final content = await openMines(t);
     expectCounts({'locations': 2, 'items': 2, 'characters': 2, 'quests': 1});
-    expect(find.text('Проблем не найдено'), findsOneWidget);
+    expectStrip(t, 'overview-check', errors: 0, warnings: 0);
     // Вид А: пустую историю не показываем вовсе.
     expect(find.byKey(const Key('overview-recent')), findsNothing);
     expect(find.text('Изменений пока не было'), findsNothing);

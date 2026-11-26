@@ -1,6 +1,8 @@
 // План на копии мира (3.3): «было → стало» по полям, созданное и удалённое,
 // проверка мира на копии. Настоящий мир не меняется.
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:rpg_builder/assistant/plan.dart';
 import 'package:rpg_builder/assistant/plan_apply.dart';
 import 'package:rpg_builder/check/world_check.dart';
@@ -237,8 +239,23 @@ void main() {
       FakeAssistant(List.generate(3, (_) => proposal(bad))),
     );
     await ask(t);
-    expect(find.text('Нельзя применить'), findsOneWidget);
+    // Одна красная ячейка с числом ошибок; слов «Нельзя применить» больше нет.
+    expect(find.text('Нельзя применить'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('plan-error-cell')),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('1 ошибка'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('plan-apply')),
+        matching: find.byIcon(Symbols.lock_rounded),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Не выполнить'), findsOneWidget);
     expect(find.text('этот предмет уже в добыче'), findsOneWidget);
   });

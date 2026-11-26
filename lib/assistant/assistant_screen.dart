@@ -190,17 +190,15 @@ class _AssistantScreenState extends State<AssistantScreen> {
     PlanView(plan: run.proposal.plan, preview: run.preview),
   ];
 
-  /// Почему «Применить» заперто — над кнопкой, со значком замка.
+  /// Почему «Применить» заперто после исправлений — над кнопкой, со значком замка.
   Widget _blocked(PlanRun run, Color error) => Row(
     spacing: 8,
     children: [
       Icon(Symbols.lock_rounded, size: 18, color: error),
       Expanded(
         child: Text(
-          run.fixes == maxFixes
-              ? 'Ошибки остались и после $maxFixes исправлений — '
-                    '«Применить» недоступно'
-              : 'В плане ошибки — «Применить» недоступно',
+          'Ошибки остались и после $maxFixes исправлений — '
+          '«Применить» недоступно',
           key: const Key('plan-blocked'),
           style: TextStyle(color: error),
         ),
@@ -221,7 +219,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 10,
             children: [
-              if (!run.canApply) _blocked(run, error),
+              // Замок на «Применить» и красная ячейка плана уже говорят «нельзя»;
+              // словами — только когда исправления кончились.
+              if (!run.canApply && run.fixes == maxFixes) _blocked(run, error),
               if (_error != null) _errorText(),
               Row(
                 spacing: 8,

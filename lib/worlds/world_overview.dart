@@ -5,6 +5,7 @@ import '../assistant/history.dart';
 import '../assistant/history_line.dart';
 import '../assistant/history_tile.dart';
 import '../check/world_check.dart';
+import '../ui/check_cells.dart';
 
 /// Обзор мира (4.2): сколько объектов по видам, сводка проверки, последние изменения.
 /// Сводка ведёт на «Проверку мира», изменения — в «Историю».
@@ -33,7 +34,6 @@ class WorldOverview extends StatelessWidget {
     final problems = checkWorld(w);
     final errors = problems.where((p) => p.severity == Severity.error).length;
     final warnings = problems.length - errors;
-    final colors = Theme.of(context).colorScheme;
     return Card(
       key: const Key('world-overview'),
       margin: const EdgeInsets.all(12),
@@ -79,19 +79,14 @@ class WorldOverview extends StatelessWidget {
               ],
             ),
           ),
-          ListTile(
-            key: const Key('overview-check'),
-            leading: Icon(
-              errors > 0 ? Symbols.error_rounded : Symbols.fact_check_rounded,
-              color: errors > 0 ? colors.error : null,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: CheckStrip(
+              key: const Key('overview-check'),
+              errors: errors,
+              warnings: warnings,
+              onTap: onCheck,
             ),
-            title: Text(
-              problems.isEmpty
-                  ? 'Проблем не найдено'
-                  : 'Ошибок: $errors · Предупреждений: $warnings',
-            ),
-            trailing: const Icon(Symbols.chevron_right_rounded),
-            onTap: onCheck,
           ),
           // Вид А (25.11): три мини-ряда той же формы, что в истории; пустую
           // историю не показываем вовсе.
