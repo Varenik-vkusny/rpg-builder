@@ -42,7 +42,7 @@ void main() {
     await shot(t, 'msg-3-done');
 
     await tapButton(t, 'history-open');
-    await t.tap(find.text('Удаление вручную: Рынок'));
+    await t.tap(find.text('Рынок'));
     await t.pumpAndSettle();
     await tapButton(t, 'revert-set-0');
     await shot(t, 'msg-2-revert-question');

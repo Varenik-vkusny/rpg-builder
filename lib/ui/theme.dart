@@ -17,6 +17,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.okContainer,
     required this.onOkContainer,
     required this.change,
+    required this.changeContainer,
     required this.coverHues,
   });
 
@@ -29,6 +30,7 @@ class AppColors extends ThemeExtension<AppColors> {
         okContainer: p.okContainer,
         onOkContainer: p.onOkContainer,
         change: p.change,
+        changeContainer: p.changeContainer,
         coverHues: p.coverHues,
       );
 
@@ -41,6 +43,9 @@ class AppColors extends ThemeExtension<AppColors> {
 
   /// «Изменено», «СТАЛО».
   final Color change;
+
+  /// Фон ячейки «изменено».
+  final Color changeContainer;
 
   /// Цвета обложек: только свободные от смысла.
   final List<Color> coverHues;

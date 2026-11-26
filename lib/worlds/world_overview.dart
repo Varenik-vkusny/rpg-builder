@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../assistant/history.dart';
+import '../assistant/history_line.dart';
+import '../assistant/history_tile.dart';
 import '../check/world_check.dart';
 
 /// Обзор мира (4.2): сколько объектов по видам, сводка проверки, последние изменения.
@@ -91,26 +93,10 @@ class WorldOverview extends StatelessWidget {
             trailing: const Icon(Symbols.chevron_right_rounded),
             onTap: onCheck,
           ),
-          ListTile(
-            key: const Key('overview-history'),
-            leading: const Icon(Symbols.history_rounded),
-            title: Text(
-              history.isEmpty
-                  ? 'Изменений пока не было'
-                  : 'Последние изменения',
-            ),
-            subtitle: history.isEmpty
-                ? null
-                : Text(
-                    [
-                      for (final s in history.take(recent))
-                        '${s.status.label}: '
-                            '${s.summary.isEmpty ? s.request : s.summary}',
-                    ].join('\n'),
-                  ),
-            trailing: const Icon(Symbols.chevron_right_rounded),
-            onTap: onHistory,
-          ),
+          // Вид А (25.11): три мини-ряда той же формы, что в истории; пустую
+          // историю не показываем вовсе.
+          if (history.isNotEmpty)
+            _Recent(world: w, history: history, onHistory: onHistory),
         ],
       ),
     );
@@ -158,6 +144,91 @@ class _Count extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// «Последние изменения»: мини-ряды истории и «Вся история ›».
+class _Recent extends StatelessWidget {
+  const _Recent({
+    required this.world,
+    required this.history,
+    required this.onHistory,
+  });
+
+  final WorldSnapshot world;
+  final List<ChangeSetEntry> history;
+  final VoidCallback onHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    final show = valueShower(world);
+    final byId = {for (final h in history) h.id: h};
+    final line = BorderSide(color: s.outlineVariant);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'Последние изменения',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Container(
+            key: const Key('overview-recent'),
+            decoration: BoxDecoration(
+              color: s.surfaceContainerLow,
+              border: Border.all(color: s.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final h in history.take(WorldOverview.recent))
+                  InkWell(
+                    onTap: onHistory,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(border: Border(bottom: line)),
+                      child: HistoryHead(
+                        describe(
+                          h,
+                          world: world,
+                          show: show,
+                          original: h.revertsId == null
+                              ? null
+                              : byId[h.revertsId],
+                        ),
+                        h.createdAt,
+                        mini: true,
+                      ),
+                    ),
+                  ),
+                InkWell(
+                  key: const Key('overview-history'),
+                  onTap: onHistory,
+                  child: const SizedBox(
+                    height: 48,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      spacing: 6,
+                      children: [
+                        Text(
+                          'Вся история',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        Icon(Symbols.chevron_right_rounded),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

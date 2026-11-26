@@ -114,17 +114,25 @@ void main() {
       await tapButton(t, 'confirm-yes');
       expect(find.text('Изменить квест'), findsNothing);
       expect(await content.quests(minesId), isEmpty);
-      expect(find.text('Обвал'), findsNothing);
+      expect(inWorld('Обвал'), findsNothing);
 
       await tapButton(t, 'history-open');
-      expect(find.text('Удаление вручную: Обвал'), findsOneWidget);
-      await t.tap(find.text('Удаление вручную: Обвал'));
+      // Вид А: имя «Обвал» крупно и глагол «Удалено».
+      expect(find.text('Обвал'), findsOneWidget);
+      expect(find.text('Удалено'), findsOneWidget);
+      await t.tap(find.text('Обвал'));
       await t.pumpAndSettle();
       await tapButton(t, 'revert-set-0');
       await tapButton(t, 'confirm-yes');
       await t.pageBack();
       await t.pumpAndSettle();
-      expect(find.text('Обвал'), findsOneWidget);
+      expect((await content.quests(minesId)).single.title, 'Обвал');
+      await t.scrollUntilVisible(
+        inWorld('Обвал'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(inWorld('Обвал'), findsOneWidget);
     },
   );
 

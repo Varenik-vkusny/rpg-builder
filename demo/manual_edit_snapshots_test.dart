@@ -55,7 +55,7 @@ void main() {
     await t.pumpAndSettle();
 
     await tapShown(t, find.byKey(const Key('history-open')));
-    await tapShown(t, find.text('Правка вручную: Слизень'));
+    await tapShown(t, find.text('Слизень'));
     await shot(t, '4.1-history');
   });
 }

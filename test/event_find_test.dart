@@ -170,7 +170,7 @@ void main() {
     final fair = w.events.firstWhere((e) => e.title == 'Ярмарка');
     expect(w.titles[fair.locationId], 'Рынок');
     // Снова мир — и сцена уже в разделе событий.
-    expect(find.text('Ярмарка'), findsOneWidget);
+    expect(inWorld('Ярмарка'), findsOneWidget);
   });
 
   testWidgets('страница места с событиями: «Добавить событие» под сценами', (

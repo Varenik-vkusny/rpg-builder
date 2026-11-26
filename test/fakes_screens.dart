@@ -79,7 +79,16 @@ Future<void> openWorld(WidgetTester t, String title) async {
 
 /// Открывает страницу объекта мира по его названию в списке.
 Future<void> openObject(WidgetTester t, String title) async {
-  final row = find.text(title).first;
+  // В мире имя есть и в «Последних изменениях» — открываем строку списка;
+  // список ленивый: строки ниже экрана ещё нет — докрутить до неё.
+  if (inWorld(title).evaluate().isEmpty) {
+    await t.scrollUntilVisible(
+      inWorld(title),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
+  final row = inWorld(title).first;
   await t.ensureVisible(row);
   await t.pumpAndSettle();
   await t.tap(row);
@@ -106,3 +115,15 @@ void expectLoot(String item, String chance) => expect(
   findsOneWidget,
   reason: '$item $chance',
 );
+
+/// Текст [text] в мире, кроме мини-рядов «Последних изменений» (там имена тоже есть).
+Finder inWorld(String text) => find.byElementPredicate((e) {
+  final w = e.widget;
+  if (w is! Text || (w.data ?? w.textSpan?.toPlainText()) != text) return false;
+  var recent = false;
+  e.visitAncestorElements((a) {
+    recent = a.widget.key == const Key('overview-recent');
+    return !recent;
+  });
+  return !recent;
+}, description: 'текст «$text» вне «Последних изменений»');

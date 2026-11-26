@@ -165,7 +165,7 @@ void main() {
       );
       // Название — из словаря приложения (ru_names.dart), оригинал — в источнике.
       await t.scrollUntilVisible(
-        find.text('Боевая кирка'),
+        inWorld('Боевая кирка'),
         200,
         scrollable: find.byType(Scrollable).first,
       );

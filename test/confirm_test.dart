@@ -142,7 +142,7 @@ void main() {
     expect(_question, findsOneWidget);
     expect(find.text('Откатить набор?'), findsOneWidget);
     await tapButton(t, 'confirm-no');
-    expect(find.textContaining('Откачен'), findsNothing);
+    expect(find.text('ОТКАЧЕН'), findsNothing);
     expect(
       (await content.characters(minesId)).map((c) => c.slug),
       contains('utoplennik'),
@@ -150,7 +150,7 @@ void main() {
     // Кнопка снова доступна: отказ не оставил экран «занятым».
     await tapButton(t, 'revert-set-0');
     await tapButton(t, 'confirm-yes');
-    expect(find.textContaining('Откачен'), findsOneWidget);
+    expect(find.text('ОТКАЧЕН'), findsOneWidget);
     expect(
       (await content.characters(minesId)).map((c) => c.slug),
       isNot(contains('utoplennik')),

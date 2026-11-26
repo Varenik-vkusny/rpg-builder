@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'apply_flow_test.dart' show tapButton;
 import 'fakes.dart';
 
 /// Раздел «Предметы» стоит ниже мест и событий и на экран теста не попадает:
@@ -22,8 +23,7 @@ void main() {
     await openWorld(t, 'Пепельные копи');
     expect(find.text('Локаций пока нет'), findsOneWidget);
 
-    await t.tap(find.byKey(const Key('new-location')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-location');
     await t.enterText(find.byKey(const Key('location-title')), 'Штольня №3');
     await t.enterText(
       find.byKey(const Key('location-description')),
@@ -32,7 +32,7 @@ void main() {
     await t.tap(find.byKey(const Key('location-save')));
     await t.pumpAndSettle();
 
-    expect(find.text('Штольня №3'), findsOneWidget);
+    expect(inWorld('Штольня №3'), findsOneWidget);
     expect(find.text('ур. 1–10'), findsOneWidget);
     expect(find.text('Локаций пока нет'), findsNothing);
   });
@@ -43,8 +43,7 @@ void main() {
     await createWorld(t, 'Пепельные копи');
     await openWorld(t, 'Пепельные копи');
 
-    await t.tap(find.byKey(const Key('new-location')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-location');
     await t.tap(find.byKey(const Key('location-save')));
     await t.pumpAndSettle();
 
@@ -59,8 +58,7 @@ void main() {
     await toItems(t);
     expect(find.text('Предметов пока нет'), findsOneWidget);
 
-    await t.tap(find.byKey(const Key('new-item')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-item');
     await t.enterText(find.byKey(const Key('item-title')), 'Ключ от лебёдки');
     await t.tap(find.byKey(const Key('item-kind-quest')));
     await t.pumpAndSettle();
@@ -70,7 +68,7 @@ void main() {
     await t.tap(find.byKey(const Key('item-save')));
     await t.pumpAndSettle();
 
-    expect(find.text('Ключ от лебёдки'), findsOneWidget);
+    expect(inWorld('Ключ от лебёдки'), findsOneWidget);
     await openObject(t, 'Ключ от лебёдки');
     expect(find.text('Квестовый · Обычный'), findsOneWidget);
     expectTile('Уровень', '2');
@@ -84,8 +82,7 @@ void main() {
     await openWorld(t, 'Пепельные копи');
 
     await toItems(t);
-    await t.tap(find.byKey(const Key('new-item')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-item');
     await t.enterText(find.byKey(const Key('item-title')), 'Кирка');
     await t.tap(find.byKey(const Key('item-rarity-rare')));
     await t.enterText(find.byKey(const Key('item-level')), '3');
@@ -108,8 +105,7 @@ void main() {
     await openWorld(t, 'Пепельные копи');
 
     await toItems(t);
-    await t.tap(find.byKey(const Key('new-item')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-item');
     await t.enterText(find.byKey(const Key('item-title')), 'Кирка');
     await t.tap(find.byKey(const Key('item-save')));
     await t.pumpAndSettle();
@@ -127,13 +123,11 @@ void main() {
     await signUp(t, 'a@test.dev');
     await createWorld(t, 'Пепельные копи');
     await openWorld(t, 'Пепельные копи');
-    await t.tap(find.byKey(const Key('new-location')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-location');
     await t.enterText(find.byKey(const Key('location-title')), 'Штольня №3');
     await t.tap(find.byKey(const Key('location-save')));
     await t.pumpAndSettle();
-    await t.tap(find.byKey(const Key('new-item')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-item');
     await t.enterText(find.byKey(const Key('item-title')), 'Ключ от лебёдки');
     await t.tap(find.byKey(const Key('item-kind-quest')));
     await t.tap(find.byKey(const Key('item-save')));
@@ -141,8 +135,7 @@ void main() {
   }
 
   Future<void> startEnemy(WidgetTester t, String name) async {
-    await t.tap(find.byKey(const Key('new-character')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-character');
     await t.enterText(find.byKey(const Key('character-title')), name);
     await t.tap(find.byKey(const Key('character-role-enemy')));
     await t.pumpAndSettle();
@@ -157,6 +150,11 @@ void main() {
 
   testWidgets('персонаж-враг в локации роняет ключ с шансом 35%', (t) async {
     await worldWithShaftAndKey(t);
+    await t.scrollUntilVisible(
+      find.text('Персонажей пока нет'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Персонажей пока нет'), findsOneWidget);
 
     await startEnemy(t, 'Пепельный слизень');
@@ -247,8 +245,7 @@ void main() {
 
   testWidgets('персонаж-житель не имеет добычи', (t) async {
     await worldWithShaftAndKey(t);
-    await t.tap(find.byKey(const Key('new-character')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-character');
     expect(find.byKey(const Key('loot-add')), findsNothing);
     await t.enterText(find.byKey(const Key('character-title')), 'Бригадир');
     await choose(t, const Key('character-location'), 'Штольня №3');

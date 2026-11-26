@@ -40,10 +40,11 @@ void main() {
     final content = await flooded(t);
     await openHistory(t);
     expect(find.text(flood), findsOneWidget);
-    expect(find.textContaining('Применён'), findsOneWidget);
+    // Вид А: «Применён» не пишем — это норма; плашка только у откаченного.
+    expect(find.byKey(const Key('history-off')), findsNothing);
     await t.tap(find.text(flood));
     await t.pumpAndSettle();
-    expect(find.textContaining('shtolnya_3: описание'), findsOneWidget);
+    expect(find.textContaining('shtolnya_3 описание'), findsOneWidget);
 
     await tapButton(t, 'revert-set-0');
     await tapButton(t, 'confirm-yes');
@@ -51,8 +52,10 @@ void main() {
       find.byKey(const Key('revert-error-set-0'), skipOffstage: false),
       findsNothing,
     );
-    expect(find.text('Откат: $flood'), findsOneWidget);
-    expect(find.textContaining('Откачен'), findsOneWidget);
+    // Вид А: у отката то же имя и глагол «Откат: правка» (вместо «Откат: …» целиком).
+    expect(find.text(flood), findsNWidgets(2));
+    expect(find.text('Откат: правка'), findsOneWidget);
+    expect(find.text('ОТКАЧЕН'), findsOneWidget);
     expect(find.byKey(const Key('revert-set-0')), findsNothing);
 
     // Назад в мир — он перечитан: утопленника нет.
@@ -76,7 +79,7 @@ void main() {
     await tapButton(t, 'revert-set-0');
     expect(find.byKey(const Key('revert-conflicts-set-0')), findsOneWidget);
     expect(find.text('мир — изменён после набора'), findsOneWidget);
-    expect(find.textContaining('Откачен'), findsNothing);
+    expect(find.text('ОТКАЧЕН'), findsNothing);
     expect(
       (await content.characters(minesId)).map((c) => c.slug),
       contains('utoplennik'),
@@ -90,7 +93,7 @@ void main() {
     await ask(t);
     await tapButton(t, 'plan-reject');
     await openHistory(t);
-    expect(find.textContaining('Отклонён'), findsOneWidget);
+    expect(find.text('ОТКЛОНЁН'), findsOneWidget);
     await t.tap(find.text(flood));
     await t.pumpAndSettle();
     expect(find.byKey(const Key('revert-set-0')), findsNothing);

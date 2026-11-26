@@ -4,14 +4,12 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../help/help.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
-import '../content/delete_confirm.dart' show objectIcon;
-import '../content/quest.dart';
 import '../worlds/world.dart';
 import 'history.dart';
+import 'history_line.dart';
+import 'history_tile.dart';
 import '../ui/messages.dart';
 import '../ui/parts.dart';
-import '../ui/theme.dart';
-import 'plan_labels.dart';
 
 /// История наборов изменений мира (3.7): что меняли, «было → стало», откат любого
 /// применённого. Объект меняли после набора — конфликт на экране, откат не идёт.
@@ -29,6 +27,9 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   late Future<(List<ChangeSetEntry>, WorldSnapshot)> _data = _load();
   bool _changed = false;
+
+  /// Раскрытые наборы.
+  final _open = <String>{};
   String? _busy;
 
   /// Набор → что мешает его откатить (показано после нажатия «Откатить»).
@@ -73,12 +74,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   /// Вид А: что откатываем и что вернётся. Одна операция — объект плашкой и что
   /// с ним станет; несколько — набор плашкой и до трёх строк.
   Future<bool> _confirmRevert(ChangeSetEntry set, WorldSnapshot world) {
-    final show = _shower(world);
-    String field(String k) =>
-        fieldLabel(k.replaceAll(RegExp(r'_id$'), '')).toLowerCase();
+    final show = valueShower(world);
     String back(JournalOp op) => [
       for (final (k, was, _) in op.changes)
-        '${field(k)} → ${show(op, k, was) ?? '—'}',
+        '${fieldWord(k)} → ${show(op, k, was) ?? '—'}',
     ].join(', ');
     SheetFact fact(JournalOp op, {required bool named}) {
       final who = named ? '${op.title}: ' : '';
@@ -106,7 +105,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Symbols.history_rounded,
               set.summary.isEmpty ? set.request : set.summary,
             )
-          : SheetSubject(_opIcon(single, world), single.title),
+          : SheetSubject(opIcon(single, world), single.title),
       facts: [
         if (single != null)
           fact(single, named: false)
@@ -122,34 +121,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       action: 'Откатить',
       actionIcon: Symbols.undo_rounded,
     );
-  }
-
-  /// Значок объекта операции: по самому объекту, а убранного — по виду строки.
-  IconData _opIcon(JournalOp op, WorldSnapshot world) {
-    final id = (op.after?['id'] ?? op.before?['id'])?.toString();
-    final known = id != null && world.titles.containsKey(id);
-    if (known) return objectIcon(world, id);
-    return switch (op.type) {
-      'character' => Symbols.person_rounded,
-      'item' => Symbols.deployed_code_rounded,
-      'quest' => Symbols.flag_rounded,
-      'event' => Symbols.bolt_rounded,
-      _ => Symbols.landscape_rounded,
-    };
-  }
-
-  /// Значение поля словами: ссылки — названиями, вид шага — «поговорить / убить».
-  String? Function(JournalOp, String, String?) _shower(WorldSnapshot world) {
-    final labels = PlanLabels(() => world);
-    final titles = world.titles;
-    return (op, key, raw) {
-      if (raw == null) return null;
-      if (key.endsWith('_id')) return titles[raw] ?? '?';
-      if (op.type == 'quest_step' && key == 'kind') {
-        return StepKind.values.byName(raw).label;
-      }
-      return labels.value(key, num.tryParse(raw) ?? raw);
-    };
   }
 
   @override
@@ -181,14 +152,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: Text('Изменений пока не было'),
             );
           }
+          final byId = {for (final s in sets) s.id: s};
+          final now = DateTime.now();
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
             children: [
-              for (final s in sets)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Card(child: _set(s, world)),
-                ),
+              for (final (i, s) in sets.indexed) ...[
+                if (i == 0 ||
+                    dayTitle(s.createdAt, now) !=
+                        dayTitle(sets[i - 1].createdAt, now))
+                  _Day(dayTitle(s.createdAt, now), first: i == 0),
+                _set(s, world, byId),
+              ],
             ],
           );
         },
@@ -196,78 +171,62 @@ class _HistoryScreenState extends State<HistoryScreen> {
     ),
   );
 
-  Widget _set(ChangeSetEntry s, WorldSnapshot world) {
-    final show = _shower(world);
-
-    final when =
-        '${s.createdAt.day.toString().padLeft(2, '0')}.'
-        '${s.createdAt.month.toString().padLeft(2, '0')} '
-        '${s.createdAt.hour.toString().padLeft(2, '0')}:'
-        '${s.createdAt.minute.toString().padLeft(2, '0')}';
-    final title = s.summary.isEmpty ? s.request : s.summary;
-    // Под «Откатить» — только то, что говорит больше заголовка (владелец 25.11):
-    // просьба автора, если она не и есть заголовок; одна операция «новое/убрано: X»
-    // при X в заголовке («Создано вручную: Причал») — повтор, не показываем.
-    final single = s.ops.length == 1 ? s.ops.single : null;
-    final opsRepeatTitle =
-        single != null &&
-        single.action != 'update' &&
-        single.title.isNotEmpty &&
-        title.contains(single.title);
-    return ExpansionTile(
-      key: Key('history-${s.id}'),
-      maintainState: true,
-      shape: const RoundedRectangleBorder(),
-      leading: _statusIcon(s.status),
-      title: Text(title),
-      subtitle: Text(
-        '${s.status.label} · $when'
-        '${s.revertsId == null ? '' : ' · откат набора'}',
-      ),
-      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ..._revertArea(s),
-        if (s.request != title) ...[
-          Row(
-            spacing: 8,
-            children: [
-              Icon(
-                Symbols.chat_bubble_rounded,
-                size: 18,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              Expanded(child: Text('«${s.request}»')),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
-        if (!opsRepeatTitle)
-          for (final op in s.ops) _op(op, show),
-      ],
+  /// Набор: голова (нажатие раскрывает), под ней «Откатить», просьба автора и
+  /// операции ячейками цвета действия.
+  Widget _set(
+    ChangeSetEntry s,
+    WorldSnapshot world,
+    Map<String, ChangeSetEntry> byId,
+  ) {
+    final show = valueShower(world);
+    final line = describe(
+      s,
+      world: world,
+      show: show,
+      original: s.revertsId == null ? null : byId[s.revertsId],
     );
-  }
-
-  /// Операция набора одной строкой: «новое: Кирка», «убрано: Житель»,
-  /// «Слизень: атака 3 → 4» (только изменённые поля).
-  Widget _op(JournalOp op, String? Function(JournalOp, String, String?) show) {
-    String field(String k) =>
-        fieldLabel(k.replaceAll(RegExp(r'_id$'), '')).toLowerCase();
-    // Каждое значение короче по отдельности: «стало» видно всегда (ревью 22.11).
-    String short(String? v) =>
-        v == null ? '—' : (v.length > 32 ? '${v.substring(0, 31)}…' : v);
-    final link = journalLinkWord(op.type);
-    final what = link == null ? op.title : '$link ${op.title}';
-    final text = switch (op.action) {
-      'create' => 'новое: $what',
-      'delete' => 'убрано: $what',
-      _ =>
-        '$what: ${[for (final (k, was, now) in op.changes) '${field(k)} ${short(show(op, k, was))} → ${short(show(op, k, now))}'].join(', ')}',
-    };
-    return Padding(
-      key: Key('history-op-${op.label}'),
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(text),
+    final colors = Theme.of(context).colorScheme;
+    final open = _open.contains(s.id);
+    // Под «Откатить» — только то, что говорит больше головы (владелец 25.11):
+    // одна операция над тем же объектом, что в голове, — повтор, не показываем.
+    final single = s.ops.length == 1 ? s.ops.single : null;
+    final opsRepeatHead =
+        single != null &&
+        single.title.isNotEmpty &&
+        (single.action != 'update' || line.field != null) &&
+        line.name.contains(single.title);
+    return Container(
+      key: Key('history-${s.id}'),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        border: Border.all(
+          color: open ? colors.outline : colors.outlineVariant,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            key: Key('history-head-${s.id}'),
+            onTap: () =>
+                setState(() => open ? _open.remove(s.id) : _open.add(s.id)),
+            child: Semantics(
+              expanded: open,
+              child: HistoryHead(line, s.createdAt),
+            ),
+          ),
+          if (open)
+            SetBody(
+              top: _revertArea(s),
+              request: line.source == Source.assistant && s.request != line.name
+                  ? s.request
+                  : null,
+              ops: opsRepeatHead ? const [] : s.ops,
+              show: show,
+            ),
+        ],
+      ),
     );
   }
 
@@ -296,29 +255,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
     const SizedBox(height: 12),
   ];
+}
 
-  Widget _statusIcon(SetStatus status) {
-    final s = Theme.of(context).colorScheme;
-    final (icon, bg, fg) = switch (status) {
-      SetStatus.applied => (
-        Symbols.check_rounded,
-        AppColors.of(context).okContainer,
-        AppColors.of(context).onOkContainer,
+/// Заголовок дня: «Сегодня», «Вчера», «22 ноября».
+class _Day extends StatelessWidget {
+  const _Day(this.title, {required this.first});
+  final String title;
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(4, first ? 4 : 18, 4, 8),
+    child: Text(
+      title,
+      key: Key('history-day-$title'),
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
-      SetStatus.rejected => (
-        Symbols.close_rounded,
-        s.surfaceContainerHighest,
-        s.onSurfaceVariant,
-      ),
-      SetStatus.reverted => (
-        Symbols.undo_rounded,
-        s.tertiaryContainer,
-        s.onTertiaryContainer,
-      ),
-    };
-    return CircleAvatar(
-      backgroundColor: bg,
-      child: Icon(icon, color: fg),
-    );
-  }
+    ),
+  );
 }

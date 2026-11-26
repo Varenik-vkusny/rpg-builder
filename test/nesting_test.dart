@@ -11,6 +11,7 @@ import 'package:rpg_builder/check/world_check.dart';
 import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/content/nesting.dart';
 
+import 'apply_flow_test.dart' show tapButton;
 import 'fakes.dart';
 
 Location place(String id, {String? parent, int min = 1, int max = 10}) =>
@@ -225,8 +226,7 @@ void main() {
     );
 
     // Третий уровень занят — в выборе его нет.
-    await t.tap(find.byKey(const Key('new-location')));
-    await t.pumpAndSettle();
+    await tapButton(t, 'new-location');
     await t.tap(find.byKey(const Key('location-parent')));
     await t.pumpAndSettle();
     expect(find.text('Копи › Штольня №3 › Забой'), findsNothing);

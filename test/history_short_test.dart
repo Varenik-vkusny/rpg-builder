@@ -22,12 +22,12 @@ void main() {
     expect(find.text('БЫЛО'), findsNothing);
     expect(find.text('СТАЛО'), findsNothing);
     expect(find.textContaining('Изменить ·'), findsNothing);
-    // Создание — одной строкой, без полей.
-    expect(find.text('новое: utoplennik'), findsOneWidget);
+    // Вид А: операция — ячейка цвета действия и имя. Создание — без полей.
+    expect(find.text('utoplennik'), findsOneWidget);
     expect(find.textContaining('здоровье'), findsNothing);
-    expect(find.text('убрано: добыча slizen/klyuch'), findsOneWidget);
-    // Изменение — одной строкой «поле было → стало».
-    expect(find.textContaining('shtolnya_3: описание'), findsOneWidget);
+    expect(find.text('добыча slizen/klyuch'), findsOneWidget);
+    // Изменение — имя и поле, ниже «было → стало».
+    expect(find.textContaining('shtolnya_3 описание'), findsOneWidget);
     expect(find.textContaining('затоплена по пояс'), findsOneWidget);
   });
 
@@ -65,15 +65,16 @@ void main() {
       ),
     );
     await openHistory(t);
-    await t.tap(find.text('Создано вручную: Причал'));
+    // Вид А: в голове — имя «Причал» и «Создано»; раскрытый набор его не повторяет.
+    await t.tap(find.text('Причал'));
     await t.pumpAndSettle();
     expect(find.byKey(const Key('revert-set-1')), findsOneWidget);
     expect(find.text('«Создано вручную: Причал»'), findsNothing);
-    expect(find.text('новое: Причал'), findsNothing);
+    expect(find.text('Причал'), findsOneWidget, reason: 'имя только в голове');
     // Набор ассистента: просьба автора не равна заголовку — видна, операции видны.
     await t.tap(find.text(flood));
     await t.pumpAndSettle();
     expect(find.textContaining('«затопи её'), findsOneWidget);
-    expect(find.text('новое: utoplennik'), findsOneWidget);
+    expect(find.text('utoplennik'), findsOneWidget);
   });
 }

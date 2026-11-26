@@ -90,7 +90,7 @@ Future<void> revertFirst(WidgetTester t, String summary) async {
     find.byKey(const Key('revert-error-set-0'), skipOffstage: false),
     findsNothing,
   );
-  expect(find.textContaining('Откачен'), findsOneWidget);
+  expect(find.text('ОТКАЧЕН'), findsOneWidget);
 }
 
 /// Мир «Копи» с засадой на копии — для проверок без экрана.

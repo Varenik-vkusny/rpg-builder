@@ -42,7 +42,7 @@ void main() {
     await fillAmbush(t);
 
     expect(find.text('Новое событие'), findsNothing);
-    expect(find.text('Засада у лебёдки'), findsOneWidget);
+    expect(inWorld('Засада у лебёдки'), findsOneWidget);
     final w = await content.snapshotOf(minesId);
     final e = w.events.single;
     expect(w.titles[e.locationId], 'Штольня №3');

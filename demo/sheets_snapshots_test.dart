@@ -70,7 +70,7 @@ void main() {
     await tapShown(t, find.byKey(const Key('character-save')));
     // Сохранение возвращает в списки мира — там «История».
     await tapShown(t, find.byKey(const Key('history-open')));
-    await tapShown(t, find.text('Правка вручную: Слизень'));
+    await tapShown(t, find.text('Слизень'));
     await tapShown(t, find.byKey(const Key('revert-set-0')));
     await shot(t, 'sheet-6-revert');
     await tapShown(t, find.byKey(const Key('confirm-no')));

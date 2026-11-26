@@ -12,7 +12,9 @@ void main() {
     final content = await openMines(t);
     expectCounts({'locations': 2, 'items': 2, 'characters': 2, 'quests': 1});
     expect(find.text('Проблем не найдено'), findsOneWidget);
-    expect(find.text('Изменений пока не было'), findsOneWidget);
+    // Вид А: пустую историю не показываем вовсе.
+    expect(find.byKey(const Key('overview-recent')), findsNothing);
+    expect(find.text('Изменений пока не было'), findsNothing);
 
     // Удалили рынок вручную — счётчик и последние изменения обновились.
     await tapButton(t, 'open-rynok');
@@ -20,7 +22,18 @@ void main() {
     await tapButton(t, 'object-delete');
     await tapButton(t, 'confirm-yes');
     expectCounts({'locations': 1, 'items': 2, 'characters': 2, 'quests': 1});
-    expect(find.text('Применён: Удаление вручную: Рынок'), findsOneWidget);
+    // Мини-ряд той же формы, что в истории: имя и глагол, без «Применён».
+    for (final text in ['Рынок', 'Удалено']) {
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('overview-recent')),
+          matching: find.text(text),
+        ),
+        findsOneWidget,
+        reason: text,
+      );
+    }
+    expect(find.textContaining('Применён'), findsNothing);
     expect(content.journal, hasLength(1));
 
     await tapButton(t, 'overview-history');

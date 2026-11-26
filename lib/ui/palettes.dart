@@ -21,6 +21,7 @@ class Palette {
     required this.primaryContainer,
     required this.onPrimaryContainer,
     required this.change,
+    required this.changeContainer,
     required this.error,
     required this.onError,
     required this.errorContainer,
@@ -40,6 +41,8 @@ class Palette {
 
   /// «Изменено» и «СТАЛО» — пурпурный: голубой занят главными действиями.
   final Color change;
+  /// Фон ячейки «изменено» (история, план).
+  final Color changeContainer;
   final Color error, onError, errorContainer, onErrorContainer;
   final Color warn, warnContainer, onWarnContainer;
   final Color ok, okContainer, onOkContainer;
@@ -128,6 +131,7 @@ const darkPalette = Palette(
   primaryContainer: Color(0xFF003D3D),
   onPrimaryContainer: Color(0xFFA6FFFF),
   change: Color(0xFFF07CF0),
+  changeContainer: Color(0xFF3A1A3A),
   error: Color(0xFFFF5C5C),
   onError: Color(0xFF1A0000),
   errorContainer: Color(0xFF4A1111),
@@ -165,6 +169,7 @@ const lightPalette = Palette(
   primaryContainer: Color(0xFFB8F5F5),
   onPrimaryContainer: Color(0xFF002020),
   change: Color(0xFF9A1F9A),
+  changeContainer: Color(0xFFF7D6F7),
   error: Color(0xFFC00000),
   onError: Color(0xFFFFFFFF),
   errorContainer: Color(0xFFFFD6D6),

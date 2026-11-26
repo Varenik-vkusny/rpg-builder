@@ -146,9 +146,12 @@ void main() {
     await t.pumpAndSettle();
 
     // 2.7: враг «Утопленник» ур. 3, здоровье 30, атака 14 при потолке 10.
+    // Список наверх и вниз до «Нового персонажа»: над ним теперь «Последние изменения».
+    await t.drag(find.byType(Scrollable).first, const Offset(0, 3000));
+    await t.pumpAndSettle();
     await t.scrollUntilVisible(
       find.byKey(const Key('new-character')),
-      -200,
+      200,
       scrollable: find.byType(Scrollable).first,
     );
     await tapShown(t, find.byKey(const Key('new-character')));

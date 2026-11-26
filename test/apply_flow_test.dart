@@ -8,6 +8,14 @@ import 'autofix_test.dart' show broken, floodWithAttack;
 import 'fakes.dart';
 
 Future<void> tapButton(WidgetTester t, String key) async {
+  // Список мира ленивый: кнопка ниже экрана ещё не построена — докрутить до неё.
+  if (find.byKey(Key(key)).evaluate().isEmpty) {
+    await t.scrollUntilVisible(
+      find.byKey(Key(key)),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
   await t.ensureVisible(find.byKey(Key(key)));
   await t.pumpAndSettle();
   await t.tap(find.byKey(Key(key)));
