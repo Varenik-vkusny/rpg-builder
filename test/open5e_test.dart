@@ -170,7 +170,8 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       await openObject(t, 'Боевая кирка');
-      expect(find.text('Оружие · Обычный'), findsOneWidget);
+      expect(find.text('Оружие'), findsOneWidget);
+      expect(find.text('Обычный'), findsOneWidget);
       expectTile('Уровень', '1');
       expectTile('Урон', '5');
       expectTile('Цена', '5');

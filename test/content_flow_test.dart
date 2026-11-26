@@ -70,7 +70,10 @@ void main() {
 
     expect(inWorld('Ключ от лебёдки'), findsOneWidget);
     await openObject(t, 'Ключ от лебёдки');
-    expect(find.text('Квестовый · Обычный'), findsOneWidget);
+    // Вид и редкость — отдельные плашки, не склейка «Квестовый · Обычный».
+    expect(find.text('Квестовый'), findsOneWidget);
+    expect(find.text('Обычный'), findsOneWidget);
+    expect(find.textContaining(' · '), findsNothing);
     expectTile('Уровень', '2');
     expectTile('Цена', '0');
   });
@@ -92,7 +95,9 @@ void main() {
     await t.pumpAndSettle();
 
     await openObject(t, 'Кирка');
-    expect(find.text('Оружие · Редкий'), findsOneWidget);
+    expect(find.text('Оружие'), findsOneWidget);
+    expect(find.text('Редкий'), findsOneWidget);
+    expect(find.textContaining(' · '), findsNothing);
     expectTile('Уровень', '3');
     expectTile('Урон', '6');
     expectTile('Цена', '40');

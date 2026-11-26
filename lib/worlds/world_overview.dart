@@ -42,42 +42,29 @@ class WorldOverview extends StatelessWidget {
         children: [
           Padding(
             key: const Key('overview-counts'),
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: Row(
-              spacing: 8,
-              children: [
-                _Count(
-                  'locations',
-                  Symbols.landscape_rounded,
-                  'Места',
-                  w.locations.length,
-                ),
-                _Count(
-                  'items',
-                  Symbols.deployed_code_rounded,
-                  'Предметы',
-                  w.items.length,
-                ),
-                _Count(
-                  'characters',
-                  Symbols.groups_rounded,
-                  'Персонажи',
-                  w.characters.length,
-                ),
-                _Count(
-                  'quests',
-                  Symbols.flag_rounded,
-                  'Квесты',
-                  w.quests.length,
-                ),
-                _Count(
-                  'events',
-                  Symbols.bolt_rounded,
-                  'События',
-                  w.events.length,
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
+            child: _Counts([
+              (
+                'locations',
+                Symbols.landscape_rounded,
+                'Места',
+                w.locations.length,
+              ),
+              (
+                'items',
+                Symbols.deployed_code_rounded,
+                'Предметы',
+                w.items.length,
+              ),
+              (
+                'characters',
+                Symbols.groups_rounded,
+                'Персонажи',
+                w.characters.length,
+              ),
+              ('quests', Symbols.flag_rounded, 'Квесты', w.quests.length),
+              ('events', Symbols.bolt_rounded, 'События', w.events.length),
+            ]),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -98,13 +85,63 @@ class WorldOverview extends StatelessWidget {
   }
 }
 
+typedef _CountSpec = (String, IconData, String, int);
+
+/// Ряд из пяти плиток: один кегль подписи на всех — по самой длинной подписи.
+class _Counts extends StatelessWidget {
+  const _Counts(this.specs);
+  final List<_CountSpec> specs;
+
+  static const _gap = 6.0;
+
+  /// Самый крупный кегль (11 → 8), при котором самая длинная подпись влезает в плитку.
+  double _labelSize(BuildContext context, double tile) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final dir = Directionality.of(context);
+    final longest = specs
+        .map((e) => e.$3)
+        .reduce((a, b) => a.length >= b.length ? a : b);
+    var size = 11.0;
+    while (size > 8) {
+      final p = TextPainter(
+        text: TextSpan(
+          text: longest,
+          style: TextStyle(fontSize: size),
+        ),
+        textDirection: dir,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      if (p.width <= tile - 6) break;
+      size -= .5;
+    }
+    return size;
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final tile = (box.maxWidth - _gap * (specs.length - 1)) / specs.length;
+      final size = _labelSize(context, tile);
+      return Row(
+        spacing: _gap,
+        children: [
+          for (final (kind, icon, label, n) in specs)
+            _Count(kind, icon, label, n, size),
+        ],
+      );
+    },
+  );
+}
+
 /// Счётчик объектов одного вида: значок, число, короткая подпись.
 class _Count extends StatelessWidget {
-  const _Count(this.kind, this.icon, this.label, this.n);
+  const _Count(this.kind, this.icon, this.label, this.n, this.labelSize);
   final String kind;
   final IconData icon;
   final String label;
   final int n;
+  final double labelSize;
 
   @override
   Widget build(BuildContext context) {
@@ -122,20 +159,11 @@ class _Count extends StatelessWidget {
           children: [
             Icon(icon, size: 20, color: s.onSurfaceVariant),
             Text('$n', style: const TextStyle(fontSize: 20)),
-            // Пять плиток в ряд узкие: длинная подпись сжимается, а не обрезается.
-            // Высота строки одна у всех плиток — сжатая подпись не делает плитку ниже.
-            Container(
-              height: MediaQuery.textScalerOf(context).scale(11) * 1.5,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: TextStyle(fontSize: 11, color: s.onSurfaceVariant),
-                ),
-              ),
+            Text(
+              label,
+              key: Key('count-label-$kind'),
+              maxLines: 1,
+              style: TextStyle(fontSize: labelSize, color: s.onSurfaceVariant),
             ),
           ],
         ),

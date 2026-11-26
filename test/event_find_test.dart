@@ -13,6 +13,7 @@ import 'package:rpg_builder/ui/cover_card.dart';
 import 'apply_flow_test.dart' show tapButton;
 import 'event_map_test.dart' show minesWithEvents;
 import 'fakes.dart';
+import 'section_count.dart';
 import 'object_links_test.dart' show open;
 import 'place_page_test.dart' show nestedMines, openWorldOf, worldId;
 
@@ -28,12 +29,17 @@ double top(WidgetTester t, Finder f) => t.getTopLeft(f).dy;
 
 void main() {
   group('строка события', () {
-    test('где сцена (путём) · кто и сколько · что лежит', () async {
+    test('где сцена (путём), кто и сколько — отдельные плашки', () async {
       final w = await (await minesWithEvents()).snapshot(worldId);
-      String line(String title) =>
-          eventLine(w, w.events.firstWhere((e) => e.title == title));
-      expect(line('Засада у лебёдки'), 'Копи › Штольня №3 · Слизень × 3');
-      expect(line('Обвал кровли'), 'Копи › Штольня №3 › Забой');
+      List<String> cells(String title) => [
+        for (final c in eventCells(
+          w,
+          w.events.firstWhere((e) => e.title == title),
+        ))
+          c.text,
+      ];
+      expect(cells('Засада у лебёдки'), ['Копи › Штольня №3', 'Слизень ×3']);
+      expect(cells('Обвал кровли'), ['Копи › Штольня №3 › Забой']);
     });
 
     test(
@@ -108,7 +114,10 @@ void main() {
     // Последнее место в списке стоит выше раздела событий: раздел — под всеми местами.
     expect(events, greaterThan(top(t, find.byKey(const Key('open-rynok')))));
 
-    expect(find.text('Копи › Штольня №3 · Слизень × 3'), findsOneWidget);
+    // Строка события — плашками, без склейки «·»: место, враги.
+    expect(find.text('Копи › Штольня №3'), findsOneWidget);
+    expect(find.text('Слизень ×3'), findsOneWidget);
+    expect(find.textContaining(' · '), findsNothing);
     expect(find.text('Копи › Штольня №3 › Забой'), findsOneWidget);
     expect(find.byKey(const Key('events-empty')), findsNothing);
   });
@@ -179,7 +188,7 @@ void main() {
     final c = await minesWithEvents();
     await openTall(t, c);
     await open(t, 'shtolnya_3');
-    expect(find.text('События · 2'), findsOneWidget);
+    expect(sectionCount(t, 'События'), 2);
     await tapButton(t, 'event-add');
     expect(
       find.descendant(

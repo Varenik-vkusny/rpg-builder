@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
+import '../ui/cells.dart';
 import '../ui/object_page.dart';
 import 'event.dart';
 import 'location.dart';
@@ -21,16 +22,27 @@ List<Event> eventsByPlace(WorldSnapshot c) {
   return [...c.events]..sort((a, b) => key(a).compareTo(key(b)));
 }
 
-/// «Копи › Штольня №3 · Слизень × 3 · Ключ» — где сцена и что в ней.
-String eventLine(WorldSnapshot c, Event e) {
+/// Что в сцене плашками: где идёт, враги «Слизень ×3», предметы. Без склеек «·».
+List<CellSpec> eventCells(WorldSnapshot c, Event e) {
   final place = c.locations.where((l) => l.id == e.locationId).firstOrNull;
   final t = c.titles;
   return [
-    place == null ? '?' : pathOf(c.locations, place),
-    // Неразрывные пробелы: «Слизень × 3» не рвётся между строками.
-    for (final x in e.enemies) '${t[x.characterId] ?? '?'} × ${x.amount}',
-    for (final id in e.itemIds) t[id] ?? '?',
-  ].join(' · ');
+    cellSpec(
+      Symbols.landscape_rounded,
+      place == null ? '?' : pathOf(c.locations, place),
+    ),
+    for (final x in e.enemies)
+      cellSpec(
+        Symbols.skull_rounded,
+        '${t[x.characterId] ?? '?'} ×${x.amount}',
+        foe: true,
+      ),
+    for (final id in e.itemIds)
+      cellSpec(switch (c.items.where((i) => i.id == id).firstOrNull) {
+        final i? => itemIcon(i),
+        null => Symbols.deployed_code_rounded,
+      }, t[id] ?? '?'),
+  ];
 }
 
 extension EventPages on WorldPages {
@@ -56,15 +68,16 @@ extension EventPages on WorldPages {
       children: [top, addButton],
     );
     if (here.isEmpty) {
-      return (
+      return ObjectSection(
         icon: eventIcon,
         title: 'События',
         child: block(const Text('Событий пока нет')),
       );
     }
-    return (
+    return ObjectSection(
       icon: eventIcon,
-      title: 'События · ${here.length}',
+      title: 'События',
+      count: here.length,
       child: block(
         Rail([
           for (final e in here)
@@ -98,14 +111,13 @@ extension EventPages on WorldPages {
         icon: eventIcon,
         title: e.title,
         help: 'page.event',
-        kind: 'Событие',
         path: [if (place != null) pathOf(c.locations, place)],
         description: e.description,
         edit: () =>
             NewEventScreen(world: world, repo: repo, snapshot: c, editing: e),
         sections: [
           if (e.enemies.isNotEmpty)
-            (
+            ObjectSection(
               icon: Symbols.skull_rounded,
               title: 'Враги',
               child: Rail([
@@ -127,7 +139,7 @@ extension EventPages on WorldPages {
               ]),
             ),
           if (e.items.isNotEmpty)
-            (
+            ObjectSection(
               icon: Symbols.inventory_2_rounded,
               title: 'Предметы',
               child: Rail([

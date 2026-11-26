@@ -282,11 +282,6 @@ class _Empty extends StatelessWidget {
               'Миров пока нет',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            Text(
-              'Нажми «Новый мир» — и начни с названия и диапазона уровней',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: s.onSurfaceVariant),
-            ),
           ],
         ),
       ),

@@ -6,6 +6,7 @@ import 'package:rpg_builder/content/character.dart';
 import 'package:rpg_builder/content/location.dart';
 
 import 'fakes.dart';
+import 'section_count.dart';
 import 'object_links_test.dart' show open;
 
 const worldId = '0-Пепельные копи';
@@ -62,7 +63,7 @@ void main() {
     expect(find.byKey(const Key('inner-shtolnya_3')), findsOneWidget);
     // Только прямые вложенные: забой — внутри штольни, не в копях.
     expect(find.byKey(const Key('inner-zaboy')), findsNothing);
-    expect(find.text('Кто здесь · 3'), findsOneWidget);
+    expect(sectionCount(t, 'Кто здесь'), 3);
     for (final s in ['brigadir', 'lampshchitsa', 'zaboyshchik']) {
       expect(find.byKey(Key('who-$s')), findsOneWidget, reason: s);
     }
@@ -87,7 +88,7 @@ void main() {
       ),
       ['Копи › Штольня №3'],
     );
-    expect(find.text('Кто здесь · 2'), findsOneWidget);
+    expect(sectionCount(t, 'Кто здесь'), 2);
     expect(find.byKey(const Key('inner-zaboy')), findsOneWidget);
   });
 

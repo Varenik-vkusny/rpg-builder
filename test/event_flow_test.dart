@@ -97,7 +97,9 @@ void main() {
     final slug = (await content.events(minesId)).single.slug;
 
     await tapButton(t, 'open-$slug');
-    expect(find.text('Событие'), findsOneWidget);
+    // Имя один раз (в шапке его нет), вид — значком, не словом.
+    expect(find.text('Засада у лебёдки'), findsOneWidget);
+    expect(find.text('Событие'), findsNothing);
     expect(find.text('Штольня №3'), findsOneWidget);
     expect(find.text('× 3'), findsOneWidget);
     expect(find.byKey(const Key('enemy-slizen')), findsOneWidget);

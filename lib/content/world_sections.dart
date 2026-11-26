@@ -5,6 +5,7 @@ import '../check/world_check.dart';
 import '../map/map_screen.dart';
 import '../open5e/open5e_api.dart';
 import '../open5e/open5e_screen.dart';
+import '../ui/cells.dart';
 import '../ui/cover_card.dart';
 import '../worlds/world.dart';
 import 'content_repo.dart';
@@ -78,23 +79,22 @@ class WorldSections {
   );
 
   /// Строка объекта в списке: значок и имя, подробности — на его странице.
-  Widget _row(
-    String slug,
-    IconData icon,
-    String title,
-    Widget page, {
-    String? subtitle,
-  }) => ListTile(
-    key: Key('open-$slug'),
-    leading: CircleAvatar(
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant),
-    ),
-    title: Text(title),
-    subtitle: subtitle == null ? null : Text(subtitle),
-    trailing: const Icon(Symbols.chevron_right_rounded),
-    onTap: () => open(page),
-  );
+  Widget _row(String slug, IconData icon, String title, Widget page) =>
+      ListTile(
+        key: Key('open-$slug'),
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest,
+          child: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        title: Text(title),
+        trailing: const Icon(Symbols.chevron_right_rounded),
+        onTap: () => open(page),
+      );
 
   List<Widget> locations(WorldSnapshot c) => [
     _header(
@@ -234,12 +234,15 @@ class WorldSections {
       ),
     // Сцены идут по местам: под названием — где сцена и что в ней.
     for (final e in eventsByPlace(c))
-      _row(
-        e.slug,
-        eventIcon,
-        e.title,
-        _pages(c).event(e),
-        subtitle: eventLine(c, e),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: ObjRow(
+          key: Key('open-${e.slug}'),
+          icon: eventIcon,
+          title: e.title,
+          cells: eventCells(c, e),
+          onTap: () => open(_pages(c).event(e)),
+        ),
       ),
   ];
 }

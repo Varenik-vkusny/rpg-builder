@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
+import '../ui/cells.dart';
 import '../ui/object_page.dart';
 import '../ui/parts.dart';
 import '../worlds/world.dart';
@@ -54,7 +55,12 @@ class WorldPages {
         icon: Symbols.landscape_rounded,
         title: l.title,
         help: 'page.location',
-        kind: 'Локация · ур. ${l.levelMin}–${l.levelMax}',
+        cells: [
+          cellSpec(
+            Symbols.military_tech_rounded,
+            'ур. ${l.levelMin}–${l.levelMax}',
+          ),
+        ],
         path: [if (up.isNotEmpty) pathOf(c.locations, l)],
         pathKey: const Key('place-path'),
         cover: true,
@@ -80,9 +86,10 @@ class WorldPages {
   ObjectSection? _inner(BuildContext context, Location l) {
     final inner = childrenOf(c.locations, l.id);
     if (inner.isEmpty) return null;
-    return (
+    return ObjectSection(
       icon: Symbols.account_tree_rounded,
-      title: 'Внутри · ${inner.length}',
+      title: 'Внутри',
+      count: inner.length,
       child: Rail([
         for (final p in inner)
           PortraitCard(
@@ -102,9 +109,10 @@ class WorldPages {
   ObjectSection? _here(BuildContext context, Location l) {
     final here = residentsOf(c.locations, c.characters, l.id);
     if (here.isEmpty) return null;
-    return (
+    return ObjectSection(
       icon: Symbols.groups_rounded,
-      title: 'Кто здесь · ${here.length}',
+      title: 'Кто здесь',
+      count: here.length,
       child: Rail([
         for (final ch in here)
           PortraitCard(
@@ -130,7 +138,13 @@ class WorldPages {
         icon: characterIcon(ch),
         title: ch.title,
         help: 'page.character',
-        kind: ch.role.label,
+        cells: [
+          cellSpec(
+            characterIcon(ch),
+            ch.role.label,
+            foe: ch.role == Role.enemy,
+          ),
+        ],
         path: [if (home != null) pathOf(c.locations, home)],
         description: ch.description,
         tiles: [
@@ -148,9 +162,10 @@ class WorldPages {
         ),
         sections: [
           if (ch.loot.isNotEmpty)
-            (
+            ObjectSection(
               icon: Symbols.inventory_2_rounded,
               title: 'Добыча',
+              count: ch.loot.length,
               child: Rail([
                 for (final d in ch.loot)
                   switch (items[d.itemId]) {
@@ -197,7 +212,10 @@ class WorldPages {
         icon: itemIcon(i),
         title: i.title,
         help: 'page.item',
-        kind: '${i.kind.label} · ${i.rarity.label}',
+        cells: [
+          cellSpec(itemIcon(i), i.kind.label),
+          cellSpec(Symbols.diamond_rounded, i.rarity.label),
+        ],
         tiles: [
           StatTile(Symbols.military_tech_rounded, 'Уровень', '${i.level}'),
           if (i.damage case final d?)
@@ -210,7 +228,7 @@ class WorldPages {
         edit: () =>
             NewItemScreen(world: world, repo: repo, editing: i, snapshot: c),
         sections: [
-          (
+          ObjectSection(
             icon: Symbols.link_rounded,
             title: 'Связи',
             // Нет связей — одна строка: это и подсказка к проверке «нельзя получить».
@@ -221,26 +239,32 @@ class WorldPages {
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 8,
                     children: [
                       for (final (ch, d) in droppers)
-                        LinkRow(
+                        ObjRow(
                           key: Key('link-${ch.slug}'),
                           icon: characterIcon(ch),
-                          text: 'Роняет: ${ch.title} · ${d.chanceLabel}',
+                          title: ch.title,
+                          cells: [
+                            cellSpec(Symbols.casino_rounded, d.chanceLabel),
+                          ],
                           onTap: () => openDeeper(context, character(ch)),
                         ),
                       for (final q in needs)
-                        LinkRow(
+                        ObjRow(
                           key: Key('link-need-${q.slug}'),
                           icon: Symbols.flag_rounded,
-                          text: 'Нужен в квесте: ${q.title}',
+                          title: q.title,
+                          cells: [cellSpec(Symbols.key_rounded, 'нужен')],
                           onTap: () => openDeeper(context, quest(q)),
                         ),
                       for (final q in gives)
-                        LinkRow(
+                        ObjRow(
                           key: Key('link-reward-${q.slug}'),
-                          icon: Symbols.redeem_rounded,
-                          text: 'Награда за квест: ${q.title}',
+                          icon: Symbols.flag_rounded,
+                          title: q.title,
+                          cells: [cellSpec(Symbols.redeem_rounded, 'награда')],
                           onTap: () => openDeeper(context, quest(q)),
                         ),
                     ],
@@ -274,7 +298,6 @@ class WorldPages {
         icon: Symbols.flag_rounded,
         title: q.title,
         help: 'page.quest',
-        kind: 'Квест',
         description: q.description,
         edit: () => NewQuestScreen(
           world: world,
@@ -287,9 +310,9 @@ class WorldPages {
           snapshot: c,
         ),
         sections: [
-          (
+          ObjectSection(
             icon: Symbols.format_list_numbered_rounded,
-            title: 'Кто выдаёт, шаги, награда',
+            title: '',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: 8,

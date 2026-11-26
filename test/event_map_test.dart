@@ -12,6 +12,7 @@ import 'package:rpg_builder/content/event.dart';
 import 'package:rpg_builder/map/map_model.dart';
 
 import 'fakes.dart';
+import 'section_count.dart';
 import 'map_test.dart' show blockLabel, openMap, problemOn;
 import 'object_links_test.dart' show open;
 import 'place_page_test.dart' show nestedMines, openWorldOf, worldId;
@@ -156,7 +157,7 @@ void main() {
         int.parse(RegExp(r'событий внутри (\d+)').firstMatch(label)![1]!);
     await t.tap(find.byKey(const Key('place-kopi')));
     await t.pumpAndSettle();
-    expect(find.text('События · $n'), findsOneWidget);
+    expect(sectionCount(t, 'События'), n);
     semantics.dispose();
   });
 
@@ -168,7 +169,7 @@ void main() {
     await openWorldOf(t, await minesWithEvents());
     await open(t, 'shtolnya_3');
 
-    expect(find.text('События · 2'), findsOneWidget);
+    expect(sectionCount(t, 'События'), 2);
     Finder on(String event, Finder what) =>
         find.descendant(of: find.byKey(Key('event-$event')), matching: what);
     // Своё событие: на карточке — сколько врагов в сцене всего, места не подписано.
@@ -179,7 +180,7 @@ void main() {
     await t.ensureVisible(find.byKey(const Key('event-zasada_u_lebedki')));
     await t.tap(find.byKey(const Key('event-zasada_u_lebedki')));
     await t.pumpAndSettle();
-    expect(find.text('Событие'), findsOneWidget);
+    expect(find.text('Засада у лебёдки'), findsOneWidget);
     expect(find.byKey(const Key('enemy-slizen')), findsOneWidget);
   });
 
@@ -193,7 +194,7 @@ void main() {
     await openWorldOf(t, await minesWithEvents());
     await open(t, 'rynok');
     expect(find.text('События'), findsOneWidget);
-    expect(find.textContaining('События ·'), findsNothing);
-    expect(find.text('Кто здесь · 1'), findsOneWidget);
+    expect(sectionCount(t, 'События'), isNull);
+    expect(sectionCount(t, 'Кто здесь'), 1);
   });
 }

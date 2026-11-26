@@ -42,13 +42,22 @@ void main() {
   testWidgets('предмет: кто роняет с шансом, в каком квесте нужен', (t) async {
     await openMines(t);
     await open(t, 'klyuch');
-    expect(find.text('Роняет: Слизень · 35%'), findsOneWidget);
-    expect(find.text('Нужен в квесте: Обвал'), findsOneWidget);
+    // Строка связи: имя и шанс — отдельными плашками, без «Роняет: … · 35%».
+    expect(find.byKey(const Key('link-slizen')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('link-slizen')),
+        matching: find.text('35%'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Роняет'), findsNothing);
+    expect(find.byKey(const Key('link-need-obval')), findsOneWidget);
     expect(find.byKey(const Key('item-no-links')), findsNothing);
 
-    await t.tap(find.text('Роняет: Слизень · 35%'));
+    await t.tap(find.byKey(const Key('link-slizen')));
     await t.pumpAndSettle();
-    expect(find.widgetWithText(AppBar, 'Слизень'), findsOneWidget);
+    expect(find.text('Слизень'), findsOneWidget);
   });
 
   testWidgets('враг: карточка добычи ведёт на предмет', (t) async {
@@ -57,15 +66,15 @@ void main() {
     await t.ensureVisible(find.byKey(const Key('loot-klyuch')));
     await t.tap(find.byKey(const Key('loot-klyuch')));
     await t.pumpAndSettle();
-    expect(find.widgetWithText(AppBar, 'Ключ'), findsOneWidget);
+    expect(find.text('Ключ'), findsOneWidget);
   });
 
   testWidgets('предмет-награда ведёт на свой квест', (t) async {
     await openMines(t);
     await open(t, 'kirka');
-    await t.tap(find.text('Награда за квест: Обвал'));
+    await t.tap(find.byKey(const Key('link-reward-obval')));
     await t.pumpAndSettle();
-    expect(find.widgetWithText(AppBar, 'Обвал'), findsOneWidget);
+    expect(find.text('Обвал'), findsOneWidget);
   });
 
   testWidgets('предмет без связей: одна строка «ни с чем не связан»', (
@@ -90,7 +99,7 @@ void main() {
       await t.ensureVisible(find.text(line));
       await t.tap(find.text(line));
       await t.pumpAndSettle();
-      expect(find.widgetWithText(AppBar, page), findsOneWidget, reason: line);
+      expect(find.text(page), findsOneWidget, reason: line);
       await t.pageBack();
       await t.pumpAndSettle();
     }

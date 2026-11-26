@@ -194,7 +194,8 @@ void main() {
     await t.ensureVisible(cell);
     await t.tap(cell);
     await t.pumpAndSettle();
-    expect(find.text('Событие'), findsOneWidget);
+    expect(find.text('Событие'), findsNothing);
+    expect(find.text('Засада у лебёдки'), findsOneWidget);
     expect(find.byKey(const Key('enemy-slizen')), findsOneWidget);
   });
 

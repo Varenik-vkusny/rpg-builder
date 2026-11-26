@@ -10,6 +10,7 @@ import 'package:rpg_builder/content/location.dart';
 import 'package:rpg_builder/map/map_model.dart';
 
 import 'fakes.dart';
+import 'section_count.dart';
 import 'place_page_test.dart' show nestedMines, openWorldOf, worldId;
 
 Future<void> openMap(WidgetTester t) async {
@@ -76,7 +77,7 @@ void main() {
       final n = RegExp(r'жителей (\d+)').firstMatch(blockLabel(t, slug))![1];
       await t.tap(find.byKey(Key('place-$slug')));
       await t.pumpAndSettle();
-      expect(find.text('Кто здесь · $n'), findsOneWidget, reason: slug);
+      expect(sectionCount(t, 'Кто здесь'), int.parse(n!), reason: slug);
       await t.pageBack();
       await t.pumpAndSettle();
     }
