@@ -36,7 +36,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ? 'Укажи почту'
         : looksLikeEmail(email)
         ? null
-        : 'Почта выглядит неверно — нужен вид name@example.com';
+        : 'Нужен вид name@example.com';
     final passwordError = password.length < 6
         ? 'Пароль — не короче 6 символов'
         : null;

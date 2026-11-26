@@ -1,6 +1,7 @@
 // Библиотека Open5e (4.6): поиск образца → короткая карточка → «Импортировать» одним набором
 // изменений (в историю, с откатом). Враги (5д) — правкой вручную с той же проверкой на копии.
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../help/help.dart';
 import '../assistant/change_set.dart';
@@ -254,9 +255,19 @@ class _Open5eScreenState extends State<Open5eScreen> {
           children: [
             SegmentedButton<bool>(
               key: const Key('open5e-kind'),
+              // Вид А: значок вида вместо галки выбранного (прототип 25.11).
+              showSelectedIcon: false,
               segments: const [
-                ButtonSegment(value: false, label: Text('Предметы')),
-                ButtonSegment(value: true, label: Text('Враги')),
+                ButtonSegment(
+                  value: false,
+                  icon: Icon(Symbols.inventory_2_rounded),
+                  label: Text('Предметы'),
+                ),
+                ButtonSegment(
+                  value: true,
+                  icon: Icon(Symbols.skull_rounded),
+                  label: Text('Враги'),
+                ),
               ],
               // Прямые углы, как у всего приложения (вид А).
               style: const ButtonStyle(

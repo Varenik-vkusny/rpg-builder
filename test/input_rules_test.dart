@@ -60,10 +60,7 @@ void main() {
   ) async {
     await pumpApp(t);
     await signUp(t, 'timur.mail.kz');
-    expect(
-      find.text('Почта выглядит неверно — нужен вид name@example.com'),
-      findsOneWidget,
-    );
+    expect(find.text('Нужен вид name@example.com'), findsOneWidget);
     expect(find.byKey(const Key('sign-up')), findsOneWidget);
     expect(find.text('Мои миры'), findsNothing);
 

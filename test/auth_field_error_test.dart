@@ -17,9 +17,7 @@ void main() {
       expect(
         find.descendant(
           of: err,
-          matching: find.text(
-            'Почта выглядит неверно — нужен вид name@example.com',
-          ),
+          matching: find.text('Нужен вид name@example.com'),
         ),
         findsOneWidget,
       );
@@ -32,6 +30,11 @@ void main() {
       expect(t.getRect(err).top, greaterThanOrEqualTo(mailField.bottom - 1));
       expect(t.getRect(err).bottom, lessThanOrEqualTo(passField.top));
       expect(find.byKey(const Key('password-error')), findsNothing);
+      // Прототип: ошибка почты — одной строкой (телефон 26.11: была в две).
+      expect(
+        t.getRect(find.text('Нужен вид name@example.com')).height,
+        lessThan(30),
+      );
     },
   );
 

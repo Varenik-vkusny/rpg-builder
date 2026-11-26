@@ -77,4 +77,14 @@ void main() {
       }
     }
   });
+
+  // Телефон 26.11: в прототипе у переключателя значки вида, а не галка выбранного.
+  testWidgets('переключатель: значки «архив» и «череп», без галки', (t) async {
+    await openLibrary(t, FakeOpen5e([warPick()]));
+    Finder inSwitch(IconData i) =>
+        find.descendant(of: k('open5e-kind'), matching: find.byIcon(i));
+    expect(inSwitch(Symbols.inventory_2_rounded), findsOneWidget);
+    expect(inSwitch(Symbols.skull_rounded), findsOneWidget);
+    expect(inSwitch(Icons.check), findsNothing);
+  });
 }
