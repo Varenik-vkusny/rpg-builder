@@ -189,7 +189,8 @@ class WorldPages {
     );
   }
 
-  /// Предмет: кто роняет (с шансом), какой квест требует, какой даёт наградой.
+  /// Предмет: кто роняет (с шансом), какой квест требует, какой даёт наградой,
+  /// в каком событии лежит.
   Widget item(Item i) {
     final droppers = [
       for (final ch in c.characters)
@@ -206,6 +207,12 @@ class WorldPages {
     final gives = [
       for (final q in c.quests)
         if (q.rewardIds.contains(i.id)) q,
+    ];
+    // События, где предмет лежит в сцене (телефон 26.11: «Лампа» в «Засаде», а
+    // страница писала «ни с чем не связан»).
+    final scenes = [
+      for (final e in c.events)
+        if (e.itemIds.contains(i.id)) e,
     ];
     return Builder(
       builder: (context) => ObjectPage(
@@ -232,7 +239,11 @@ class WorldPages {
             icon: Symbols.link_rounded,
             title: 'Связи',
             // Нет связей — одна строка: это и подсказка к проверке «нельзя получить».
-            child: droppers.isEmpty && needs.isEmpty && gives.isEmpty
+            child:
+                droppers.isEmpty &&
+                    needs.isEmpty &&
+                    gives.isEmpty &&
+                    scenes.isEmpty
                 ? const Text(
                     'Предмет ни с чем не связан',
                     key: Key('item-no-links'),
@@ -266,6 +277,19 @@ class WorldPages {
                           title: q.title,
                           cells: [cellSpec(Symbols.redeem_rounded, 'награда')],
                           onTap: () => openDeeper(context, quest(q)),
+                        ),
+                      for (final e in scenes)
+                        ObjRow(
+                          key: Key('link-event-${e.slug}'),
+                          icon: Symbols.bolt_rounded,
+                          title: e.title,
+                          cells: [
+                            cellSpec(
+                              Symbols.inventory_2_rounded,
+                              'лежит здесь',
+                            ),
+                          ],
+                          onTap: () => openDeeper(context, event(e)),
                         ),
                     ],
                   ),

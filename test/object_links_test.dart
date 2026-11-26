@@ -1,6 +1,7 @@
 // Правка 1 (29.09): страница предмета показывает связи, страница квеста ведёт на объекты.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg_builder/content/event.dart';
 import 'package:rpg_builder/content/item.dart';
 import 'package:rpg_builder/ui/parts.dart';
 
@@ -39,6 +40,49 @@ Future<void> open(WidgetTester t, String slug) async {
 }
 
 void main() {
+  // Телефон 26.11: «Лампа» лежала в событии «Засада», а страница писала «ни с чем
+  // не связан» — события в связях предмета не учитывались.
+  testWidgets('предмет в событии: связь «лежит здесь» ведёт на событие', (
+    t,
+  ) async {
+    final content = await minesContent();
+    final w = await content.snapshotOf(minesId);
+    final lamp = await content.createItem(
+      minesId,
+      const NewItem(
+        title: 'Фонарь',
+        kind: ItemKind.misc,
+        rarity: Rarity.common,
+        level: 1,
+        price: 5,
+      ),
+    );
+    await content.createEvent(
+      minesId,
+      NewEvent(
+        title: 'Нора',
+        description: '',
+        locationId: w.locations.first.id,
+        itemIds: [lamp.id],
+      ),
+    );
+    await pumpApp(t, content: content);
+    await signUp(t, 'author@test.dev');
+    await createWorld(t, 'Пепельные копи');
+    await openWorld(t, 'Пепельные копи');
+    await open(t, 'fonar');
+    expect(find.byKey(const Key('item-no-links')), findsNothing);
+    final row = find.byKey(const Key('link-event-nora'));
+    expect(row, findsOneWidget);
+    expect(
+      find.descendant(of: row, matching: find.text('лежит здесь')),
+      findsOneWidget,
+    );
+    await t.tap(row);
+    await t.pumpAndSettle();
+    expect(find.text('Нора'), findsOneWidget);
+  });
+
   testWidgets('предмет: кто роняет с шансом, в каком квесте нужен', (t) async {
     await openMines(t);
     await open(t, 'klyuch');
