@@ -1,0 +1,548 @@
+{
+  "schemaVersion": 3,
+  "world": {
+    "slug": "pepelnye_kopi",
+    "title": "Пепельные копи",
+    "setting": "",
+    "tone": "",
+    "levelMin": 1,
+    "levelMax": 10
+  },
+  "locations": [
+    {
+      "slug": "kopi",
+      "name": "Копи",
+      "description": "",
+      "levelMin": 1,
+      "levelMax": 10,
+      "parent": ""
+    },
+    {
+      "slug": "rynok",
+      "name": "Рынок",
+      "description": "",
+      "levelMin": 1,
+      "levelMax": 10,
+      "parent": ""
+    },
+    {
+      "slug": "derevnya",
+      "name": "Деревня",
+      "description": "",
+      "levelMin": 1,
+      "levelMax": 10,
+      "parent": ""
+    },
+    {
+      "slug": "shtolnya",
+      "name": "Штольня",
+      "description": "",
+      "levelMin": 1,
+      "levelMax": 10,
+      "parent": "kopi"
+    },
+    {
+      "slug": "zaboy",
+      "name": "Забой",
+      "description": "",
+      "levelMin": 1,
+      "levelMax": 10,
+      "parent": "shtolnya"
+    },
+    {
+      "slug": "novoe_mesto",
+      "name": "Новое место",
+      "description": "",
+      "levelMin": 1,
+      "levelMax": 3,
+      "parent": ""
+    },
+    {
+      "slug": "novoe_mesto_2",
+      "name": "Новое место",
+      "description": "",
+      "levelMin": 1,
+      "levelMax": 3,
+      "parent": ""
+    }
+  ],
+  "items": [
+    {
+      "slug": "kirka",
+      "name": "Кирка",
+      "type": "weapon",
+      "rarity": "common",
+      "level": 1,
+      "damage": 4,
+      "defense": 0,
+      "price": 15,
+      "source": "",
+      "sourceRef": "",
+      "icon": ""
+    },
+    {
+      "slug": "klyuch_ot_lebedki",
+      "name": "Ключ от лебедки",
+      "type": "quest",
+      "rarity": "common",
+      "level": 1,
+      "damage": 0,
+      "defense": 0,
+      "price": 0,
+      "source": "",
+      "sourceRef": "",
+      "icon": ""
+    },
+    {
+      "slug": "lampa",
+      "name": "Лампа",
+      "type": "misc",
+      "rarity": "common",
+      "level": 1,
+      "damage": 0,
+      "defense": 0,
+      "price": 5,
+      "source": "",
+      "sourceRef": "",
+      "icon": ""
+    },
+    {
+      "slug": "maslo",
+      "name": "Масло",
+      "type": "consumable",
+      "rarity": "common",
+      "level": 1,
+      "damage": 0,
+      "defense": 0,
+      "price": 3,
+      "source": "",
+      "sourceRef": "",
+      "icon": ""
+    },
+    {
+      "slug": "verevka",
+      "name": "Веревка",
+      "type": "misc",
+      "rarity": "common",
+      "level": 1,
+      "damage": 0,
+      "defense": 0,
+      "price": 4,
+      "source": "",
+      "sourceRef": "",
+      "icon": ""
+    },
+    {
+      "slug": "kaska",
+      "name": "Каска",
+      "type": "armor",
+      "rarity": "common",
+      "level": 1,
+      "damage": 0,
+      "defense": 2,
+      "price": 12,
+      "source": "",
+      "sourceRef": "",
+      "icon": ""
+    },
+    {
+      "slug": "novyy_predmet",
+      "name": "Новый предмет",
+      "type": "misc",
+      "rarity": "common",
+      "level": 1,
+      "damage": 0,
+      "defense": 0,
+      "price": 0,
+      "source": "",
+      "sourceRef": "",
+      "icon": ""
+    },
+    {
+      "slug": "potion_of_healing",
+      "name": "Зелье лечения",
+      "type": "consumable",
+      "rarity": "common",
+      "level": 1,
+      "damage": 0,
+      "defense": 0,
+      "price": 50,
+      "source": "Open5e",
+      "sourceRef": "srd-2024_potion-of-healing",
+      "icon": ""
+    },
+    {
+      "slug": "novyy_predmet_2",
+      "name": "Новый предмет",
+      "type": "misc",
+      "rarity": "common",
+      "level": 1,
+      "damage": 0,
+      "defense": 0,
+      "price": 0,
+      "source": "",
+      "sourceRef": "",
+      "icon": ""
+    },
+    {
+      "slug": "novyy_predmet_3",
+      "name": "Новый предмет",
+      "type": "misc",
+      "rarity": "common",
+      "level": 1,
+      "damage": 0,
+      "defense": 0,
+      "price": 0,
+      "source": "",
+      "sourceRef": "",
+      "icon": ""
+    }
+  ],
+  "characters": [
+    {
+      "slug": "brigadir",
+      "name": "Бригадир",
+      "description": "",
+      "role": "npc",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "kopi",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "torgovets",
+      "name": "Торговец",
+      "description": "",
+      "role": "npc",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "rynok",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "lekar",
+      "name": "Лекарь",
+      "description": "",
+      "role": "npc",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "derevnya",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "slizen",
+      "name": "Слизень",
+      "description": "",
+      "role": "enemy",
+      "level": 2,
+      "hp": 12,
+      "attack": 3,
+      "location": "shtolnya",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "krysa",
+      "name": "Крыса",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 6,
+      "attack": 2,
+      "location": "zaboy",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "novyy_vrag",
+      "name": "Пепельный слизень",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 10,
+      "attack": 4,
+      "location": "kopi",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "novyy_vrag_2",
+      "name": "Новый враг",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "rynok",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "novyy_zhitel",
+      "name": "Новый житель",
+      "description": "",
+      "role": "npc",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "derevnya",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "novyy_vrag_3",
+      "name": "Новый враг",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "derevnya",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "novyy_zhitel_2",
+      "name": "Новый житель",
+      "description": "",
+      "role": "npc",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "rynok",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "goblin_warrior",
+      "name": "Гоблин-воин",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 10,
+      "attack": 6,
+      "location": "",
+      "icon": "goblin-head",
+      "source": "Open5e",
+      "sourceRef": "srd-2024_goblin-warrior",
+      "sourceCard": "{\"key\":\"srd-2024_goblin-warrior\",\"name\":\"Goblin Warrior\",\"size\":{\"key\":\"small\",\"name\":\"Small\"},\"type\":{\"key\":\"fey\",\"name\":\"Fey\"},\"speed\":{\"unit\":\"feet\",\"walk\":30},\"traits\":[],\"actions\":[{\"desc\":\"Melee Attack Roll: +4, reach 5 ft. 5 (1d6 + 2) Slashing damage, plus 2 (1d4) Slashing damage if the attack roll had Advantage.\",\"name\":\"Scimitar\",\"attacks\":[{\"name\":\"Scimitar attack\",\"range\":null,\"reach\":5,\"long_range\":null,\"to_hit_mod\":4,\"attack_type\":\"WEAPON\",\"damage_type\":null,\"damage_bonus\":2,\"distance_unit\":\"feet\",\"damage_die_type\":\"D6\",\"damage_die_count\":1,\"extra_damage_type\":{\"key\":\"slashing\",\"name\":\"Slashing\"},\"extra_damage_bonus\":null,\"target_creature_only\":false,\"extra_damage_die_type\":null,\"extra_damage_die_count\":null}],\"action_type\":\"ACTION\",\"usage_limits\":null,\"crossreferences\":{\"to\":[]},\"limited_to_form\":null,\"order_in_statblock\":0,\"legendary_action_cost\":1},{\"desc\":\"Ranged Attack Roll: +4, range 80/320 ft. 5 (1d6 + 2) Piercing damage, plus 2 (1d4) Piercing damage if the attack roll had Advantage.\",\"name\":\"Shortbow\",\"attacks\":[{\"name\":\"Shortbow attack\",\"range\":80,\"reach\":null,\"long_range\":320,\"to_hit_mod\":4,\"attack_type\":\"WEAPON\",\"damage_type\":null,\"damage_bonus\":2,\"distance_unit\":\"feet\",\"damage_die_type\":\"D6\",\"damage_die_count\":1,\"extra_damage_type\":{\"key\":\"piercing\",\"name\":\"Piercing\"},\"extra_damage_bonus\":null,\"target_creature_only\":false,\"extra_damage_die_type\":null,\"extra_damage_die_count\":null}],\"action_type\":\"ACTION\",\"usage_limits\":null,\"crossreferences\":{\"to\":[]},\"limited_to_form\":null,\"order_in_statblock\":1,\"legendary_action_cost\":1},{\"desc\":\"The goblin takes the Disengage or Hide action.\",\"name\":\"Nimble Escape\",\"attacks\":[],\"action_type\":\"BONUS_ACTION\",\"usage_limits\":null,\"crossreferences\":{\"to\":[]},\"limited_to_form\":null,\"order_in_statblock\":0,\"legendary_action_cost\":null}],\"category\":\"Monsters\",\"document\":{\"key\":\"srd-2024\",\"name\":\"System Reference Document 5.2\",\"type\":\"SOURCE\",\"permalink\":\"https://dnd.wizards.com/resources/systems-reference-document\",\"publisher\":{\"key\":\"wizards-of-the-coast\",\"name\":\"Wizards of the Coast\"},\"gamesystem\":{\"key\":\"5e-2024\",\"name\":\"5th Edition 2024\"},\"display_name\":\"5e 2024 Rules\"},\"hit_dice\":\"3d6\",\"alignment\":\"chaotic neutral\",\"languages\":{\"data\":[{\"key\":\"common\",\"desc\":\"Typical speakers are Humans.\",\"name\":\"Common\"},{\"key\":\"goblin\",\"desc\":\"Typical speakers are goblinoids.\",\"name\":\"Goblin\"}],\"as_string\":\"Common, Goblin\"},\"modifiers\":{\"wisdom\":-1,\"charisma\":-1,\"strength\":-1,\"dexterity\":2,\"constitution\":0,\"intelligence\":0},\"speed_all\":{\"fly\":0,\"swim\":15,\"unit\":\"feet\",\"walk\":30,\"climb\":15,\"crawl\":15,\"hover\":false,\"burrow\":0},\"hit_points\":10,\"armor_class\":15,\"subcategory\":null,\"armor_detail\":\"natural armor\",\"creaturesets\":[],\"environments\":[],\"illustration\":null,\"saving_throws\":{\"wisdom\":-1,\"charisma\":-1,\"strength\":-1,\"dexterity\":2,\"constitution\":0,\"intelligence\":0},\"skill_bonuses\":{\"stealth\":6},\"ability_scores\":{\"wisdom\":8,\"charisma\":8,\"strength\":8,\"dexterity\":15,\"constitution\":10,\"intelligence\":10},\"crossreferences\":{\"to\":[]},\"truesight_range\":null,\"blindsight_range\":null,\"challenge_rating\":0.25,\"darkvision_range\":60,\"initiative_bonus\":2,\"experience_points\":50,\"proficiency_bonus\":null,\"saving_throws_all\":{\"wisdom\":-1,\"charisma\":-1,\"strength\":-1,\"dexterity\":2,\"constitution\":0,\"intelligence\":0},\"skill_bonuses_all\":{\"arcana\":0,\"nature\":0,\"history\":0,\"insight\":-1,\"stealth\":6,\"medicine\":-1,\"religion\":0,\"survival\":-1,\"athletics\":-1,\"deception\":-1,\"acrobatics\":2,\"perception\":-1,\"persuasion\":-1,\"performance\":-1,\"intimidation\":-1,\"investigation\":0,\"animal_handling\":-1,\"sleight_of_hand\":2},\"tremorsense_range\":null,\"normal_sight_range\":10560,\"passive_perception\":9,\"resistances_and_immunities\":{\"damage_immunities\":[],\"damage_resistances\":[],\"condition_immunities\":[],\"damage_vulnerabilities\":[],\"damage_immunities_display\":\"\",\"damage_resistances_display\":\"\",\"condition_immunities_display\":\"\",\"damage_vulnerabilities_display\":\"\"}}",
+      "loot": []
+    },
+    {
+      "slug": "skeleton",
+      "name": "Скелет",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 13,
+      "attack": 7,
+      "location": "",
+      "icon": "skeleton",
+      "source": "Open5e",
+      "sourceRef": "srd-2024_skeleton",
+      "sourceCard": "{\"key\":\"srd-2024_skeleton\",\"name\":\"Skeleton\",\"size\":{\"key\":\"medium\",\"name\":\"Medium\"},\"type\":{\"key\":\"undead\",\"name\":\"Undead\"},\"speed\":{\"unit\":\"feet\",\"walk\":30},\"traits\":[],\"actions\":[{\"desc\":\"Ranged Attack Roll: +5, range 80/320 ft. 6 (1d6 + 3) Piercing damage.\",\"name\":\"Shortbow\",\"attacks\":[{\"name\":\"Shortbow attack\",\"range\":80,\"reach\":null,\"long_range\":320,\"to_hit_mod\":5,\"attack_type\":\"WEAPON\",\"damage_type\":null,\"damage_bonus\":3,\"distance_unit\":\"feet\",\"damage_die_type\":\"D6\",\"damage_die_count\":1,\"extra_damage_type\":{\"key\":\"piercing\",\"name\":\"Piercing\"},\"extra_damage_bonus\":null,\"target_creature_only\":false,\"extra_damage_die_type\":null,\"extra_damage_die_count\":null}],\"action_type\":\"ACTION\",\"usage_limits\":null,\"crossreferences\":{\"to\":[]},\"limited_to_form\":null,\"order_in_statblock\":1,\"legendary_action_cost\":1},{\"desc\":\"Melee Attack Roll: +5, reach 5 ft. 6 (1d6 + 3) Piercing damage.\",\"name\":\"Shortsword\",\"attacks\":[{\"name\":\"Shortsword attack\",\"range\":null,\"reach\":5,\"long_range\":null,\"to_hit_mod\":5,\"attack_type\":\"WEAPON\",\"damage_type\":null,\"damage_bonus\":3,\"distance_unit\":\"feet\",\"damage_die_type\":\"D6\",\"damage_die_count\":1,\"extra_damage_type\":{\"key\":\"piercing\",\"name\":\"Piercing\"},\"extra_damage_bonus\":null,\"target_creature_only\":false,\"extra_damage_die_type\":null,\"extra_damage_die_count\":null}],\"action_type\":\"ACTION\",\"usage_limits\":null,\"crossreferences\":{\"to\":[]},\"limited_to_form\":null,\"order_in_statblock\":0,\"legendary_action_cost\":1}],\"category\":\"Monsters\",\"document\":{\"key\":\"srd-2024\",\"name\":\"System Reference Document 5.2\",\"type\":\"SOURCE\",\"permalink\":\"https://dnd.wizards.com/resources/systems-reference-document\",\"publisher\":{\"key\":\"wizards-of-the-coast\",\"name\":\"Wizards of the Coast\"},\"gamesystem\":{\"key\":\"5e-2024\",\"name\":\"5th Edition 2024\"},\"display_name\":\"5e 2024 Rules\"},\"hit_dice\":\"2d8 + 4\",\"alignment\":\"lawful evil\",\"languages\":{\"data\":[{\"key\":\"common\",\"desc\":\"Typical speakers are Humans.\",\"name\":\"Common\"}],\"as_string\":\"Understands Common plus one other language but can't speak\"},\"modifiers\":{\"wisdom\":-1,\"charisma\":-3,\"strength\":0,\"dexterity\":3,\"constitution\":2,\"intelligence\":-2},\"speed_all\":{\"fly\":0,\"swim\":15,\"unit\":\"feet\",\"walk\":30,\"climb\":15,\"crawl\":15,\"hover\":false,\"burrow\":0},\"hit_points\":13,\"armor_class\":14,\"subcategory\":null,\"armor_detail\":\"natural armor\",\"creaturesets\":[],\"environments\":[],\"illustration\":null,\"saving_throws\":{\"wisdom\":-1,\"charisma\":-3,\"strength\":0,\"dexterity\":3,\"constitution\":2,\"intelligence\":-2},\"skill_bonuses\":{},\"ability_scores\":{\"wisdom\":8,\"charisma\":5,\"strength\":10,\"dexterity\":16,\"constitution\":15,\"intelligence\":6},\"crossreferences\":{\"to\":[]},\"truesight_range\":null,\"blindsight_range\":null,\"challenge_rating\":0.25,\"darkvision_range\":60,\"initiative_bonus\":3,\"experience_points\":50,\"proficiency_bonus\":null,\"saving_throws_all\":{\"wisdom\":-1,\"charisma\":-3,\"strength\":0,\"dexterity\":3,\"constitution\":2,\"intelligence\":-2},\"skill_bonuses_all\":{\"arcana\":-2,\"nature\":-2,\"history\":-2,\"insight\":-1,\"stealth\":3,\"medicine\":-1,\"religion\":-2,\"survival\":-1,\"athletics\":0,\"deception\":-3,\"acrobatics\":3,\"perception\":-1,\"persuasion\":-3,\"performance\":-3,\"intimidation\":-3,\"investigation\":-2,\"animal_handling\":-1,\"sleight_of_hand\":3},\"tremorsense_range\":null,\"normal_sight_range\":10560,\"passive_perception\":9,\"resistances_and_immunities\":{\"damage_immunities\":[{\"key\":\"poison\",\"name\":\"Poison\"}],\"damage_resistances\":[],\"condition_immunities\":[{\"key\":\"exhaustion\",\"name\":\"Exhaustion\"},{\"key\":\"poisoned\",\"name\":\"Poisoned\"}],\"damage_vulnerabilities\":[],\"damage_immunities_display\":\"poison\",\"damage_resistances_display\":\"\",\"condition_immunities_display\":\"exhaustion, poisoned\",\"damage_vulnerabilities_display\":\"\"}}",
+      "loot": []
+    },
+    {
+      "slug": "zombie",
+      "name": "Зомби",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 15,
+      "attack": 6,
+      "location": "",
+      "icon": "shambling-zombie",
+      "source": "Open5e",
+      "sourceRef": "srd-2024_zombie",
+      "sourceCard": "{\"key\":\"srd-2024_zombie\",\"name\":\"Zombie\",\"size\":{\"key\":\"medium\",\"name\":\"Medium\"},\"type\":{\"key\":\"undead\",\"name\":\"Undead\"},\"speed\":{\"unit\":\"feet\",\"walk\":20},\"traits\":[{\"desc\":\"If damage reduces the zombie to 0 Hit Points, it makes a Constitution saving throw (DC 5 plus the damage taken) unless the damage is Radiant or from a Critical Hit. On a successful save, the zombie drops to 1 Hit Point instead.\",\"name\":\"Undead Fortitude\"}],\"actions\":[{\"desc\":\"Melee Attack Roll: +3, reach 5 ft. 5 (1d8 + 1) Bludgeoning damage.\",\"name\":\"Slam\",\"attacks\":[{\"name\":\"Slam attack\",\"range\":null,\"reach\":5,\"long_range\":null,\"to_hit_mod\":3,\"attack_type\":\"WEAPON\",\"damage_type\":null,\"damage_bonus\":1,\"distance_unit\":\"feet\",\"damage_die_type\":\"D8\",\"damage_die_count\":1,\"extra_damage_type\":{\"key\":\"bludgeoning\",\"name\":\"Bludgeoning\"},\"extra_damage_bonus\":null,\"target_creature_only\":false,\"extra_damage_die_type\":null,\"extra_damage_die_count\":null}],\"action_type\":\"ACTION\",\"usage_limits\":null,\"crossreferences\":{\"to\":[]},\"limited_to_form\":null,\"order_in_statblock\":0,\"legendary_action_cost\":1}],\"category\":\"Monsters\",\"document\":{\"key\":\"srd-2024\",\"name\":\"System Reference Document 5.2\",\"type\":\"SOURCE\",\"permalink\":\"https://dnd.wizards.com/resources/systems-reference-document\",\"publisher\":{\"key\":\"wizards-of-the-coast\",\"name\":\"Wizards of the Coast\"},\"gamesystem\":{\"key\":\"5e-2024\",\"name\":\"5th Edition 2024\"},\"display_name\":\"5e 2024 Rules\"},\"hit_dice\":\"2d8 + 6\",\"alignment\":\"neutral evil\",\"languages\":{\"data\":[{\"key\":\"common\",\"desc\":\"Typical speakers are Humans.\",\"name\":\"Common\"}],\"as_string\":\"Understands Common plus one other language but can't speak\"},\"modifiers\":{\"wisdom\":-2,\"charisma\":-3,\"strength\":1,\"dexterity\":-2,\"constitution\":3,\"intelligence\":-4},\"speed_all\":{\"fly\":0,\"swim\":10,\"unit\":\"feet\",\"walk\":20,\"climb\":10,\"crawl\":10,\"hover\":false,\"burrow\":0},\"hit_points\":15,\"armor_class\":8,\"subcategory\":null,\"armor_detail\":\"natural armor\",\"creaturesets\":[],\"environments\":[],\"illustration\":null,\"saving_throws\":{\"wisdom\":0,\"charisma\":-3,\"strength\":1,\"dexterity\":-2,\"constitution\":3,\"intelligence\":-4},\"skill_bonuses\":{},\"ability_scores\":{\"wisdom\":6,\"charisma\":5,\"strength\":13,\"dexterity\":6,\"constitution\":16,\"intelligence\":3},\"crossreferences\":{\"to\":[]},\"truesight_range\":null,\"blindsight_range\":null,\"challenge_rating\":0.25,\"darkvision_range\":60,\"initiative_bonus\":-2,\"experience_points\":50,\"proficiency_bonus\":null,\"saving_throws_all\":{\"wisdom\":0,\"charisma\":-3,\"strength\":1,\"dexterity\":-2,\"constitution\":3,\"intelligence\":-4},\"skill_bonuses_all\":{\"arcana\":-4,\"nature\":-4,\"history\":-4,\"insight\":-2,\"stealth\":-2,\"medicine\":-2,\"religion\":-4,\"survival\":-2,\"athletics\":1,\"deception\":-3,\"acrobatics\":-2,\"perception\":-2,\"persuasion\":-3,\"performance\":-3,\"intimidation\":-3,\"investigation\":-4,\"animal_handling\":-2,\"sleight_of_hand\":-2},\"tremorsense_range\":null,\"normal_sight_range\":10560,\"passive_perception\":8,\"resistances_and_immunities\":{\"damage_immunities\":[{\"key\":\"poison\",\"name\":\"Poison\"}],\"damage_resistances\":[],\"condition_immunities\":[{\"key\":\"exhaustion\",\"name\":\"Exhaustion\"},{\"key\":\"poisoned\",\"name\":\"Poisoned\"}],\"damage_vulnerabilities\":[],\"damage_immunities_display\":\"poison\",\"damage_resistances_display\":\"\",\"condition_immunities_display\":\"exhaustion, poisoned\",\"damage_vulnerabilities_display\":\"\"}}",
+      "loot": []
+    },
+    {
+      "slug": "wolf",
+      "name": "Волк",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 11,
+      "attack": 6,
+      "location": "",
+      "icon": "wolf-head",
+      "source": "Open5e",
+      "sourceRef": "srd-2024_wolf",
+      "sourceCard": "{\"key\":\"srd-2024_wolf\",\"name\":\"Wolf\",\"size\":{\"key\":\"medium\",\"name\":\"Medium\"},\"type\":{\"key\":\"beast\",\"name\":\"Beast\"},\"speed\":{\"unit\":\"feet\",\"walk\":40},\"traits\":[{\"desc\":\"The wolf has Advantage on attack rolls against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.\",\"name\":\"Pack Tactics\"}],\"actions\":[{\"desc\":\"Melee Attack Roll: +4, reach 5 ft. 5 (1d6 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Prone condition.\",\"name\":\"Bite\",\"attacks\":[{\"name\":\"Bite attack\",\"range\":null,\"reach\":5,\"long_range\":null,\"to_hit_mod\":4,\"attack_type\":\"WEAPON\",\"damage_type\":null,\"damage_bonus\":2,\"distance_unit\":\"feet\",\"damage_die_type\":\"D6\",\"damage_die_count\":1,\"extra_damage_type\":{\"key\":\"piercing\",\"name\":\"Piercing\"},\"extra_damage_bonus\":null,\"target_creature_only\":false,\"extra_damage_die_type\":null,\"extra_damage_die_count\":null}],\"action_type\":\"ACTION\",\"usage_limits\":null,\"crossreferences\":{\"to\":[]},\"limited_to_form\":null,\"order_in_statblock\":0,\"legendary_action_cost\":1}],\"category\":\"Animals\",\"document\":{\"key\":\"srd-2024\",\"name\":\"System Reference Document 5.2\",\"type\":\"SOURCE\",\"permalink\":\"https://dnd.wizards.com/resources/systems-reference-document\",\"publisher\":{\"key\":\"wizards-of-the-coast\",\"name\":\"Wizards of the Coast\"},\"gamesystem\":{\"key\":\"5e-2024\",\"name\":\"5th Edition 2024\"},\"display_name\":\"5e 2024 Rules\"},\"hit_dice\":\"2d8 + 2\",\"alignment\":\"unaligned\",\"languages\":{\"data\":[],\"as_string\":\"\"},\"modifiers\":{\"wisdom\":1,\"charisma\":-2,\"strength\":2,\"dexterity\":2,\"constitution\":1,\"intelligence\":-4},\"speed_all\":{\"fly\":0,\"swim\":20,\"unit\":\"feet\",\"walk\":40,\"climb\":20,\"crawl\":20,\"hover\":false,\"burrow\":0},\"hit_points\":11,\"armor_class\":12,\"subcategory\":null,\"armor_detail\":\"natural armor\",\"creaturesets\":[],\"environments\":[],\"illustration\":null,\"saving_throws\":{\"wisdom\":1,\"charisma\":-2,\"strength\":2,\"dexterity\":2,\"constitution\":1,\"intelligence\":-4},\"skill_bonuses\":{\"stealth\":4,\"perception\":5},\"ability_scores\":{\"wisdom\":12,\"charisma\":6,\"strength\":14,\"dexterity\":15,\"constitution\":12,\"intelligence\":3},\"crossreferences\":{\"to\":[]},\"truesight_range\":null,\"blindsight_range\":null,\"challenge_rating\":0.25,\"darkvision_range\":60,\"initiative_bonus\":2,\"experience_points\":50,\"proficiency_bonus\":null,\"saving_throws_all\":{\"wisdom\":1,\"charisma\":-2,\"strength\":2,\"dexterity\":2,\"constitution\":1,\"intelligence\":-4},\"skill_bonuses_all\":{\"arcana\":-4,\"nature\":-4,\"history\":-4,\"insight\":1,\"stealth\":4,\"medicine\":1,\"religion\":-4,\"survival\":1,\"athletics\":2,\"deception\":-2,\"acrobatics\":2,\"perception\":5,\"persuasion\":-2,\"performance\":-2,\"intimidation\":-2,\"investigation\":-4,\"animal_handling\":1,\"sleight_of_hand\":2},\"tremorsense_range\":null,\"normal_sight_range\":10560,\"passive_perception\":15,\"resistances_and_immunities\":{\"damage_immunities\":[],\"damage_resistances\":[],\"condition_immunities\":[],\"damage_vulnerabilities\":[],\"damage_immunities_display\":\"\",\"damage_resistances_display\":\"\",\"condition_immunities_display\":\"\",\"damage_vulnerabilities_display\":\"\"}}",
+      "loot": []
+    },
+    {
+      "slug": "novyy_vrag_4",
+      "name": "Новый враг",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "kopi",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "novyy_vrag_5",
+      "name": "Новый враг",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "rynok",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "novyy_zhitel_3",
+      "name": "Новый житель",
+      "description": "",
+      "role": "npc",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "rynok",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    },
+    {
+      "slug": "novyy_vrag_6",
+      "name": "Новый враг",
+      "description": "",
+      "role": "enemy",
+      "level": 1,
+      "hp": 10,
+      "attack": 0,
+      "location": "kopi",
+      "icon": "",
+      "source": "",
+      "sourceRef": "",
+      "sourceCard": "",
+      "loot": []
+    }
+  ],
+  "events": [
+    {
+      "slug": "zasada",
+      "name": "Засада",
+      "description": "",
+      "location": "shtolnya",
+      "enemies": [
+        {
+          "enemy": "slizen",
+          "amount": 3
+        }
+      ],
+      "items": [
+        {
+          "item": "lampa",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "slug": "novoe_sobytie",
+      "name": "Новое событие",
+      "description": "",
+      "location": "derevnya",
+      "enemies": [],
+      "items": []
+    },
+    {
+      "slug": "novoe_sobytie_2",
+      "name": "Новое событие",
+      "description": "",
+      "location": "rynok",
+      "enemies": [],
+      "items": []
+    },
+    {
+      "slug": "novoe_sobytie_3",
+      "name": "Новое событие",
+      "description": "",
+      "location": "kopi",
+      "enemies": [],
+      "items": []
+    }
+  ],
+  "quests": [
+    {
+      "slug": "obval",
+      "title": "Обвал",
+      "description": "",
+      "giver": "brigadir",
+      "steps": [
+        {
+          "kind": "talk",
+          "target": "brigadir",
+          "amount": 1
+        },
+        {
+          "kind": "kill",
+          "target": "slizen",
+          "amount": 4
+        },
+        {
+          "kind": "collect",
+          "target": "klyuch_ot_lebedki",
+          "amount": 1
+        }
+      ],
+      "rewards": [
+        {
+          "item": "kaska",
+          "amount": 1
+        }
+      ]
+    }
+  ]
+}
