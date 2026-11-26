@@ -98,10 +98,10 @@ class _PlanReviewScreenState extends State<PlanReviewScreen> {
                     icon: const Icon(Symbols.arrow_back_rounded),
                   ),
                   Expanded(
+                    // Пояснение «Листай влево и вправо» убрано (обход 25.11): стрелки
+                    // и так видны; остаётся только причина, если операция не пройдёт.
                     child: Text(
-                      _bad(_at)
-                          ? 'Эта операция не пройдёт'
-                          : 'Листай влево и вправо',
+                      _bad(_at) ? 'Эта операция не пройдёт' : '',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: _bad(_at) ? s.error : s.onSurfaceVariant,

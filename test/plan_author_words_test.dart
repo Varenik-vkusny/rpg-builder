@@ -1,4 +1,5 @@
 // План глазами автора: без служебного, без повторов, без ключей вида «location:rynok».
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg_builder/assistant/plan.dart';
 import 'package:rpg_builder/assistant/plan_cards.dart';
@@ -68,6 +69,16 @@ void main() {
     await openVerdict(t);
     expect(find.text('Проверка'), findsOneWidget);
     expect(find.textContaining('на копии мира'), findsNothing);
+  });
+
+  testWidgets('«По одному»: без пояснения «Листай влево и вправо»', (t) async {
+    await openAssistant(t);
+    await ask(t);
+    await t.ensureVisible(find.byKey(const Key('plan-review')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('plan-review')));
+    await t.pumpAndSettle();
+    expect(find.textContaining('Листай'), findsNothing);
   });
 }
 
