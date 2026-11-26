@@ -34,15 +34,17 @@ class WorldOverview extends StatelessWidget {
     final problems = checkWorld(w);
     final errors = problems.where((p) => p.severity == Severity.error).length;
     final warnings = problems.length - errors;
-    return Card(
+    // Вид А: без карточки-обёртки, как в прототипе — плиткам счётчиков достаётся вся
+    // ширина, подписи не ужимаются до 8 sp (телефон 26.11).
+    return Padding(
       key: const Key('world-overview'),
-      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             key: const Key('overview-counts'),
-            padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
+            padding: const EdgeInsets.only(bottom: 4),
             child: _Counts([
               (
                 'locations',
@@ -67,7 +69,7 @@ class WorldOverview extends StatelessWidget {
             ]),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
             child: CheckStrip(
               key: const Key('overview-check'),
               errors: errors,
@@ -104,15 +106,17 @@ class _Counts extends StatelessWidget {
     var size = 11.0;
     while (size > 8) {
       final p = TextPainter(
+        // Тем же шрифтом, каким подпись рисуется (тема), — без него мерился
+        // запасной шрифт, и кегль всегда падал до 8 (телефон 26.11).
         text: TextSpan(
           text: longest,
-          style: TextStyle(fontSize: size),
+          style: DefaultTextStyle.of(context).style.copyWith(fontSize: size),
         ),
         textDirection: dir,
         textScaler: scaler,
         maxLines: 1,
       )..layout();
-      if (p.width <= tile - 6) break;
+      if (p.width <= tile - 2) break;
       size -= .5;
     }
     return size;
@@ -191,7 +195,7 @@ class _Recent extends StatelessWidget {
     final byId = {for (final h in history) h.id: h};
     final line = BorderSide(color: s.outlineVariant);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      padding: const EdgeInsets.only(top: 4, bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

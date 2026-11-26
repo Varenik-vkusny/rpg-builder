@@ -77,6 +77,8 @@ void main() {
         t.widget<Text>(find.byKey(Key('count-label-$k'))).style!.fontSize,
     };
     expect(sizes, hasLength(1), reason: 'кегли подписей: $sizes');
+    // Телефон 26.11: подписи ужимались до 8–9 sp; прототип — 11. Не мельче 10.
+    expect(sizes.single, greaterThanOrEqualTo(10), reason: 'кегль: $sizes');
     // Ни одна подпись не обрезана и не перенесена.
     for (final k in ['locations', 'items', 'characters', 'quests', 'events']) {
       final p = t.renderObject<RenderParagraph>(
