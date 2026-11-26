@@ -9,6 +9,7 @@ import '../assistant/plan_preview.dart';
 import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../content/manual_save.dart';
+import '../content/world_pages.dart' show itemKindIcon;
 import '../ui/messages.dart';
 import '../worlds/world.dart';
 import 'open5e_api.dart';
@@ -17,6 +18,7 @@ import 'open5e_enemy.dart';
 import 'open5e_enemy_view.dart';
 import 'open5e_import.dart';
 import 'open5e_item_view.dart';
+import 'open5e_result_row.dart';
 import 'ru_names.dart';
 
 class Open5eScreen extends StatefulWidget {
@@ -256,6 +258,11 @@ class _Open5eScreenState extends State<Open5eScreen> {
                 ButtonSegment(value: false, label: Text('Предметы')),
                 ButtonSegment(value: true, label: Text('Враги')),
               ],
+              // Прямые углы, как у всего приложения (вид А).
+              style: const ButtonStyle(
+                shape: WidgetStatePropertyAll(RoundedRectangleBorder()),
+                minimumSize: WidgetStatePropertyAll(Size.fromHeight(48)),
+              ),
               selected: {_enemies},
               onSelectionChanged: _busy
                   ? null
@@ -321,15 +328,15 @@ class _Open5eScreenState extends State<Open5eScreen> {
         subtitle: Text('Ничего не нашлось'),
       ),
     for (final o in _found ?? const <Open5eItem>[])
-      ListTile(
+      ResultRow(
         key: Key('open5e-${o.key}'),
-        title: Text(_title(o.key, o.name)),
-        // Есть перевод — оригинал строкой выше чисел, как у врага.
-        subtitle: Text(
-          '${_ru.containsKey(o.key) ? '${o.name}\n' : ''}'
-          '${kindOf(o).label} · ${rarityOf(o).label} · ${o.document}',
-        ),
-        isThreeLine: _ru.containsKey(o.key),
+        icon: itemKindIcon(kindOf(o)),
+        title: _title(o.key, o.name),
+        source: o.document,
+        cells: [
+          ResultCell(text: kindOf(o).label),
+          ResultCell(text: rarityOf(o).label),
+        ],
         onTap: () => _pick(o),
       ),
   ];

@@ -19,6 +19,8 @@ class _AuthScreenState extends State<AuthScreen> {
   final _password = TextEditingController();
   bool _busy = false;
   String? _error;
+  String? _emailError;
+  String? _passwordError;
 
   @override
   void dispose() {
@@ -30,20 +32,21 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _run(Future<void> Function(String, String) action) async {
     final email = _email.text.trim();
     final password = _password.text;
-    if (email.isEmpty || password.length < 6) {
-      setState(() => _error = 'Укажи почту и пароль не короче 6 символов');
-      return;
-    }
-    if (!looksLikeEmail(email)) {
-      setState(
-        () => _error = 'Почта выглядит неверно — нужен вид name@example.com',
-      );
-      return;
-    }
+    final emailError = email.isEmpty
+        ? 'Укажи почту'
+        : looksLikeEmail(email)
+        ? null
+        : 'Почта выглядит неверно — нужен вид name@example.com';
+    final passwordError = password.length < 6
+        ? 'Пароль — не короче 6 символов'
+        : null;
     setState(() {
-      _busy = true;
+      _emailError = emailError;
+      _passwordError = passwordError;
       _error = null;
     });
+    if (emailError != null || passwordError != null) return;
+    setState(() => _busy = true);
     try {
       await action(email, password);
     } on AuthException catch (e) {
@@ -53,6 +56,66 @@ class _AuthScreenState extends State<AuthScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Поле со своей ошибкой: красная линия снизу и под ним строка «❗ причина».
+  Widget _field(
+    String id,
+    TextEditingController c,
+    String label,
+    IconData icon,
+    String? error, {
+    bool obscure = false,
+  }) {
+    final s = Theme.of(context).colorScheme;
+    final line = error == null
+        ? null
+        : UnderlineInputBorder(
+            borderRadius: BorderRadius.zero,
+            borderSide: BorderSide(color: s.error, width: 2),
+          );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          key: Key(id),
+          controller: c,
+          obscureText: obscure,
+          keyboardType: obscure ? null : TextInputType.emailAddress,
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(icon),
+            floatingLabelStyle: error == null
+                ? null
+                : TextStyle(color: s.error),
+            enabledBorder: line,
+            focusedBorder: line,
+          ),
+        ),
+        if (error != null)
+          Padding(
+            key: Key('$id-error'),
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              spacing: 6,
+              children: [
+                Icon(Symbols.error_rounded, size: 18, color: s.error, fill: 1),
+                Expanded(
+                  child: Text(
+                    error,
+                    style: TextStyle(
+                      color: s.error,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 12),
+      ],
+    );
   }
 
   @override
@@ -77,26 +140,16 @@ class _AuthScreenState extends State<AuthScreen> {
               style: TextStyle(color: s.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
-            TextField(
-              key: const Key('email'),
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Почта',
-                prefixIcon: Icon(Symbols.mail_rounded),
-              ),
+            _field('email', _email, 'Почта', Symbols.mail_rounded, _emailError),
+            _field(
+              'password',
+              _password,
+              'Пароль',
+              Symbols.lock_rounded,
+              _passwordError,
+              obscure: true,
             ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const Key('password'),
-              controller: _password,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Пароль',
-                prefixIcon: Icon(Symbols.lock_rounded),
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             if (_error != null) ...[
               Text(_error!, style: TextStyle(color: s.error)),
               const SizedBox(height: 8),

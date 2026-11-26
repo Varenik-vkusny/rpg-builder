@@ -186,9 +186,16 @@ ThemeData appTheme(Brightness brightness) {
       filled: true,
       contentPadding: const EdgeInsets.fromLTRB(8, 10, 6, 10),
       fillColor: s.surfaceContainer,
-      border: UnderlineInputBorder(borderSide: BorderSide(color: s.outline)),
-      enabledBorder: UnderlineInputBorder(borderSide: hairline),
+      border: UnderlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: s.outline),
+      ),
+      enabledBorder: UnderlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: hairline,
+      ),
       focusedBorder: UnderlineInputBorder(
+        borderRadius: BorderRadius.zero,
         borderSide: BorderSide(color: s.onSurface, width: 2),
       ),
       floatingLabelStyle: TextStyle(color: s.onSurfaceVariant),

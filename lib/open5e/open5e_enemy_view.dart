@@ -3,10 +3,14 @@
 import 'package:flutter/material.dart';
 
 import '../check/world_check.dart';
+
+import 'package:material_symbols_icons/symbols.dart';
+
 import '../map/glyphs.dart';
 import '../ui/parts.dart';
 import 'open5e_api.dart';
 import 'open5e_enemy.dart';
+import 'open5e_result_row.dart';
 
 String _cr(double cr) => switch (cr) {
   0.125 => '1/8',
@@ -15,17 +19,25 @@ String _cr(double cr) => switch (cr) {
   _ => '${cr.round()}',
 };
 
-/// Строка находки: имя по-русски [title]; оригинал (без перевода — документ); числа.
+/// Строка находки: имя по-русски [title]; опасность и здоровье ячейками; оригинал — в карточке.
 Widget enemyTile(Open5eCreature c, String title, VoidCallback onTap) =>
-    ListTile(
+    ResultRow(
       key: Key('open5e-${c.key}'),
-      title: Text(title),
-      // Без точек-разделителей: оригинал одной строкой, числа — второй.
-      subtitle: Text(
-        '${title == c.name ? c.document : c.name}\n'
-        'опасность ${_cr(c.challenge)}, здоровье ${c.hp}',
-      ),
-      isThreeLine: true,
+      icon: Symbols.skull_rounded,
+      title: title,
+      source: c.document,
+      cells: [
+        ResultCell(
+          icon: Symbols.military_tech_rounded,
+          text: _cr(c.challenge),
+          tip: 'Опасность',
+        ),
+        ResultCell(
+          icon: Symbols.favorite_rounded,
+          text: '${c.hp}',
+          tip: 'Здоровье',
+        ),
+      ],
       onTap: onTap,
     );
 

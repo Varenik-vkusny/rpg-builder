@@ -82,8 +82,8 @@ void main() {
       );
       expect(
         find.descendant(of: tile, matching: find.textContaining('Skeleton')),
-        findsOneWidget,
-        reason: 'оригинал виден рядом с переводом',
+        findsNothing,
+        reason: 'английского дубля в строке нет (вид А); оригинал — в карточке',
       );
 
       await tapButton(t, 'open5e-srd_skeleton');
