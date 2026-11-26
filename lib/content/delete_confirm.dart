@@ -39,7 +39,8 @@ Future<bool> confirmDelete(
     subject: subject,
     facts: [
       ..._goesAlong(world, id),
-      const SheetFact(Symbols.undo_rounded, 'Откат — в истории'),
+      // По-простому, без «Откат — в истории» (владелец 26.11).
+      const SheetFact(Symbols.undo_rounded, 'Можно откатить'),
     ],
     action: 'Удалить',
     actionIcon: Symbols.delete_rounded,

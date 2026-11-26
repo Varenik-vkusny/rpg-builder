@@ -152,27 +152,32 @@ class ProblemRow extends StatelessWidget {
                   spacing: 6,
                   children: [
                     Text(problem.message, style: const TextStyle(fontSize: 15)),
-                    // Не влезает рядом со словом (крупный шрифт) — кнопка ниже.
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      runSpacing: 4,
-                      children: [
-                        Text(
-                          problem.severity.label,
-                          style: TextStyle(
-                            color: tint,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                    // Как в прототипе: слово слева, «Исправить» прижата вправо (было:
+                    // кнопка липла к слову, 26.11). Перенос — на всю ширину карточки;
+                    // крупный шрифт и не влезает — кнопка уходит под слово, слово целое.
+                    SizedBox(
+                      width: double.infinity,
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            problem.severity.label,
+                            style: TextStyle(
+                              color: tint,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        FilledButton.tonal(
-                          key: fixKey,
-                          // Высота из темы — 48 dp, минимум касания на Android.
-                          onPressed: onFix,
-                          child: const Text('Исправить'),
-                        ),
-                      ],
+                          FilledButton.tonal(
+                            key: fixKey,
+                            // Высота из темы — 48 dp, минимум касания на Android.
+                            onPressed: onFix,
+                            child: const Text('Исправить'),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

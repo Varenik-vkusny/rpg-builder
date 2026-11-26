@@ -51,7 +51,7 @@ void main() {
       s.error,
       reason: 'необратимое — красная заливка',
     );
-    final noUndo = t.widget<Text>(find.text('Без отката'));
+    final noUndo = t.widget<Text>(find.text('Нельзя откатить'));
     expect(noUndo.style?.color, s.error);
   });
 
@@ -64,7 +64,7 @@ void main() {
     _mainRightAndWide(t);
     final yes = t.widget<OutlinedButton>(find.byKey(const Key('confirm-yes')));
     expect(yes.style?.side?.resolve({})?.color, _scheme(t).error);
-    expect(find.text('Откат — в истории'), findsOneWidget);
+    expect(find.text('Можно откатить'), findsOneWidget);
   });
 
   testWidgets('бросить введённое: имя и изменённые поля', (t) async {

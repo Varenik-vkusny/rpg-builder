@@ -77,4 +77,19 @@ void main() {
     expect(find.textContaining('«затопи её'), findsOneWidget);
     expect(find.text('Утопленник'), findsOneWidget);
   });
+
+  // Владелец 26.11: «Откатить» была прижата к голове набора и сжата.
+  testWidgets(
+    'история: «Откатить» во всю ширину, 52 dp, с отступом от головы',
+    (t) async {
+      await flooded(t);
+      await openHistory(t);
+      await t.tap(find.text(flood));
+      await t.pumpAndSettle();
+      final button = t.getRect(find.byKey(const Key('revert-set-0')));
+      final head = t.getRect(find.byKey(const Key('history-head-set-0')));
+      expect(button.height, greaterThanOrEqualTo(52));
+      expect(button.top - head.bottom, greaterThanOrEqualTo(10));
+    },
+  );
 }

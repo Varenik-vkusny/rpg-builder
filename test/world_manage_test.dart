@@ -70,7 +70,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Без отката'), findsOneWidget);
+    expect(find.text('Нельзя откатить'), findsOneWidget);
     expect(find.text('Удалить навсегда'), findsOneWidget);
     await t.tap(find.byKey(const Key('confirm-no')));
     await t.pumpAndSettle();

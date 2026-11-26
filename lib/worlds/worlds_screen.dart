@@ -145,7 +145,7 @@ class _WorldsScreenState extends State<WorldsScreen> {
           SheetFact(Symbols.history_rounded, 'Наборов истории: $sets'),
         const SheetFact(
           Symbols.delete_forever_rounded,
-          'Без отката',
+          'Нельзя откатить',
           tone: FactTone.hot,
         ),
       ],

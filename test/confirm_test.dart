@@ -56,7 +56,7 @@ void main() {
     expect(_question, findsOneWidget);
     expect(find.text('Удалить?'), findsOneWidget);
     expectSubject('Рынок');
-    expect(find.text('Откат — в истории'), findsOneWidget);
+    expect(find.text('Можно откатить'), findsOneWidget);
 
     await tapButton(t, 'confirm-no');
     expect(_question, findsNothing);

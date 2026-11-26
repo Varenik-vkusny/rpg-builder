@@ -127,5 +127,18 @@ void main() {
     expect(_in('e', find.text('Ошибка')), findsOneWidget);
     expect(_in('w', find.text('Предупреждение')), findsOneWidget);
     expect(_in('e', find.text('Исправить')), findsOneWidget);
+    // Владелец 26.11: «Исправить» прижата вправо, а не липнет к слову.
+    final card = t.getRect(find.byKey(const Key('w')));
+    final fix = t.getRect(_in('w', find.text('Исправить')));
+    expect(
+      card.right - fix.right,
+      lessThan(40),
+      reason: 'кнопка у правого края',
+    );
+    expect(
+      fix.left,
+      greaterThan(card.center.dx),
+      reason: 'кнопка — в правой половине',
+    );
   });
 }

@@ -250,6 +250,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (s.canRevert)
       FilledButton.tonalIcon(
         key: Key('revert-${s.id}'),
+        // Как в прототипе: во всю ширину, 52 dp (было прижато и сжато — 26.11).
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
         icon: const Icon(Symbols.undo_rounded),
         label: const Text('Откатить'),
         onPressed: _busy == null ? () => _revert(s) : null,
