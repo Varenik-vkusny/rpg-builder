@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../check/world_check.dart';
 import '../ui/theme.dart';
 import 'history.dart';
 import 'history_line.dart';
@@ -259,9 +260,10 @@ class _Tally extends StatelessWidget {
 
 /// Операция набора: ячейка цвета действия, имя жирным, поле и «было → стало».
 class OpRow extends StatelessWidget {
-  const OpRow(this.op, this.show, {super.key});
+  const OpRow(this.op, this.show, this.world, {super.key});
   final JournalOp op;
   final ShowValue show;
+  final WorldSnapshot world;
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +273,8 @@ class OpRow extends StatelessWidget {
     String short(String? v) =>
         v == null ? '—' : (v.length > 32 ? '${v.substring(0, 31)}…' : v);
     final link = journalLinkWord(op.type);
-    final what = link == null ? op.title : '$link ${op.title}';
+    final name = opTitle(op, world);
+    final what = link == null ? name : '$link $name';
     final verb = switch (op.action) {
       'create' => Verb.created,
       'delete' => Verb.deleted,
@@ -337,12 +340,14 @@ class SetBody extends StatelessWidget {
     required this.request,
     required this.ops,
     required this.show,
+    required this.world,
   });
 
   final List<Widget> top;
   final String? request;
   final List<JournalOp> ops;
   final ShowValue show;
+  final WorldSnapshot world;
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +382,7 @@ class SetBody extends StatelessWidget {
                 ],
               ),
             ),
-          for (final op in ops) OpRow(op, show),
+          for (final op in ops) OpRow(op, show, world),
         ],
       ),
     );

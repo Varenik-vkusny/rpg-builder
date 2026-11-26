@@ -7,6 +7,8 @@ import 'package:rpg_builder/assistant/history_line.dart';
 import 'package:rpg_builder/assistant/history_tile.dart';
 import 'package:rpg_builder/check/world_check.dart';
 
+import 'assistant_fixtures.dart' show minesContent, minesId;
+
 ChangeSetEntry entry(
   String request, {
   String summary = '',
@@ -155,4 +157,42 @@ void main() {
     expect(dayTitle(DateTime(2025, 3, 1), now), '1 марта 2025');
     expect(clock(DateTime(2026, 11, 25, 9, 5)), '09:05');
   });
+
+  // Телефон 26.11: у связи жестом в истории было служебное «vrag_1/kirka».
+  test(
+    'связь жестом и строки без названия — словами, не служебной подписью',
+    () async {
+      final link = line(
+        entry(
+          'Холст: связь Враг 1 — роняет 25% — Кирка',
+          ops: [
+            JournalOp(
+              action: 'create',
+              type: 'loot',
+              label: 'vrag_1/kirka',
+              after: const {'chance': 25},
+            ),
+          ],
+        ),
+      );
+      expect(
+        (link.name, link.source),
+        ('Враг 1 — роняет 25% — Кирка', Source.canvas),
+      );
+      final mines = await (await minesContent()).snapshotOf(minesId);
+      JournalOp row(String type, String label) => JournalOp(
+        action: 'delete',
+        type: type,
+        label: label,
+        before: const {},
+      );
+      expect(opTitle(row('loot', 'slizen/klyuch'), mines), 'Слизень → Ключ');
+      expect(opTitle(row('quest_step', 'obval#2'), mines), 'Обвал, шаг 2');
+      expect(
+        opTitle(row('loot', 'nikto/klyuch'), mines),
+        'nikto → Ключ',
+        reason: 'объекта нет — подпись как есть',
+      );
+    },
+  );
 }

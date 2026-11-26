@@ -125,7 +125,7 @@ HistoryLine describe(
   final many = source == Source.assistant && s.ops.length > 1;
   return HistoryLine(
     verb: verb,
-    name: source == Source.assistant ? _plainName(s) : _nameOf(s, main),
+    name: source == Source.assistant ? _plainName(s) : _nameOf(s, main, world),
     kind: source == Source.assistant || main == null
         ? null
         : opIcon(main, world),
@@ -171,14 +171,38 @@ String _plainName(ChangeSetEntry s) =>
 
 /// Имя объекта: из подписи («Правка вручную: Лампа», «Холст: создано «Враг 1»»),
 /// иначе — название главной операции.
-String _nameOf(ChangeSetEntry s, JournalOp? main) {
+String _nameOf(ChangeSetEntry s, JournalOp? main, WorldSnapshot world) {
   final t = _plainName(s);
+  // Связь жестом: «Холст: связь Враг 1 — роняет 25% — Кирка» — имена уже в подписи
+  // (у строки добычи своего названия нет — был служебный «vrag_1/kirka», телефон 26.11).
+  if (t.startsWith('Холст: связь ')) return t.substring('Холст: связь '.length);
   final quoted = RegExp(r'«([^»]+)»').firstMatch(t);
   if (t.startsWith('Холст:') && quoted != null) return quoted.group(1)!;
   final colon = t.indexOf(': ');
   if (colon > 0 && !t.startsWith('Холст:')) return t.substring(colon + 2);
-  if (main != null) return main.title;
+  if (main != null) return opTitle(main, world);
   return t.replaceFirst('Холст: ', '');
+}
+
+/// Название операции для автора: своё название строки, а у строк без названия
+/// (добыча, шаг квеста, награда) — названия концов по служебной подписи
+/// («vrag_1/kirka» → «Враг 1 → Кирка», «obval#2» → «Обвал, шаг 2»). Объекта уже нет
+/// в мире — остаётся подпись как есть.
+String opTitle(JournalOp op, WorldSnapshot world) {
+  if (op.title != op.label) return op.title;
+  final bySlug = {
+    for (final l in world.locations) l.slug: l.title,
+    for (final i in world.items) i.slug: i.title,
+    for (final c in world.characters) c.slug: c.title,
+    for (final q in world.quests) q.slug: q.title,
+    for (final e in world.events) e.slug: e.title,
+  };
+  final step = RegExp(r'^(.+)#(\d+)$').firstMatch(op.label);
+  if (step != null) {
+    return '${bySlug[step.group(1)] ?? step.group(1)}, шаг ${step.group(2)}';
+  }
+  return [for (final part in op.label.split('/')) bySlug[part] ?? part]
+      .join(' → ');
 }
 
 const _objectTypes = {'location', 'item', 'character', 'quest', 'event'};

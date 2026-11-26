@@ -80,7 +80,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         '${fieldWord(k)} → ${show(op, k, was) ?? '—'}',
     ].join(', ');
     SheetFact fact(JournalOp op, {required bool named}) {
-      final who = named ? '${op.title}: ' : '';
+      final who = named ? '${opTitle(op, world)}: ' : '';
       // Без имени строка начинается с глагола — с заглавной.
       String say(String v) =>
           named ? '$who$v' : v[0].toUpperCase() + v.substring(1);
@@ -105,7 +105,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Symbols.history_rounded,
               set.summary.isEmpty ? set.request : set.summary,
             )
-          : SheetSubject(opIcon(single, world), single.title),
+          : SheetSubject(opIcon(single, world), opTitle(single, world)),
       facts: [
         if (single != null)
           fact(single, named: false)
@@ -224,6 +224,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   : null,
               ops: opsRepeatHead ? const [] : s.ops,
               show: show,
+              world: world,
             ),
         ],
       ),
