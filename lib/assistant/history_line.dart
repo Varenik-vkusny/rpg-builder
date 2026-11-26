@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../check/world_check.dart';
+import '../content/character.dart' show Role;
 import '../content/delete_confirm.dart' show objectIcon;
+import '../content/item.dart' show ItemKind;
+import '../content/world_pages.dart' show itemKindIcon, roleIcon;
 import 'history.dart';
 import '../content/quest.dart';
 import 'plan_labels.dart';
@@ -243,9 +246,20 @@ String fieldWord(String key) =>
 IconData opIcon(JournalOp op, WorldSnapshot world) {
   final id = (op.after?['id'] ?? op.before?['id'])?.toString();
   if (id != null && world.titles.containsKey(id)) return objectIcon(world, id);
+  // Объекта уже нет — вид по самой строке: роль врага, вид предмета (телефон 26.11:
+  // удалённый враг показывался человечком).
+  final row = op.after ?? op.before ?? const {};
+  T? named<T extends Enum>(List<T> values, Object? v) =>
+      values.where((x) => x.name == v).firstOrNull;
   return switch (op.type) {
-    'character' => Symbols.person_rounded,
-    'item' => Symbols.deployed_code_rounded,
+    'character' => switch (named(Role.values, row['role'])) {
+      final r? => roleIcon(r),
+      null => Symbols.person_rounded,
+    },
+    'item' => switch (named(ItemKind.values, row['kind'])) {
+      final k? => itemKindIcon(k),
+      null => Symbols.deployed_code_rounded,
+    },
     'quest' => Symbols.flag_rounded,
     'event' => Symbols.bolt_rounded,
     _ => Symbols.landscape_rounded,

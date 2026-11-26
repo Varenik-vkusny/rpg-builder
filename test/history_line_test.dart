@@ -6,6 +6,10 @@ import 'package:rpg_builder/assistant/history.dart';
 import 'package:rpg_builder/assistant/history_line.dart';
 import 'package:rpg_builder/assistant/history_tile.dart';
 import 'package:rpg_builder/check/world_check.dart';
+import 'package:rpg_builder/content/character.dart' show Role;
+import 'package:rpg_builder/content/item.dart' show ItemKind;
+import 'package:rpg_builder/content/world_pages.dart'
+    show itemKindIcon, roleIcon;
 
 import 'assistant_fixtures.dart' show minesContent, minesId;
 
@@ -195,4 +199,26 @@ void main() {
       );
     },
   );
+
+  // Телефон 26.11: удалённый враг в истории — значком врага, а не человечка.
+  test('значок убранного объекта — по роли и виду из самой строки', () {
+    JournalOp gone(String type, Map<String, dynamic> row) => JournalOp(
+      action: 'delete',
+      type: type,
+      label: 'x',
+      before: {'title': 'X', ...row},
+    );
+    expect(
+      opIcon(gone('character', {'role': 'enemy'}), world),
+      roleIcon(Role.enemy),
+    );
+    expect(
+      opIcon(gone('character', {'role': 'npc'}), world),
+      roleIcon(Role.npc),
+    );
+    expect(
+      opIcon(gone('item', {'kind': 'weapon'}), world),
+      itemKindIcon(ItemKind.weapon),
+    );
+  });
 }
