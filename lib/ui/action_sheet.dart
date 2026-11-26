@@ -4,7 +4,6 @@
 // заливка, с откатом красная рамка. Прототип: Docs/rpg-builder/vid-a-prototype.html.
 import 'package:flutter/material.dart';
 
-
 import 'action_sheet_buttons.dart';
 import 'theme.dart';
 

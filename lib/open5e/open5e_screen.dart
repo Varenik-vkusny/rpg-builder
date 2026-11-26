@@ -143,6 +143,7 @@ class _Open5eScreenState extends State<Open5eScreen> {
         closeDone(
           context,
           'Импортировано: ${_title(_picked!.key, _picked!.name)}',
+          DoneKind.created,
         );
       }
     } catch (e) {
@@ -175,7 +176,11 @@ class _Open5eScreenState extends State<Open5eScreen> {
     );
     if (!mounted) return;
     if (failed == null) {
-      closeDone(context, 'Импортировано: ${_title(c.key, c.name)}');
+      closeDone(
+        context,
+        'Импортировано: ${_title(c.key, c.name)}',
+        DoneKind.created,
+      );
     } else {
       setState(() {
         _busy = false;

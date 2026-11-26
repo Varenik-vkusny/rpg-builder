@@ -84,6 +84,7 @@ class _NewWorldScreenState extends State<NewWorldScreen>
         closeDone(
           context,
           old == null ? 'Мир создан: $title' : 'Мир сохранён: $title',
+          old == null ? DoneKind.created : DoneKind.changed,
         );
       }
     } catch (e) {

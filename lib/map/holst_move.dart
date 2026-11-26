@@ -96,12 +96,8 @@ extension _Move on _HolstState {
 
   /// Почему перенос не применён — словами автора, а не правилом проверки.
   String? _why(Problem p, String what, String into) => switch (p.rule) {
-    'location_cycle' =>
-      '«$into» и так лежит внутри «$what» — место нельзя положить внутрь '
-          'самого себя',
-    'location_too_deep' =>
-      'Внутри «$into» уже нет места: мест в месте — не больше '
-          '$maxNestingDepth уровней',
+    'location_cycle' => '«$into» уже лежит внутри «$what»',
+    'location_too_deep' => 'Мест в месте — не больше $maxNestingDepth уровней',
     _ => null,
   };
 

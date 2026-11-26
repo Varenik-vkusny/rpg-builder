@@ -138,7 +138,7 @@ class _NewItemScreenState extends State<NewItemScreen>
       );
       if (!mounted) return;
       if (error == null) {
-        closeDone(context, 'Сохранено: $title');
+        closeDone(context, 'Сохранено: $title', DoneKind.changed);
       } else {
         setState(() {
           _busy = false;
@@ -154,7 +154,7 @@ class _NewItemScreenState extends State<NewItemScreen>
     );
     if (!mounted) return;
     if (error == null) {
-      closeDone(context, 'Создано: $title');
+      closeDone(context, 'Создано: $title', DoneKind.created);
     } else {
       setState(() {
         _busy = false;
@@ -179,7 +179,7 @@ class _NewItemScreenState extends State<NewItemScreen>
     );
     if (!mounted) return;
     if (error == null) {
-      closeDone(context, 'Удалено: ${e.title}');
+      closeDone(context, 'Удалено: ${e.title}', DoneKind.deleted);
     } else {
       setState(() {
         _busy = false;

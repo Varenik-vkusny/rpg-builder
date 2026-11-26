@@ -286,7 +286,11 @@ class _AssistantScreenState extends State<AssistantScreen> {
       });
       return;
     }
-    showDone(context, apply ? 'План применён' : 'План отклонён');
+    showDone(
+      context,
+      apply ? 'План применён' : 'План отклонён',
+      apply ? DoneKind.applied : DoneKind.rejected,
+    );
     Navigator.of(context).pop(apply);
   }
 

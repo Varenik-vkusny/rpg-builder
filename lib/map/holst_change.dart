@@ -211,7 +211,12 @@ extension _Change on _HolstState {
         _rebuild();
       });
       return _say(
-        const SnackData(title: 'План отклонён', sub: null, seconds: 2),
+        const SnackData(
+          title: 'План отклонён',
+          kind: DoneKind.rejected,
+          sub: null,
+          seconds: 2,
+        ),
       );
     }
     final setId = (await widget.repo.history(widget.world.id)).first.id;
@@ -225,6 +230,7 @@ extension _Change on _HolstState {
     _say(
       SnackData(
         title: 'План применён: ${changesWord(p.run.proposal.plan.ops.length)}',
+        kind: DoneKind.applied,
         // Крупное действие — одно короткое напоминание, где его найти (владелец 19.11).
         sub: 'в истории',
         action: 'Откатить',

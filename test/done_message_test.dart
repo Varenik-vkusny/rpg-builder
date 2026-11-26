@@ -236,10 +236,10 @@ void main() {
         ),
       ),
     );
-    showDone(ctx, 'первое');
+    showDone(ctx, 'первое', DoneKind.created);
     await t.pump(); // полоса построена — её срок пошёл
     await t.pump(const Duration(milliseconds: 1999));
-    showDone(ctx, 'второе');
+    showDone(ctx, 'второе', DoneKind.changed);
     await t.pump(const Duration(milliseconds: 2));
     expect(t.takeException(), isNull);
     expectDone('второе');

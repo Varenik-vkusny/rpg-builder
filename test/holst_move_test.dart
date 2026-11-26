@@ -102,11 +102,7 @@ void main() {
     );
     expect(snack(t), 'Не перенесено: Штольня №3');
     // Причина — словами автора, а не правилом проверки.
-    expect(
-      snackSub(t),
-      '«Забой» и так лежит внутри «Штольня №3» — место нельзя положить '
-      'внутрь самого себя',
-    );
+    expect(snackSub(t), '«Забой» уже лежит внутри «Штольня №3»');
     expect(c.journal.length, sets);
     await t.pump(const Duration(seconds: 1));
     expect(

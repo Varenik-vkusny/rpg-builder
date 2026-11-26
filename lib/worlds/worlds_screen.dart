@@ -155,9 +155,13 @@ class _WorldsScreenState extends State<WorldsScreen> {
     if (!yes) return;
     try {
       await widget.repo.delete(w.id);
-      if (mounted) showDone(context, 'Мир удалён: ${w.title}');
+      if (mounted) {
+        showDone(context, 'Мир удалён: ${w.title}', DoneKind.deleted);
+      }
     } catch (e) {
-      if (mounted) showDone(context, 'Не удалось удалить: $e');
+      if (mounted) {
+        showDone(context, 'Не удалось удалить', DoneKind.error, sub: '$e');
+      }
     }
     _reload();
   }

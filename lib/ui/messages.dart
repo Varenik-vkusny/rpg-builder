@@ -3,9 +3,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+
+import 'done_strip.dart';
 
 export 'action_sheet.dart';
+export 'done_strip.dart' show DoneKind;
 
 /// Сколько висит «сделано».
 const doneDuration = Duration(seconds: 2);
@@ -15,7 +17,7 @@ VoidCallback? _hideShown;
 
 /// «Сделано»: полоса внизу экрана, исчезает сама. Новое сообщение сменяет прежнее.
 /// Полоса не перехватывает нажатия: то, что под ней, остаётся доступным сразу.
-void showDone(BuildContext context, String text) {
+void showDone(BuildContext context, String text, DoneKind kind, {String? sub}) {
   final overlay = Overlay.of(context, rootOverlay: true);
   _hideShown?.call();
   late final OverlayEntry entry;
@@ -28,21 +30,23 @@ void showDone(BuildContext context, String text) {
     if (entry.mounted) entry.remove();
   }
 
-  entry = OverlayEntry(builder: (_) => _DoneToast(text, hide));
+  entry = OverlayEntry(builder: (_) => _DoneToast(text, kind, sub, hide));
   _hideShown = hide;
   overlay.insert(entry);
 }
 
 /// Закрыть экран с признаком «мир изменился» и сказать автору, что сделано.
-void closeDone(BuildContext context, String text) {
-  showDone(context, text);
+void closeDone(BuildContext context, String text, DoneKind kind) {
+  showDone(context, text, kind);
   Navigator.of(context).pop(true);
 }
 
 class _DoneToast extends StatefulWidget {
-  const _DoneToast(this.text, this.onGone);
+  const _DoneToast(this.text, this.kind, this.sub, this.onGone);
 
   final String text;
+  final DoneKind kind;
+  final String? sub;
   final VoidCallback onGone;
 
   @override
@@ -66,7 +70,6 @@ class _DoneToastState extends State<_DoneToast> {
 
   @override
   Widget build(BuildContext context) {
-    final s = Theme.of(context).colorScheme;
     return Positioned(
       left: 16,
       right: 16,
@@ -75,25 +78,11 @@ class _DoneToastState extends State<_DoneToast> {
       child: IgnorePointer(
         child: Semantics(
           liveRegion: true,
-          child: Material(
+          child: DoneStrip(
             key: const Key('done-message'),
-            color: s.inverseSurface,
-            shape: RoundedRectangleBorder(side: BorderSide(color: s.outline)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Icon(Symbols.check_rounded, color: s.onInverseSurface),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      widget.text,
-                      style: TextStyle(color: s.onInverseSurface),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            kind: widget.kind,
+            title: widget.text,
+            sub: widget.sub,
           ),
         ),
       ),

@@ -60,7 +60,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (!mounted || !await _confirmRevert(set, world)) return;
       await widget.repo.revertChangeSet(widget.world.id, set.id);
       _changed = true;
-      if (mounted) showDone(context, 'Набор откачен');
+      if (mounted) showDone(context, 'Набор откачен', DoneKind.reverted);
       setState(() {
         _data = _load();
       });

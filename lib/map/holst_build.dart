@@ -68,6 +68,7 @@ extension _Build on _HolstState {
     await _gesture(
       made.edit,
       done: 'Создано: ${made.title}$where',
+      kind: DoneKind.created,
       marks: {made.id: Mark.isNew},
     );
   }
@@ -87,6 +88,7 @@ extension _Build on _HolstState {
     final ok = await _gesture(
       made.edit,
       done: 'Создано: ${made.title}',
+      kind: DoneKind.created,
       marks: {made.id: Mark.isNew},
     );
     if (!ok || !mounted || !ask) return;
@@ -102,6 +104,7 @@ extension _Build on _HolstState {
     ManualEdit edit, {
     required String done,
     required Map<String, Mark> marks,
+    DoneKind kind = DoneKind.changed,
     Set<String> threads = const {},
     SnackLink? link,
     String failed = 'Не применено',
@@ -157,6 +160,7 @@ extension _Build on _HolstState {
         title: done,
         link: link,
         tone: r.tone,
+        kind: kind,
         action: setId == null ? null : 'Отменить',
         onAction: setId == null ? null : () => _undo(setId),
       ),
@@ -188,7 +192,7 @@ extension _Build on _HolstState {
       _warns.removeWhere((_, w) => w.setId == setId);
       _rebuild(); // меток нет — тесное место в обычном порядке
     });
-    _say(SnackData(title: done, seconds: 2));
+    _say(SnackData(title: done, kind: DoneKind.reverted, seconds: 2));
   }
 
   void _say(SnackData s) {

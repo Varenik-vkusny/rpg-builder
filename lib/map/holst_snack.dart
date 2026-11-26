@@ -1,8 +1,9 @@
 // Холст мира (5е): полоса после жеста — что сделано и «Отменить»
-// на 5 секунд (полоска убывает). Предупреждение — жёлтая, ошибка — красная с причиной.
+// на 5 секунд (полоска убывает). Предупреждение — рамка warn, ошибка — красная с причиной одной строкой.
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../ui/done_strip.dart';
 import '../ui/theme.dart';
 import 'gesture_path.dart';
 
@@ -24,6 +25,7 @@ class SnackData {
     this.sub,
     this.link,
     this.tone = GestureTone.ok,
+    this.kind = DoneKind.info,
     this.action,
     this.onAction,
     this.seconds = 5,
@@ -33,6 +35,7 @@ class SnackData {
   final String? sub;
   final SnackLink? link;
   final GestureTone tone;
+  final DoneKind kind;
   final String? action;
   final VoidCallback? onAction;
   final int seconds;
@@ -43,127 +46,68 @@ class HolstSnack extends StatelessWidget {
 
   final SnackData data;
 
+  /// Вид ячейки: тон жеста сильнее вида — отказ красный, предупреждение с рамкой.
+  DoneKind get _kind => switch (data.tone) {
+    GestureTone.error => DoneKind.error,
+    GestureTone.warn => DoneKind.warn,
+    GestureTone.ok => data.kind,
+  };
+
   @override
   Widget build(BuildContext context) {
     final s = Theme.of(context).colorScheme;
-    final c = AppColors.of(context);
-    final (bg, edge, icBg, icFg, icon) = switch (data.tone) {
-      GestureTone.ok => (
-        s.surfaceContainerHighest,
-        s.outline,
-        Colors.transparent,
-        s.onSurfaceVariant,
-        Symbols.check_rounded,
-      ),
-      GestureTone.warn => (
-        s.surfaceContainerHighest,
-        c.warn,
-        c.warn,
-        s.surfaceContainerLowest,
-        Symbols.warning_rounded,
-      ),
-      GestureTone.error => (
-        s.errorContainer,
-        s.error,
-        s.error,
-        s.surfaceContainerLowest,
-        Symbols.error_rounded,
-      ),
-    };
-    return Material(
+    final link = data.link;
+    return DoneStrip(
       key: const Key('holst-snack'),
-      color: bg,
-      shape: Border.all(color: edge),
-      child: Stack(
-        children: [
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // У связи галочки нет: рисунок связи и есть «сделано»; место — под имена.
-                if (data.link == null || data.tone != GestureTone.ok)
-                  Container(
-                    width: 40,
-                    color: icBg,
-                    child: Icon(icon, color: icFg, fill: 1, size: 22),
-                  ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 8, 12, 10),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (data.link case final l?)
-                          Semantics(
-                            label: data.title,
-                            child: ExcludeSemantics(child: _LinkStrip(l)),
-                          )
-                        else
-                          Text(
-                            data.title,
-                            key: const Key('holst-snack-title'),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
-                        if (data.sub case final sub?)
-                          Text(
-                            sub,
-                            key: const Key('holst-snack-sub'),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: data.tone == GestureTone.error
-                                  ? s.onErrorContainer
-                                  : s.onSurfaceVariant,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (data.action case final a?)
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: Border(left: BorderSide(color: s.outline)),
-                    ),
-                    child: TextButton(
-                      key: const Key('holst-snack-action'),
-                      onPressed: data.onAction,
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 56),
-                        foregroundColor: s.onSurface,
-                      ),
-                      child: Text(a),
-                    ),
-                  ),
-              ],
+      kind: _kind,
+      title: link == null ? data.title : null,
+      titleKey: const Key('holst-snack-title'),
+      sub: data.sub,
+      subKey: const Key('holst-snack-sub'),
+      body: link == null
+          ? null
+          : Semantics(
+              label: data.title,
+              child: ExcludeSemantics(child: _LinkStrip(link)),
             ),
-          ),
-          // Убывающая полоска: сколько ещё можно отменить.
-          if (data.action != null && data.tone != GestureTone.error)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 1, end: 0),
-                duration: Duration(seconds: data.seconds),
-                builder: (_, v, _) => Align(
-                  alignment: Alignment.centerLeft,
-                  child: FractionallySizedBox(
-                    widthFactor: v,
-                    child: Container(height: 3, color: s.onSurface),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+      action: data.action == null ? null : _action(s),
+      // Убывающая полоска: сколько ещё можно отменить.
+      bottom: data.action != null && data.tone != GestureTone.error
+          ? _timer(s)
+          : null,
     );
   }
+
+  Widget _action(ColorScheme s) => DecoratedBox(
+    decoration: BoxDecoration(
+      border: Border(left: BorderSide(color: s.outline)),
+    ),
+    child: TextButton(
+      key: const Key('holst-snack-action'),
+      onPressed: data.onAction,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(48, 52),
+        shape: const RoundedRectangleBorder(),
+        foregroundColor: s.onSurface,
+      ),
+      child: Text(
+        data.action!,
+        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+      ),
+    ),
+  );
+
+  Widget _timer(ColorScheme s) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: 1, end: 0),
+    duration: Duration(seconds: data.seconds),
+    builder: (_, v, _) => Align(
+      alignment: Alignment.centerLeft,
+      child: FractionallySizedBox(
+        widthFactor: v,
+        child: Container(height: 3, color: s.onSurface),
+      ),
+    ),
+  );
 }
 
 /// Связь рисунком: значок с именем мелко под ним ─40%─▶ значок с именем. Имена под
@@ -192,7 +136,7 @@ class _LinkStrip extends StatelessWidget {
       maxLines: 1,
     )..layout()).width;
     // Поля полосы, «Отменить», два значка, усы стрелки и наконечник.
-    const around = 16 + 26 + 104 + 48 + 40;
+    const around = 16 + 26 + 104 + 48 + 48;
     final roomy = MediaQuery.sizeOf(context).width - around - pill >= 0;
     // Конец связи: значок, под ним имя мелко. Место делится по длине имён.
     Widget end(IconData? icon, String name, String key) => Flexible(

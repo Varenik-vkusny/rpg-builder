@@ -41,6 +41,7 @@ class Palette {
 
   /// «Изменено» и «СТАЛО» — пурпурный: голубой занят главными действиями.
   final Color change;
+
   /// Фон ячейки «изменено» (история, план).
   final Color changeContainer;
   final Color error, onError, errorContainer, onErrorContainer;

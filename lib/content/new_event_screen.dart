@@ -177,7 +177,11 @@ class _NewEventScreenState extends State<NewEventScreen>
         (w) => createEventEdit(widget.world.id, w, now),
       );
     }
-    _done(error, _editing ? 'Сохранено: $title' : 'Создано: $title');
+    _done(
+      error,
+      _editing ? 'Сохранено: $title' : 'Создано: $title',
+      _editing ? DoneKind.changed : DoneKind.created,
+    );
   }
 
   Future<void> _delete() async {
@@ -196,14 +200,15 @@ class _NewEventScreenState extends State<NewEventScreen>
         title: e.title,
       ),
       'Удалено: ${e.title}',
+      DoneKind.deleted,
     );
   }
 
   /// Нет ошибки — назад с «мир изменился» и словом, что сделано; есть — показать и остаться.
-  void _done(String? error, String done) {
+  void _done(String? error, String done, DoneKind kind) {
     if (!mounted) return;
     if (error == null) {
-      closeDone(context, done);
+      closeDone(context, done, kind);
     } else {
       setState(() {
         _busy = false;
