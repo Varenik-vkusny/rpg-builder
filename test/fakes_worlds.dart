@@ -36,9 +36,18 @@ class FakeWorlds implements WorldsRepo {
   final FakeAuth auth;
   final _byOwner = <String, List<World>>{};
 
+  /// Обрыв сети: пока задано — список миров падает с этой ошибкой.
+  Object? offline;
+
+  /// Сеть молчит: список миров не отвечает вовсе (проверка таймаута).
+  bool hang = false;
+
   @override
-  Future<List<World>> listMine() async =>
-      List.of(_byOwner[auth.user] ?? const []);
+  Future<List<World>> listMine() async {
+    if (offline case final e?) throw e;
+    if (hang) return Completer<List<World>>().future;
+    return List.of(_byOwner[auth.user] ?? const []);
+  }
 
   @override
   Future<World> create(NewWorld w) async {

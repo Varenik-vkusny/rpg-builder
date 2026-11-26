@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 
 import '../assistant/assistant_service.dart';
+import '../check/world_check.dart';
+import '../ui/offline.dart';
 import '../content/content_repo.dart';
 import '../content/world_screen.dart';
 import '../help/help.dart';
@@ -29,7 +31,11 @@ class WorldHome extends StatefulWidget {
 }
 
 class _WorldHomeState extends State<WorldHome> {
-  late final _load = widget.repo.snapshot(widget.world.id);
+  late Future<WorldSnapshot> _load = _fetch();
+
+  /// Мир целиком; сеть молчит дольше [loadTimeout] — «Нет связи» и «Повторить».
+  Future<WorldSnapshot> _fetch() =>
+      widget.repo.snapshot(widget.world.id).timeout(loadTimeout);
 
   @override
   Widget build(BuildContext context) => FutureBuilder(
@@ -38,11 +44,12 @@ class _WorldHomeState extends State<WorldHome> {
       if (snap.hasError) {
         return Scaffold(
           appBar: AppBar(actions: const [HelpAction('world')]),
-          body: const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Мир не загрузился. Проверь связь и открой снова'),
-            ),
+          body: LoadFailed(
+            snap.error,
+            what: 'Мир не загрузился',
+            onRetry: () => setState(() {
+              _load = _fetch();
+            }),
           ),
         );
       }

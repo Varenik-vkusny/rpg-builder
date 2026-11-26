@@ -115,11 +115,41 @@ extension _Build on _HolstState {
     final before = {for (final l in _links) l.mark};
     final r = await applyGesture(widget.repo, widget.world.id, _w, edit);
     if (!mounted) return false;
+    if (!r.applied && r.offline && r.retry) {
+      // Нет связи — тот же жест можно повторить, ничего не теряется (5ж, 26.11).
+      _set(() => _busy = false);
+      _say(
+        SnackData(
+          title: 'Нет связи',
+          sub: r.reason,
+          tone: GestureTone.error,
+          action: 'Повторить',
+          onAction: () {
+            _hideSnack();
+            _gesture(
+              edit,
+              done: done,
+              marks: marks,
+              kind: kind,
+              threads: threads,
+              link: link,
+              failed: failed,
+              undone: undone,
+              explain: explain,
+            );
+          },
+          seconds: 10,
+        ),
+      );
+      return false;
+    }
     if (!r.applied) {
       _set(() => _busy = false);
       _say(
         SnackData(
-          title: failed,
+          // Связь оборвалась посреди записи: записалось ли — неизвестно, повтор
+          // мог бы записать дважды — только «проверь историю» (ревью 26.11).
+          title: r.offline ? 'Нет связи' : failed,
           sub:
               (r.problem == null ? null : explain?.call(r.problem!)) ??
               r.reason,

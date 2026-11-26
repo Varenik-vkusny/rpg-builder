@@ -20,9 +20,14 @@ import 'fakes_journal.dart';
 class FakeContent implements ContentRepo {
   final _locations = <String, List<Location>>{};
 
+  /// Обрыв сети: пока задано — чтение мира и любая запись падают с этой ошибкой.
+  Object? offline;
+
   @override
-  Future<List<Location>> locations(String worldId) async =>
-      List.of(_locations[worldId] ?? const []);
+  Future<List<Location>> locations(String worldId) async {
+    if (offline case final e?) throw e;
+    return List.of(_locations[worldId] ?? const []);
+  }
 
   @override
   Future<Location> createLocation(String worldId, NewLocation l) async {
@@ -153,6 +158,7 @@ class FakeContent implements ContentRepo {
   /// Как база: план на мир целиком, любая невыполнимая операция — ничего не пишется.
   @override
   Future<void> applyChangeSet(String worldId, ChangeSetDraft draft) async {
+    if (offline case final e?) throw e;
     final before = await snapshotOf(worldId);
     final (copy, results) = applyToCopy(before, draft.plan);
     final failed = results.where((r) => r.error != null);
@@ -173,6 +179,7 @@ class FakeContent implements ContentRepo {
 
   @override
   Future<void> rejectChangeSet(String worldId, ChangeSetDraft draft) async {
+    if (offline case final e?) throw e;
     changeSets.add((status: 'rejected', draft: draft));
     _log(worldId, SetStatus.rejected, draft.request, draft.plan.summary, [
       for (final op in draft.plan.ops)
@@ -227,6 +234,7 @@ class FakeContent implements ContentRepo {
   /// Как база: на удаляемый объект ссылаются — отказ; иначе мир после правки.
   @override
   Future<void> applyManualEdit(String worldId, ManualEdit edit) async {
+    if (offline case final e?) throw e;
     final before = await snapshotOf(worldId);
     for (final op in edit.ops) {
       final id = (op['row'] as Map)['id'] as String?;

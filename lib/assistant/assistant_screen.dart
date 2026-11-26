@@ -5,6 +5,7 @@ import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../help/help.dart';
 import '../ui/messages.dart';
+import '../ui/offline.dart';
 import '../ui/parts.dart';
 import '../worlds/world.dart';
 import 'assistant_service.dart';
@@ -51,6 +52,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
   SketchImage? _image;
   bool _busy = false;
   String? _error;
+
+  /// Обрыв сети: «Повторить» делает то же действие (просьба и план на экране).
+  VoidCallback? _retry;
 
   /// Номер текущей попытки, пока ассистент думает (1 — план, 2–3 — исправления).
   int _attempt = 0;
@@ -101,6 +105,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     setState(() {
       _busy = true;
       _error = null;
+      _retry = null;
       _run = null;
     });
     try {
@@ -144,7 +149,12 @@ class _AssistantScreenState extends State<AssistantScreen> {
         }
       }
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) {
+        setState(() {
+          _error = isOffline(e) ? 'просьба не потеряна, повтори' : '$e';
+          _retry = isOffline(e) ? _propose : null;
+        });
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -238,11 +248,17 @@ class _AssistantScreenState extends State<AssistantScreen> {
     );
   }
 
-  Widget _errorText() => Text(
-    _error!,
-    key: const Key('assistant-error'),
-    style: TextStyle(color: Theme.of(context).colorScheme.error),
-  );
+  Widget _errorText() => switch (_retry) {
+    final retry? => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: RetryStrip(_error!, onRetry: retry),
+    ),
+    null => Text(
+      _error!,
+      key: const Key('assistant-error'),
+      style: TextStyle(color: Theme.of(context).colorScheme.error),
+    ),
+  };
 
   /// «Применить» — план одной транзакцией; «Отклонить» — только в журнал.
   /// Успех — назад в мир; при применении мир перечитывается.
@@ -250,6 +266,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     setState(() {
       _busy = true;
       _error = null;
+      _retry = null;
     });
     final failed = await decidePlan(
       widget.repo,
@@ -262,7 +279,8 @@ class _AssistantScreenState extends State<AssistantScreen> {
     if (failed != null) {
       setState(() {
         _busy = false;
-        _error = failed;
+        _error = failed.safeRetry ? 'план не потерян, повтори' : failed.message;
+        _retry = failed.safeRetry ? () => _decide(apply) : null;
       });
       return;
     }

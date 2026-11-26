@@ -190,8 +190,25 @@ extension _Change on _HolstState {
     if (!mounted) return;
     if (failed != null) {
       _set(() => _busy = false);
+      // Нет связи — план остаётся на холсте, «Повторить» — то же решение (26.11).
       return _say(
-        SnackData(title: 'Не записано', sub: failed, tone: GestureTone.error),
+        SnackData(
+          title: failed.offline ? 'Нет связи' : 'Не записано',
+          sub: failed.safeRetry
+              ? 'план не потерян'
+              : failed.offline
+              ? 'связь оборвалась — проверь историю'
+              : failed.message,
+          tone: GestureTone.error,
+          action: failed.safeRetry ? 'Повторить' : null,
+          onAction: failed.safeRetry
+              ? () {
+                  _hideSnack();
+                  _decidePlan(apply);
+                }
+              : null,
+          seconds: failed.safeRetry ? 10 : 5,
+        ),
       );
     }
     final marks = Map.of(_marks), threads = Map.of(_planThreads);

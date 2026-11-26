@@ -9,6 +9,7 @@ import 'new_world_screen.dart';
 import 'world_home.dart';
 import '../ui/cover_card.dart';
 import '../ui/messages.dart';
+import '../ui/offline.dart';
 import '../ui/parts.dart';
 import 'world.dart';
 import 'worlds_repo.dart';
@@ -34,11 +35,14 @@ class WorldsScreen extends StatefulWidget {
 }
 
 class _WorldsScreenState extends State<WorldsScreen> {
-  late Future<List<World>> _worlds = widget.repo.listMine();
+  late Future<List<World>> _worlds = _list();
+
+  /// Список миров; сеть молчит дольше [loadTimeout] — «Нет связи».
+  Future<List<World>> _list() => widget.repo.listMine().timeout(loadTimeout);
 
   void _reload() {
     setState(() {
-      _worlds = widget.repo.listMine();
+      _worlds = _list();
     });
   }
 
@@ -218,8 +222,10 @@ class _WorldsScreenState extends State<WorldsScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(
-              child: Text('Не удалось загрузить миры: ${snap.error}'),
+            return LoadFailed(
+              snap.error,
+              what: 'Не удалось загрузить миры',
+              onRetry: _reload,
             );
           }
           final worlds = snap.data!;

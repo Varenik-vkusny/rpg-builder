@@ -25,6 +25,8 @@ class FakeAssistant implements AssistantService {
     }
     return switch (answers.removeAt(0)) {
       final AuthorQuestion q => throw QuestionAsked(q),
+      // Сеть оборвалась посреди запроса («Нет связи», 26.11).
+      final Exception e => throw e,
       final a => a as Proposal,
     };
   }
@@ -38,11 +40,13 @@ Future<FakeAuth> pumpApp(
   AssistantService? assistant,
   GlobalKey? wrap,
   Open5eApi? open5e,
+  FakeWorlds? worlds,
+  FakeAuth? signedIn,
 }) async {
-  final auth = FakeAuth();
+  final auth = signedIn ?? worlds?.auth ?? FakeAuth();
   final app = RpgBuilderApp(
     auth: auth,
-    worlds: FakeWorlds(auth),
+    worlds: worlds ?? FakeWorlds(auth),
     content: content ?? FakeContent(),
     assistant: assistant ?? FakeAssistant(),
     open5e: open5e ?? const HttpOpen5e(),

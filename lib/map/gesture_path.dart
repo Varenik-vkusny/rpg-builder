@@ -6,6 +6,7 @@ import '../check/world_check.dart';
 import '../content/content_repo.dart';
 import '../content/manual_edit.dart';
 import '../content/manual_save.dart';
+import '../ui/offline.dart';
 
 enum GestureTone { ok, warn, error }
 
@@ -17,7 +18,15 @@ class GestureResult {
     this.problem,
     this.setId,
     this.warnings = const [],
+    this.offline = false,
+    this.retry = false,
   });
+
+  /// Не записан из-за сети.
+  final bool offline;
+
+  /// Запрос точно не ушёл — «Повторить» безопасно (без двойной записи).
+  final bool retry;
 
   final GestureTone tone;
 
@@ -57,10 +66,16 @@ Future<GestureResult> applyGesture(
   }
   try {
     await repo.applyManualEdit(worldId, edit);
-  } catch (_) {
-    return const GestureResult(
+  } catch (e) {
+    return GestureResult(
       tone: GestureTone.error,
-      reason: 'не сохранено — проверь связь',
+      reason: neverSent(e)
+          ? 'жест не записан'
+          : isOffline(e)
+          ? 'связь оборвалась — проверь историю'
+          : 'не сохранено — попробуй ещё раз',
+      offline: isOffline(e),
+      retry: neverSent(e),
     );
   }
   final history = await repo.history(worldId);
